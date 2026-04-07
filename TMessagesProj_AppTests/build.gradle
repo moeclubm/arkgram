@@ -1,6 +1,7 @@
-apply plugin: 'com.android.application'
-apply plugin: 'kotlin-android'
-apply plugin: 'test-generator'
+plugins {
+    id 'com.android.application'
+    id 'test-generator'
+}
 
 repositories {
     mavenCentral()
@@ -16,6 +17,11 @@ configurations.all {
     exclude group: 'androidx.recyclerview', module: 'recyclerview'
 }
 
+def appVersionCode = Integer.parseInt(APP_VERSION_CODE)
+def abiVersionCodes = [
+    afat: 9,
+]
+
 dependencies {
     implementation project(':TMessagesProj')
     coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.5'
@@ -29,23 +35,19 @@ dependencies {
 }
 
 android {
-    compileSdkVersion 36
+    compileSdk = 36
 
     defaultConfig.applicationId = APP_PACKAGE
 
     sourceSets.main.jniLibs.srcDirs = ['../TMessagesProj/jni/']
-    testBuildType "debug"
+    testBuildType = "debug"
 
 
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
 
-        coreLibraryDesugaringEnabled true
-    }
-
-    kotlinOptions {
-        jvmTarget = "1.8"
+        coreLibraryDesugaringEnabled = true
     }
 
     signingConfigs {
@@ -68,20 +70,20 @@ android {
         debug {
             debuggable true
             jniDebuggable true
-            signingConfig signingConfigs.debug
+            signingConfig = signingConfigs.debug
             applicationIdSuffix ".web"
             minifyEnabled false
-            multiDexEnabled true
+            multiDexEnabled = true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), '../TMessagesProj/proguard-rules.pro', '../TMessagesProj/proguard-rules-beta.pro'
             ndk.debugSymbolLevel = 'FULL'
         }
         standalone {
             debuggable false
             jniDebuggable false
-            signingConfig signingConfigs.release
+            signingConfig = signingConfigs.release
             applicationIdSuffix ".web"
             minifyEnabled true
-            multiDexEnabled true
+            multiDexEnabled = true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), '../TMessagesProj/proguard-rules.pro'
             ndk.debugSymbolLevel = 'FULL'
         }
@@ -101,44 +103,27 @@ android {
             ndk {
                 abiFilters "armeabi-v7a", "arm64-v8a", "x86", "x86_64"
             }
-            ext {
-                abiVersionCode = 9
-            }
             sourceSets.standalone {
                 manifest.srcFile '../TMessagesProj/config/release/AndroidManifest.xml'
             }
         }
     }
 
-    defaultConfig.versionCode = Integer.parseInt(APP_VERSION_CODE)
-
-    applicationVariants.all { variant ->
-        variant.outputs.all { output ->
-            outputFileName = "app.apk"
-            output.versionCodeOverride = defaultConfig.versionCode * 10 + variant.productFlavors.get(0).abiVersionCode
-        }
-    }
-
-    variantFilter { variant ->
-        def names = variant.flavors*.name
-        if (variant.buildType.name != "release" && !names.contains("afat")) {
-            setIgnore(true)
-        }
-    }
+    defaultConfig.versionCode = appVersionCode
 
     defaultConfig {
-        minSdkVersion 26
-        targetSdkVersion 36
+        minSdk = 26
+        targetSdk = 36
         versionName APP_VERSION_NAME
-        ndkVersion "21.4.7075529"
+        ndkVersion = "21.4.7075529"
 
-        multiDexEnabled true
+        multiDexEnabled = true
 
         vectorDrawables.generatedDensities = ['mdpi', 'hdpi', 'xhdpi', 'xxhdpi']
 
         externalNativeBuild {
             cmake {
-                version '3.10.2'
+                version = '3.10.2'
                 arguments '-DANDROID_STL=c++_static', '-DANDROID_PLATFORM=android-21' //, '-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON'
             }
         }
@@ -150,10 +135,34 @@ android {
     buildFeatures {
         buildConfig = true
     }
-    namespace 'org.telegram.messenger.test'
+    namespace = 'org.telegram.messenger.test'
     lint {
-        checkReleaseBuilds false
+        checkReleaseBuilds = false
         disable 'MissingTranslation', 'ExtraTranslation', 'BlockedPrivateApi'
     }
 
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17
+    }
+}
+
+androidComponents {
+    beforeVariants(selector().all()) { variantBuilder ->
+        def flavorNames = variantBuilder.productFlavors.collect { it.second }
+        if (variantBuilder.buildType != "release" && !flavorNames.contains("afat")) {
+            variantBuilder.enable = false
+        }
+    }
+
+    onVariants(selector().all()) { variant ->
+        def abiVersionCode = abiVersionCodes[variant.flavorName]
+        if (abiVersionCode != null) {
+            variant.outputs.each { output ->
+                output.versionCode.set(appVersionCode * 10 + abiVersionCode)
+            }
+        }
+    }
 }

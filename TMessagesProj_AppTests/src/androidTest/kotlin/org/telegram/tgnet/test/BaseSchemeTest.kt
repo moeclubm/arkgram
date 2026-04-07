@@ -109,15 +109,14 @@ open class BaseSchemeTest {
                 return null
             }
 
-            val strategies = fixture.fixtureConfiguration.strategies.toMutableMap()
-            strategies[RecursionStrategy::class] = this
-            strategies[NullabilityStrategy::class] = AlwaysNullStrategy
+            val configuration = ConfigurationBuilder(fixture.fixtureConfiguration).apply {
+                recursionStrategy(this@SafeRecursionStrategy)
+                nullabilityStrategy(AlwaysNullStrategy)
+                repeatCount { 0 }
+            }.build()
 
             @Suppress("DEPRECATION_ERROR")
-            return fixture.create(type, fixture.fixtureConfiguration.copy(
-                strategies = strategies,
-                repeatCount = { 0 },
-            ))
+            return fixture.create(type, configuration)
         }
     }
 
@@ -169,14 +168,15 @@ open class BaseSchemeTest {
 
         val result = mutableListOf(neverNull, alwaysNull)
 
-        @Suppress("DEPRECATION_ERROR")
         nullableFields.forEach { field ->
-            result.add(alwaysNull.copy(
-                properties = mapOf(clazz to mapOf(field.name to { fixture.create(field.returnType, neverNull) }))
-            ))
-            result.add(randomNull.copy(
-                properties = mapOf(clazz to mapOf(field.name to { fixture.create(field.returnType, neverNull) }))
-            ))
+            @Suppress("DEPRECATION_ERROR")
+            result.add(ConfigurationBuilder(alwaysNull).apply {
+                property(clazz, field.name) { fixture.create(field.returnType, neverNull) }
+            }.build())
+            @Suppress("DEPRECATION_ERROR")
+            result.add(ConfigurationBuilder(randomNull).apply {
+                property(clazz, field.name) { fixture.create(field.returnType, neverNull) }
+            }.build())
         }
         
         repeat(maxOf(25 - nullableFields.size, 1)) {
