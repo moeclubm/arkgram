@@ -49,6 +49,12 @@ def releaseKeyAlias = getSigningValue('RELEASE_KEY_ALIAS')
 def releaseKeyPassword = getSigningValue('RELEASE_KEY_PASSWORD')
 def appVersionCode = Integer.parseInt(String.valueOf(project.findProperty('APP_VERSION_CODE') ?: APP_VERSION_CODE))
 def appVersionName = String.valueOf(project.findProperty('APP_VERSION_NAME') ?: APP_VERSION_NAME)
+def defaultAbiFilters = ["armeabi-v7a", "arm64-v8a", "x86", "x86_64"]
+def ciAbiFilters = String.valueOf(project.findProperty('CI_ABI_FILTERS') ?: "")
+        .split(',')
+        .collect { it.trim() }
+        .findAll { !it.isEmpty() }
+def selectedAbiFilters = ciAbiFilters.isEmpty() ? defaultAbiFilters : ciAbiFilters
 def abiVersionCodes = [
     bundleAfat     : 1,
     bundleAfat_SDK23: 2,
@@ -140,13 +146,13 @@ android {
     productFlavors {
         bundleAfat {
             ndk {
-                abiFilters "armeabi-v7a", "arm64-v8a", "x86", "x86_64"
+                abiFilters(*selectedAbiFilters)
             }
             buildConfigField "boolean", "BUNDLE", "true"
         }
         bundleAfat_SDK23 {
             ndk {
-                abiFilters "armeabi-v7a", "arm64-v8a", "x86", "x86_64"
+                abiFilters(*selectedAbiFilters)
             }
             sourceSets.debug {
                 manifest.srcFile '../TMessagesProj/config/debug/AndroidManifest_SDK23.xml'
@@ -159,7 +165,7 @@ android {
         }
         afat {
             ndk {
-                abiFilters "armeabi-v7a", "arm64-v8a", "x86", "x86_64"
+                abiFilters(*selectedAbiFilters)
             }
             sourceSets.debug {
                 manifest.srcFile '../TMessagesProj/config/debug/AndroidManifest_SDK23.xml'
