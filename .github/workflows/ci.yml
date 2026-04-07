@@ -1,0 +1,79 @@
+name: ci
+
+on:
+  push:
+    branches:
+      - '**'
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android components
+        shell: bash
+        run: |
+          yes | sdkmanager --licenses >/dev/null
+          sdkmanager --install \
+            "platforms;android-36" \
+            "build-tools;36.0.0" \
+            "ndk;21.4.7075529" \
+            "cmake;3.10.2.4988404"
+
+      - name: Prepare local.properties
+        shell: bash
+        run: |
+          sdk_root="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
+          printf 'sdk.dir=%s\n' "$sdk_root" > local.properties
+
+      - name: Create CI signing key
+        shell: bash
+        run: |
+          ci_keystore="TMessagesProj/config/release.keystore"
+          rm -f "$ci_keystore"
+          keytool -genkeypair \
+            -v \
+            -storetype PKCS12 \
+            -keystore "$ci_keystore" \
+            -alias flexgram \
+            -storepass ci-debug-pass \
+            -keypass ci-debug-pass \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 3650 \
+            -dname "CN=Flexgram CI, OU=CI, O=Flexgram, L=CI, ST=CI, C=US"
+          echo "ORG_GRADLE_PROJECT_RELEASE_KEY_PASSWORD=ci-debug-pass" >> "$GITHUB_ENV"
+          echo "ORG_GRADLE_PROJECT_RELEASE_STORE_PASSWORD=ci-debug-pass" >> "$GITHUB_ENV"
+
+      - name: Compute CI version
+        shell: bash
+        run: |
+          echo "ORG_GRADLE_PROJECT_APP_VERSION_CODE=$((6666 + GITHUB_RUN_NUMBER))" >> "$GITHUB_ENV"
+          echo "ORG_GRADLE_PROJECT_APP_VERSION_NAME=12.6.4-ci.${GITHUB_RUN_NUMBER}" >> "$GITHUB_ENV"
+
+      - name: Build verification APK
+        shell: bash
+        run: |
+          chmod +x gradlew
+          ./gradlew :TMessagesProj_App:assembleAfatDebug --stacktrace
