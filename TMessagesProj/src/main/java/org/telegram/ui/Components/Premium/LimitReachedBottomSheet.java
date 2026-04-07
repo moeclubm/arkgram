@@ -2451,10 +2451,10 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView imp
             limitParams.descriptionStrPremium = LocaleController.formatString("LimitReachedFileSizePremium", R.string.LimitReachedFileSizePremium, "4 GB");
             limitParams.descriptionStrLocked = LocaleController.formatString("LimitReachedFileSizeLocked", R.string.LimitReachedFileSizeLocked, "2 GB");
         } else if (type == TYPE_ACCOUNTS) {
-            limitParams.defaultLimit = 3;
-            limitParams.premiumLimit = 4;
+            limitParams.defaultLimit = UserConfig.MAX_ACCOUNT_COUNT;
+            limitParams.premiumLimit = UserConfig.MAX_ACCOUNT_COUNT;
             limitParams.icon = R.drawable.msg_limit_accounts;
-            limitParams.descriptionStr = LocaleController.formatString("LimitReachedAccounts", R.string.LimitReachedAccounts, limitParams.defaultLimit, limitParams.premiumLimit);
+            limitParams.descriptionStr = LocaleController.formatString("LimitReachedAccountsPremium", R.string.LimitReachedAccountsPremium, limitParams.defaultLimit);
             limitParams.descriptionStrPremium = LocaleController.formatString("LimitReachedAccountsPremium", R.string.LimitReachedAccountsPremium, limitParams.premiumLimit);
             limitParams.descriptionStrLocked = LocaleController.formatString("LimitReachedAccountsPremium", R.string.LimitReachedAccountsPremium, limitParams.defaultLimit);
         } else if (type == TYPE_ADD_MEMBERS_RESTRICTED) {
