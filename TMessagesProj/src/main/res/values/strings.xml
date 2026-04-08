@@ -10683,8 +10683,7 @@
     <string name="FlexSettingsInfo">Custom features, Markdown, translation, and quick access</string>
     <string name="FlexFeatures">Features</string>
     <string name="FlexQuickAccess">Quick Access</string>
-    <string name="FlexFeaturesInfo">Bottom bar changes apply the next time the main screen is opened. Call changes apply to new calls.</string>
-    <string name="FlexMainTabs">Bottom Bar</string>
+    <string name="FlexFeaturesInfo">Call changes apply to new calls.</string>
     <string name="FlexEnhancedDownload">Download Acceleration</string>
     <string name="FlexDownloadSpeedBoostOff">Off</string>
     <string name="FlexDownloadSpeedBoostAverage">Normal Boost</string>
