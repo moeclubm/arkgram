@@ -52,6 +52,7 @@ import org.json.JSONArray;
 import org.json.JSONTokener;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.Emoji;
+import org.telegram.messenger.FlexConfig;
 import org.telegram.messenger.LanguageDetector;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
@@ -281,7 +282,10 @@ public class TranslateAlert2 extends BottomSheet implements NotificationCenter.N
             reqId = null;
         }
 
-        final String method = MessagesController.getInstance(currentAccount).translationsManualEnabled;
+        String method = MessagesController.getInstance(currentAccount).translationsManualEnabled;
+        if (!FlexConfig.isTelegramTranslatePreferred()) {
+            method = "alternative";
+        }
         if ("alternative".equalsIgnoreCase(method)) {
             translateAlt();
             return;
@@ -509,11 +513,9 @@ public class TranslateAlert2 extends BottomSheet implements NotificationCenter.N
                 String uri;
                 HttpURLConnection connection = null;
                 try {
-                    uri = "https://translate.goo";
-                    uri += "gleapis.com/transl";
-                    uri += "ate_a";
-                    uri += "/singl";
-                    uri += "e?client=gtx&sl=" + Uri.encode(fromLng) + "&tl=" + Uri.encode(toLng) + "&dt=t" + "&ie=UTF-8&oe=UTF-8&otf=1&ssel=0&tsel=0&kc=7&dt=at&dt=bd&dt=ex&dt=ld&dt=md&dt=qca&dt=rw&dt=rm&dt=ss&q=";
+                    uri = "https://";
+                    uri += FlexConfig.getTranslationProvider() == 2 ? "translate.google.cn" : "translate.googleapis.com";
+                    uri += "/translate_a/single?client=gtx&sl=" + Uri.encode(fromLng) + "&tl=" + Uri.encode(toLng) + "&dt=t" + "&ie=UTF-8&oe=UTF-8&otf=1&ssel=0&tsel=0&kc=7&dt=at&dt=bd&dt=ex&dt=ld&dt=md&dt=qca&dt=rw&dt=rm&dt=ss&q=";
                     uri += text;
                     connection = (HttpURLConnection) new URI(uri).toURL().openConnection();
                     connection.setRequestMethod("GET");

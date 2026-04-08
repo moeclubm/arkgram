@@ -129,6 +129,7 @@ import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
+import org.telegram.messenger.FlexConfig;
 import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.LiteMode;
 import org.telegram.messenger.LocaleController;
@@ -4974,6 +4975,22 @@ public class ChatActivityEnterView extends FrameLayout implements
                 }
             });
         }
+        CharSequence messageText = messageEditText == null ? null : messageEditText.getTextToUse();
+        if (containsMarkdown(messageText)) {
+            boolean withMarkdown = FlexConfig.isMarkdownDisabled();
+            options.add(R.drawable.menu_feature_code, getString(withMarkdown ? R.string.SendWithMarkdown : R.string.SendWithoutMarkdown), () -> {
+                sentFromPreview = System.currentTimeMillis();
+                final boolean shownDialog = sendMessageInternal(true, 0, 0, 0, true, SendMessageInternalParams.markdown(withMarkdown));
+                if (!containsSendMessage && messageSendPreview != null) {
+                    messageSendPreview.dismiss(!shownDialog);
+                    messageSendPreview = null;
+                } else {
+                    dismissSendPreviewSent = !shownDialog;
+                    AndroidUtilities.cancelRunOnUIThread(dismissSendPreview);
+                    AndroidUtilities.runOnUIThread(dismissSendPreview, 500);
+                }
+            });
+        }
         options.setupSelectors();
         if (sendWhenOnlineButton != null) {
             TLRPC.User user = parentFragment == null ? null : parentFragment.getCurrentUser();
@@ -6980,6 +6997,10 @@ public class ChatActivityEnterView extends FrameLayout implements
     }
 
     protected boolean sendMessageInternal(boolean notify, int scheduleDate, int scheduleRepeatPeriod, long payStars, boolean allowConfirm) {
+        return sendMessageInternal(notify, scheduleDate, scheduleRepeatPeriod, payStars, allowConfirm, new SendMessageInternalParams());
+    }
+
+    protected boolean sendMessageInternal(boolean notify, int scheduleDate, int scheduleRepeatPeriod, long payStars, boolean allowConfirm, SendMessageInternalParams internalParams) {
         final Runnable send = () -> {
             if (slowModeTimer == Integer.MAX_VALUE && !isInScheduleMode()) {
                 if (delegate != null) {
@@ -7002,7 +7023,7 @@ public class ChatActivityEnterView extends FrameLayout implements
                 }
             }
             if (allowConfirm && showConfirmAlert(() -> {
-                sendMessageInternal(notify, scheduleDate, scheduleRepeatPeriod, payStars, false);
+                sendMessageInternal(notify, scheduleDate, scheduleRepeatPeriod, payStars, false, internalParams);
             })) {
                 return;
             }
@@ -7094,7 +7115,7 @@ public class ChatActivityEnterView extends FrameLayout implements
             if (checkPremiumAnimatedEmoji(currentAccount, dialog_id, parentFragment, null, message)) {
                 return;
             }
-            if (processSendingText(message, notify, scheduleDate, scheduleRepeatPeriod, payStars)) {
+            if (processSendingText(message, notify, scheduleDate, scheduleRepeatPeriod, payStars, internalParams)) {
                 if (delegate.hasForwardingMessages() || (scheduleDate != 0 && !isInScheduleMode()) || isInScheduleMode()) {
                     if (messageEditText != null) {
                         messageEditText.setText("");
@@ -7124,7 +7145,7 @@ public class ChatActivityEnterView extends FrameLayout implements
             updateSendButtonPaid();
         };
         if (allowConfirm) {
-            boolean alertShown = AlertsCreator.ensurePaidMessageConfirmation(currentAccount, dialog_id, getMessagesCount(), starsPrice -> sendMessageInternal(notify, scheduleDate, scheduleRepeatPeriod, starsPrice, false), payStars);
+            boolean alertShown = AlertsCreator.ensurePaidMessageConfirmation(currentAccount, dialog_id, getMessagesCount(), starsPrice -> sendMessageInternal(notify, scheduleDate, scheduleRepeatPeriod, starsPrice, false, internalParams), payStars);
             if (alertShown && sendButtonVisible) {
                 if (isInVideoMode()) {
                     if (delegate.isVideoRecordingPaused())
@@ -7150,6 +7171,16 @@ public class ChatActivityEnterView extends FrameLayout implements
         } else {
             send.run();
             return false;
+        }
+    }
+
+    public static class SendMessageInternalParams {
+        public Boolean withMarkdown;
+
+        public static SendMessageInternalParams markdown(boolean withMarkdown) {
+            SendMessageInternalParams params = new SendMessageInternalParams();
+            params.withMarkdown = withMarkdown;
+            return params;
         }
     }
 
@@ -7468,7 +7499,24 @@ public class ChatActivityEnterView extends FrameLayout implements
         setEditingMessageObject(null, null, false);
     }
 
+    private boolean containsMarkdown(CharSequence text) {
+        return text != null && (
+            TextUtils.indexOf(text, "```") >= 0 ||
+            TextUtils.indexOf(text, "`") >= 0 ||
+            TextUtils.indexOf(text, "**") >= 0 ||
+            TextUtils.indexOf(text, "__") >= 0 ||
+            TextUtils.indexOf(text, "~~") >= 0 ||
+            TextUtils.indexOf(text, "||") >= 0 ||
+            TextUtils.indexOf(text, "](") >= 0
+        );
+    }
+
     public boolean processSendingText(CharSequence text, boolean notify, int scheduleDate, int scheduleRepeatPeriod, long payStars) {
+        return processSendingText(text, notify, scheduleDate, scheduleRepeatPeriod, payStars, new SendMessageInternalParams());
+    }
+
+    public boolean processSendingText(CharSequence text, boolean notify, int scheduleDate, int scheduleRepeatPeriod, long payStars, SendMessageInternalParams internalParams) {
+        boolean withMarkdown = internalParams.withMarkdown == null ? !FlexConfig.isMarkdownDisabled() : internalParams.withMarkdown;
         if (replyingQuote != null && parentFragment != null && replyingQuote.outdated) {
             parentFragment.showQuoteMessageUpdate();
             return false;
@@ -7527,7 +7575,7 @@ public class ChatActivityEnterView extends FrameLayout implements
                 if (!hasOnlyEmoji) {
                     part = AndroidUtilities.getTrimmedString(part);
                 }
-                CharSequence[] message = new CharSequence[]{ part };
+                CharSequence[] message = new CharSequence[]{part};
                 ArrayList<TLRPC.MessageEntity> entities = MediaDataController.getInstance(currentAccount).getEntities(message, supportsNewEntities);
                 MessageObject.SendAnimationData sendAnimationData = null;
 
@@ -7546,6 +7594,10 @@ public class ChatActivityEnterView extends FrameLayout implements
                 } else if (messageSendPreview != null) {
                     sendAnimationData = new MessageObject.SendAnimationData();
                     sendAnimationData.fromPreview = System.currentTimeMillis() - sentFromPreview < 200;
+                }
+                if (!withMarkdown) {
+                    message[0] = part.toString();
+                    entities = new ArrayList<>();
                 }
 
                 boolean updateStickersOrder = false;

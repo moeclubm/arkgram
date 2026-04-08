@@ -7114,7 +7114,7 @@ public class MediaDataController extends BaseController {
         boolean isPre = false;
         final String mono = "`";
         final String pre = "```";
-        while ((index = TextUtils.indexOf(message[0], !isPre ? mono : pre, lastIndex)) != -1) {
+        while (!(FlexConfig.isNewMarkdownParserEnabled() || FlexConfig.isMarkdownDisabled()) && (index = TextUtils.indexOf(message[0], !isPre ? mono : pre, lastIndex)) != -1) {
             if (start == -1) {
                 isPre = message[0].length() - index > 2 && message[0].charAt(index + 1) == '`' && message[0].charAt(index + 2) == '`';
                 start = index;
@@ -7198,6 +7198,10 @@ public class MediaDataController extends BaseController {
             entity.offset = start;
             entity.length = 1;
             entities.add(entity);
+        }
+
+        if (!FlexConfig.isMarkdownDisabled() && FlexConfig.isNewMarkdownParserEnabled()) {
+            FlexEntitiesHelper.parseMarkdown(message, allowStrike);
         }
 
         if (message[0] instanceof Spanned) {
@@ -7390,6 +7394,9 @@ public class MediaDataController extends BaseController {
 
         CharSequence cs = message[0];
         if (entities == null) entities = new ArrayList<>();
+        if (FlexConfig.isNewMarkdownParserEnabled() || FlexConfig.isMarkdownDisabled()) {
+            return entities;
+        }
         cs = parsePattern(cs, BOLD_PATTERN, entities, obj -> new TLRPC.TL_messageEntityBold());
         cs = parsePattern(cs, ITALIC_PATTERN, entities, obj -> new TLRPC.TL_messageEntityItalic());
         cs = parsePattern(cs, SPOILER_PATTERN, entities, obj -> new TLRPC.TL_messageEntitySpoiler());
