@@ -33,5 +33,5 @@ dependencies {
     implementation("com.squareup.moshi:moshi:1.15.0")
     implementation("com.squareup.moshi:moshi-kotlin:1.15.0")
     implementation("com.github.javaparser:javaparser-core:3.28.0")
-    implementation("com.squareup:kotlinpoet:1.15.0")
+    implementation("com.squareup:kotlinpoet:2.3.0")
 }
