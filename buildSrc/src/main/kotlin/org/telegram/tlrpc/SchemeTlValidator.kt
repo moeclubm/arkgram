@@ -9,10 +9,8 @@ object SchemeTlValidator {
 
         val types = grouped.keys
 
-        val isValid = scheme.constructors2.all { c ->
-            c.params.list.all { p -> validateParamType(types, p.type) }
-        } && scheme.methods2.all { c ->
-            true // validateParamType(types, c.type) && c.params.all { p -> validateParamType(types, p.type) }
+        val isValid = scheme.constructors2.all { constructor ->
+            constructor.params.list.all { param -> validateParamType(types, param.type) }
         }
 
         val dependenciesDirect = grouped.mapValues {

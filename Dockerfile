@@ -21,7 +21,8 @@ RUN $ANDROID_HOME/cmdline-tools/bin/sdkmanager --sdk_root=$ANDROID_HOME "build-t
     "build-tools;${ANDROID_BUILD_TOOLS_VERSION}" \
     "platforms;android-${ANDROID_VERSION}" \
     "platform-tools" \
-    "ndk;$ANDROID_NDK_VERSION"
+    "ndk;$ANDROID_NDK_VERSION" \
+    "cmake;3.22.1"
 RUN cp $ANDROID_HOME/build-tools/30.0.3/dx $ANDROID_HOME/build-tools/35.0.0/dx
 RUN cp $ANDROID_HOME/build-tools/30.0.3/lib/dx.jar $ANDROID_HOME/build-tools/35.0.0/lib/dx.jar
 ENV PATH ${ANDROID_NDK_HOME}:$PATH

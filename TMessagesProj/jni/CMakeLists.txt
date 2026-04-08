@@ -1,4 +1,5 @@
-cmake_minimum_required(VERSION 3.10.2)
+cmake_minimum_required(VERSION 3.22.1)
+project(TMessagesProj LANGUAGES C CXX ASM)
 
 set(CMAKE_CXX_FLAGS "-std=c++14 -DANDROID -g")
 set(CMAKE_C_FLAGS "-w -std=c11 -DANDROID -D_LARGEFILE_SOURCE=1 -g")
@@ -352,7 +353,7 @@ add_library(breakpad STATIC
         third_party/breakpad/src/common/linux/memory_mapped_file.cc
         third_party/breakpad/src/common/linux/safe_readlink.cc)
 set_target_properties(breakpad PROPERTIES ANDROID_ARM_MODE arm)
-set_property(SOURCE third_party/breakpad/src/common/android/breakpad_getcontext.S PROPERTY LANGUAGE C)
+set_property(SOURCE third_party/breakpad/src/common/android/breakpad_getcontext.S PROPERTY LANGUAGE ASM)
 target_include_directories(breakpad PUBLIC
         third_party/breakpad/src/common/android/include
         third_party/breakpad/src)
