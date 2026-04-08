@@ -153,10 +153,10 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
 
     @Override
     public View createView(Context context) {
-        logoDrawable = context.getResources().getDrawable(R.drawable.flexgram_logo).mutate();
-        logoDrawable.setBounds(0, dp(5.0f), dp(158), dp(35.5f));
-        SpannableStringBuilder ssb = new SpannableStringBuilder(LocaleController.getString(R.string.AppName));
-        ssb.setSpan(new ImageSpan(logoDrawable), 0, ssb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        logoDrawable = context.getResources().getDrawable(R.mipmap.icon_foreground).mutate();
+        logoDrawable.setBounds(0, 0, dp(28), dp(28));
+        SpannableStringBuilder ssb = new SpannableStringBuilder("  " + LocaleController.getString(R.string.AppName));
+        ssb.setSpan(new ImageSpan(logoDrawable, ImageSpan.ALIGN_BOTTOM), 0, 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         titles[0] = ssb;
 
 
