@@ -14532,6 +14532,11 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     new SearchResult(400, getString(R.string.Language), R.drawable.msg2_language, () -> f.presentFragment(new LanguageSelectActivity())).withLink("tg://settings/language"),
                     new SearchResult(405, getString(R.string.ShowTranslateButton), getString(R.string.Language), R.drawable.msg2_language, () -> f.presentFragment(new LanguageSelectActivity())).withLink("tg://settings/language/show-button"),
                     MessagesController.getInstance(currentAccount).getTranslateController().isContextTranslateEnabled() ? new SearchResult(406, getString(R.string.DoNotTranslate), getString(R.string.Language), R.drawable.msg2_language, () -> f.presentFragment(new LanguageSelectActivity())).withLink("tg://settings/language/do-not-translate") : null,
+                    new SearchResult(430, getString(R.string.FlexSettings), R.drawable.settings_features, () -> f.presentFragment(new FlexSettingsActivity())).withLink("tg://settings/flex"),
+                    new SearchResult(431, getString(R.string.FlexMainTabs), getString(R.string.FlexSettings), R.drawable.menu_add_tab_24, () -> f.presentFragment(new FlexSettingsActivity())),
+                    new SearchResult(432, getString(R.string.FlexEnhancedDownload), getString(R.string.FlexSettings), R.drawable.msg_speed, () -> f.presentFragment(new FlexSettingsActivity())),
+                    new SearchResult(433, getString(R.string.FlexMarkdownSettings), getString(R.string.FlexSettings), R.drawable.menu_feature_code, () -> f.presentFragment(new FlexMarkdownSettingsActivity())),
+                    new SearchResult(434, getString(R.string.FlexTranslationSettings), getString(R.string.FlexSettings), R.drawable.msg_translate, () -> f.presentFragment(new FlexTranslateSettingsActivity())),
 
                     new SearchResult(402, getString(R.string.AskAQuestion), getString(R.string.SettingsHelp), R.drawable.msg2_help, () -> f.showDialog(AlertsCreator.createSupportAlert(f, null))).withLink("tg://settings/ask-question"),
                     new SearchResult(403, getString(R.string.TelegramFAQ), getString(R.string.SettingsHelp), R.drawable.msg2_help, () -> Browser.openUrl(f.getParentActivity(), getString(R.string.TelegramFaqUrl))).withLink("tg://settings/faq"),

@@ -107,6 +107,7 @@ import org.telegram.messenger.ContactsLoadingObserver;
 import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
+import org.telegram.messenger.FlexConfig;
 import org.telegram.messenger.FingerprintController;
 import org.telegram.messenger.FlagSecureReason;
 import org.telegram.messenger.GenericProvider;
@@ -562,8 +563,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
             if (!UserConfig.getInstance(currentAccount).isClientActivated()) {
                 actionBarLayout.addFragmentToStack(getClientNotActivatedFragment());
             } else {
-                MainTabsActivity mainTabsActivity = new MainTabsActivity();
-                actionBarLayout.addFragmentToStack(mainTabsActivity);
+                actionBarLayout.addFragmentToStack(FlexConfig.createMainFragment());
             }
 
             try {
@@ -1155,10 +1155,10 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
 
     private boolean switchingAccount;
     public void switchToAccount(int account, boolean removeAll) {
-        switchToAccount(account, removeAll, obj -> new MainTabsActivity());
+        switchToAccount(account, removeAll, obj -> FlexConfig.createMainFragment());
     }
 
-    public void switchToAccount(int account, boolean removeAll, GenericProvider<Void, MainTabsActivity> dialogsActivityProvider) {
+    public void switchToAccount(int account, boolean removeAll, GenericProvider<Void, BaseFragment> dialogsActivityProvider) {
         if (account == UserConfig.selectedAccount || !UserConfig.isValidAccount(account)) {
             return;
         }
@@ -1186,8 +1186,8 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         } else {
             actionBarLayout.removeFragmentFromStack(0);
         }
-        MainTabsActivity mainTabsActivity = dialogsActivityProvider.provide(null);
-        actionBarLayout.addFragmentToStack(mainTabsActivity, INavigationLayout.FORCE_ATTACH_VIEW_AS_FIRST);
+        BaseFragment mainFragment = dialogsActivityProvider.provide(null);
+        actionBarLayout.addFragmentToStack(mainFragment, INavigationLayout.FORCE_ATTACH_VIEW_AS_FIRST);
         actionBarLayout.rebuildFragments(INavigationLayout.REBUILD_FLAG_REBUILD_LAST);
         if (AndroidUtilities.isTablet()) {
             layersActionBarLayout.rebuildFragments(INavigationLayout.REBUILD_FLAG_REBUILD_LAST);
@@ -3246,12 +3246,17 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                     }
                 } else {
                     if (actionBarLayout.getFragmentStack().isEmpty()) {
-                        MainTabsActivity mainTabsActivity = new MainTabsActivity();
-                        DialogsActivity dialogsActivity = mainTabsActivity.prepareDialogsActivity(null);
+                        BaseFragment mainFragment = FlexConfig.createMainFragment();
+                        DialogsActivity dialogsActivity;
+                        if (mainFragment instanceof MainTabsActivity) {
+                            dialogsActivity = ((MainTabsActivity) mainFragment).prepareDialogsActivity(null);
+                        } else {
+                            dialogsActivity = (DialogsActivity) mainFragment;
+                        }
                         if (searchQuery != null) {
                             dialogsActivity.setInitialSearchString(searchQuery);
                         }
-                        actionBarLayout.addFragmentToStack(mainTabsActivity, INavigationLayout.FORCE_NOT_ATTACH_VIEW);
+                        actionBarLayout.addFragmentToStack(mainFragment, INavigationLayout.FORCE_NOT_ATTACH_VIEW);
                     }
                 }
             } else {
@@ -3259,12 +3264,17 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                     if (!UserConfig.getInstance(currentAccount).isClientActivated()) {
                         actionBarLayout.addFragmentToStack(getClientNotActivatedFragment(), INavigationLayout.FORCE_NOT_ATTACH_VIEW);
                     } else {
-                        MainTabsActivity mainTabsActivity = new MainTabsActivity();
-                        DialogsActivity dialogsActivity = mainTabsActivity.prepareDialogsActivity(null);
+                        BaseFragment mainFragment = FlexConfig.createMainFragment();
+                        DialogsActivity dialogsActivity;
+                        if (mainFragment instanceof MainTabsActivity) {
+                            dialogsActivity = ((MainTabsActivity) mainFragment).prepareDialogsActivity(null);
+                        } else {
+                            dialogsActivity = (DialogsActivity) mainFragment;
+                        }
                         if (searchQuery != null) {
                             dialogsActivity.setInitialSearchString(searchQuery);
                         }
-                        actionBarLayout.addFragmentToStack(mainTabsActivity, INavigationLayout.FORCE_NOT_ATTACH_VIEW);
+                        actionBarLayout.addFragmentToStack(mainFragment, INavigationLayout.FORCE_NOT_ATTACH_VIEW);
                     }
                 }
             }

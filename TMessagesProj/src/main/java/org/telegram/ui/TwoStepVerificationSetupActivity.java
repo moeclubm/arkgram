@@ -50,6 +50,7 @@ import androidx.core.graphics.ColorUtils;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.FileLog;
+import org.telegram.messenger.FlexConfig;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
@@ -1313,9 +1314,7 @@ public class TwoStepVerificationSetupActivity extends BaseFragment {
                 } else if (fromRegistration) {
                     final Bundle args = new Bundle();
                     args.putBoolean("afterSignup", true);
-                    MainTabsActivity mainTabsActivity = new MainTabsActivity();
-                    mainTabsActivity.prepareDialogsActivity(args);
-                    presentFragment(mainTabsActivity, true);
+                    presentFragment(FlexConfig.createMainFragment(args), true);
                 } else {
                     TwoStepVerificationActivity fragment = new TwoStepVerificationActivity();
                     fragment.setCurrentPasswordParams(currentPassword, currentPasswordHash, currentSecretId, currentSecret);
@@ -2152,9 +2151,7 @@ public class TwoStepVerificationSetupActivity extends BaseFragment {
         if (otherwiseReloginDays >= 0 && parentLayout.getFragmentStack().size() == 1) {
             final Bundle args = new Bundle();
             args.putBoolean("afterSignup", true);
-            MainTabsActivity mainTabsActivity = new MainTabsActivity();
-            mainTabsActivity.prepareDialogsActivity(args);
-            presentFragment(mainTabsActivity, true);
+            presentFragment(FlexConfig.createMainFragment(args), true);
         } else {
             super.finishFragment();
         }
