@@ -14,7 +14,7 @@ public class FlexConfig {
     }
 
     public static boolean isMainTabsEnabled() {
-        return prefs().getBoolean("flex_main_tabs_enabled", true);
+        return prefs().getBoolean("flex_main_tabs_enabled", false);
     }
 
     public static void setMainTabsEnabled(boolean value) {
@@ -77,11 +77,16 @@ public class FlexConfig {
 
     public static BaseFragment createMainFragment(Bundle args) {
         if (isMainTabsEnabled()) {
-            MainTabsActivity mainTabsActivity = new MainTabsActivity();
-            if (args != null) {
-                mainTabsActivity.prepareDialogsActivity(new Bundle(args));
+            try {
+                MainTabsActivity mainTabsActivity = new MainTabsActivity();
+                if (args != null) {
+                    mainTabsActivity.prepareDialogsActivity(new Bundle(args));
+                }
+                return mainTabsActivity;
+            } catch (Throwable e) {
+                FileLog.e(e);
+                setMainTabsEnabled(false);
             }
-            return mainTabsActivity;
         }
         return args == null ? new DialogsActivity(null) : new DialogsActivity(new Bundle(args));
     }
