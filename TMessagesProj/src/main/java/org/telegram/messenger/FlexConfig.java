@@ -1,32 +1,47 @@
 package org.telegram.messenger;
 
 import android.content.SharedPreferences;
-import android.os.Bundle;
-
-import org.telegram.ui.ActionBar.BaseFragment;
-import org.telegram.ui.DialogsActivity;
-import org.telegram.ui.MainTabsActivity;
 
 public class FlexConfig {
+
+    public static final int BOOST_NONE = 0;
+    public static final int BOOST_AVERAGE = 1;
+    public static final int BOOST_EXTREME = 2;
 
     private static SharedPreferences prefs() {
         return MessagesController.getGlobalMainSettings();
     }
 
-    public static boolean isMainTabsEnabled() {
-        return prefs().getBoolean("flex_main_tabs_enabled", false);
+    public static int getDownloadSpeedBoost() {
+        return prefs().getInt("flex_download_speed_boost", BOOST_NONE);
     }
 
-    public static void setMainTabsEnabled(boolean value) {
-        prefs().edit().putBoolean("flex_main_tabs_enabled", value).apply();
+    public static void setDownloadSpeedBoost(int value) {
+        prefs().edit().putInt("flex_download_speed_boost", value).remove("flex_enhanced_file_loader").apply();
     }
 
     public static boolean isEnhancedFileLoaderEnabled() {
-        return prefs().getBoolean("flex_enhanced_file_loader", false);
+        return getDownloadSpeedBoost() != BOOST_NONE;
     }
 
     public static void setEnhancedFileLoaderEnabled(boolean value) {
-        prefs().edit().putBoolean("flex_enhanced_file_loader", value).apply();
+        setDownloadSpeedBoost(value ? BOOST_AVERAGE : BOOST_NONE);
+    }
+
+    public static boolean isWebRtcDisabled() {
+        return prefs().getBoolean("flex_disable_webrtc", false);
+    }
+
+    public static void setWebRtcDisabled(boolean value) {
+        prefs().edit().putBoolean("flex_disable_webrtc", value).apply();
+    }
+
+    public static boolean isDcInfoEnabled() {
+        return prefs().getBoolean("flex_show_dc_info", true);
+    }
+
+    public static void setDcInfoEnabled(boolean value) {
+        prefs().edit().putBoolean("flex_show_dc_info", value).apply();
     }
 
     public static boolean isMarkdownDisabled() {
@@ -69,25 +84,5 @@ public class FlexConfig {
 
     public static boolean isTelegramTranslatePreferred() {
         return getTranslationProvider() == 0;
-    }
-
-    public static BaseFragment createMainFragment() {
-        return createMainFragment(null);
-    }
-
-    public static BaseFragment createMainFragment(Bundle args) {
-        if (isMainTabsEnabled()) {
-            try {
-                MainTabsActivity mainTabsActivity = new MainTabsActivity();
-                if (args != null) {
-                    mainTabsActivity.prepareDialogsActivity(new Bundle(args));
-                }
-                return mainTabsActivity;
-            } catch (Throwable e) {
-                FileLog.e(e);
-                setMainTabsEnabled(false);
-            }
-        }
-        return args == null ? new DialogsActivity(null) : new DialogsActivity(new Bundle(args));
     }
 }

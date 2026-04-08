@@ -102,6 +102,7 @@ import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
+import org.telegram.messenger.FlexConfig;
 import org.telegram.messenger.ImageLoader;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaController;
@@ -3425,15 +3426,20 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 			// endpoints
 			final boolean forceTcp = preferences.getBoolean("dbg_force_tcp_in_calls", false);
 			final int endpointType = forceTcp ? Instance.ENDPOINT_TYPE_TCP_RELAY : Instance.ENDPOINT_TYPE_UDP_RELAY;
-			final Instance.Endpoint[] endpoints = new Instance.Endpoint[privateCall.connections.size()];
+			final boolean disableWebRtc = FlexConfig.isWebRtcDisabled();
+			final ArrayList<Instance.Endpoint> endpointsList = new ArrayList<>(privateCall.connections.size());
 			ArrayList<Long> reflectorIds = new ArrayList<>();
-			for (int i = 0; i < endpoints.length; i++) {
+			for (int i = 0; i < privateCall.connections.size(); i++) {
 				final TLRPC.PhoneConnection connection = privateCall.connections.get(i);
-				endpoints[i] = new Instance.Endpoint(connection instanceof TLRPC.TL_phoneConnectionWebrtc, connection.id, connection.ip, connection.ipv6, connection.port, endpointType, connection.peer_tag, connection.turn, connection.stun, connection.username, connection.password, connection.tcp);
+				if (disableWebRtc && connection instanceof TLRPC.TL_phoneConnectionWebrtc) {
+					continue;
+				}
+				endpointsList.add(new Instance.Endpoint(connection instanceof TLRPC.TL_phoneConnectionWebrtc, connection.id, connection.ip, connection.ipv6, connection.port, endpointType, connection.peer_tag, connection.turn, connection.stun, connection.username, connection.password, connection.tcp));
 				if (connection instanceof TLRPC.TL_phoneConnection) {
 					reflectorIds.add(((TLRPC.TL_phoneConnection) connection).id);
 				}
 			}
+			final Instance.Endpoint[] endpoints = endpointsList.toArray(new Instance.Endpoint[0]);
 			if (!reflectorIds.isEmpty()) {
 				Collections.sort(reflectorIds);
 				HashMap<Long, Integer> reflectorIdMapping = new HashMap<>();
