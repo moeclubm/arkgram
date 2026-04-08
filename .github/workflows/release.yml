@@ -32,21 +32,15 @@ jobs:
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v5
+        with:
+          cache-cleanup: always
+          cache-encryption-key: ${{ secrets.GRADLE_ENCRYPTION_KEY }}
+          cache-read-only: ${{ github.ref != 'refs/heads/master' && !startsWith(github.ref, 'refs/tags/') }}
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v4
-
-      - name: Install Android components
-        shell: bash
-        run: |
-          set +o pipefail
-          yes | sdkmanager --licenses >/dev/null
-          set -o pipefail
-          sdkmanager --install \
-            "platforms;android-36" \
-            "build-tools;36.0.0" \
-            "ndk;21.4.7075529" \
-            "cmake;3.10.2.4988404"
+        with:
+          packages: 'platforms;android-36 build-tools;36.0.0 ndk;21.4.7075529 cmake;3.22.1'
 
       - name: Prepare local.properties
         shell: bash
@@ -73,7 +67,7 @@ jobs:
         shell: bash
         run: |
           chmod +x gradlew
-          ./gradlew :TMessagesProj_App:assembleAfatRelease --stacktrace
+          ./gradlew :TMessagesProj_App:assembleAfatRelease --build-cache --configuration-cache --stacktrace
 
       - name: Upload release artifacts
         uses: actions/upload-artifact@v6
