@@ -563,7 +563,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
             if (!UserConfig.getInstance(currentAccount).isClientActivated()) {
                 actionBarLayout.addFragmentToStack(getClientNotActivatedFragment());
             } else {
-                actionBarLayout.addFragmentToStack(FlexConfig.createMainFragment());
+                addMainFragmentToActionBarLayout(null);
             }
 
             try {
@@ -1158,6 +1158,64 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         switchToAccount(account, removeAll, obj -> FlexConfig.createMainFragment());
     }
 
+    private DialogsActivity createFallbackDialogsActivity(String searchQuery) {
+        DialogsActivity dialogsActivity = new DialogsActivity(null);
+        if (searchQuery != null) {
+            dialogsActivity.setInitialSearchString(searchQuery);
+        }
+        return dialogsActivity;
+    }
+
+    private BaseFragment createPreparedMainFragment(String searchQuery) {
+        try {
+            BaseFragment mainFragment = FlexConfig.createMainFragment();
+            DialogsActivity dialogsActivity;
+            if (mainFragment instanceof MainTabsActivity) {
+                dialogsActivity = ((MainTabsActivity) mainFragment).prepareDialogsActivity(null);
+            } else {
+                dialogsActivity = (DialogsActivity) mainFragment;
+            }
+            if (searchQuery != null) {
+                dialogsActivity.setInitialSearchString(searchQuery);
+            }
+            return mainFragment;
+        } catch (Throwable e) {
+            FileLog.e(e);
+            FlexConfig.setMainTabsEnabled(false);
+            return createFallbackDialogsActivity(searchQuery);
+        }
+    }
+
+    private void addMainFragmentToActionBarLayout(String searchQuery) {
+        BaseFragment mainFragment = createPreparedMainFragment(searchQuery);
+        try {
+            actionBarLayout.addFragmentToStack(mainFragment);
+        } catch (Throwable e) {
+            FileLog.e(e);
+            if (mainFragment instanceof DialogsActivity) {
+                throw e;
+            }
+            FlexConfig.setMainTabsEnabled(false);
+            actionBarLayout.removeAllFragments();
+            actionBarLayout.addFragmentToStack(createFallbackDialogsActivity(searchQuery));
+        }
+    }
+
+    private void addMainFragmentToActionBarLayout(int flags, String searchQuery) {
+        BaseFragment mainFragment = createPreparedMainFragment(searchQuery);
+        try {
+            actionBarLayout.addFragmentToStack(mainFragment, flags);
+        } catch (Throwable e) {
+            FileLog.e(e);
+            if (mainFragment instanceof DialogsActivity) {
+                throw e;
+            }
+            FlexConfig.setMainTabsEnabled(false);
+            actionBarLayout.removeAllFragments();
+            actionBarLayout.addFragmentToStack(createFallbackDialogsActivity(searchQuery), flags);
+        }
+    }
+
     public void switchToAccount(int account, boolean removeAll, GenericProvider<Void, BaseFragment> dialogsActivityProvider) {
         if (account == UserConfig.selectedAccount || !UserConfig.isValidAccount(account)) {
             return;
@@ -1186,8 +1244,25 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         } else {
             actionBarLayout.removeFragmentFromStack(0);
         }
-        BaseFragment mainFragment = dialogsActivityProvider.provide(null);
-        actionBarLayout.addFragmentToStack(mainFragment, INavigationLayout.FORCE_ATTACH_VIEW_AS_FIRST);
+        BaseFragment mainFragment;
+        try {
+            mainFragment = dialogsActivityProvider.provide(null);
+        } catch (Throwable e) {
+            FileLog.e(e);
+            FlexConfig.setMainTabsEnabled(false);
+            mainFragment = createFallbackDialogsActivity(null);
+        }
+        try {
+            actionBarLayout.addFragmentToStack(mainFragment, INavigationLayout.FORCE_ATTACH_VIEW_AS_FIRST);
+        } catch (Throwable e) {
+            FileLog.e(e);
+            if (mainFragment instanceof DialogsActivity) {
+                throw e;
+            }
+            FlexConfig.setMainTabsEnabled(false);
+            actionBarLayout.removeAllFragments();
+            actionBarLayout.addFragmentToStack(createFallbackDialogsActivity(null), INavigationLayout.FORCE_ATTACH_VIEW_AS_FIRST);
+        }
         actionBarLayout.rebuildFragments(INavigationLayout.REBUILD_FLAG_REBUILD_LAST);
         if (AndroidUtilities.isTablet()) {
             layersActionBarLayout.rebuildFragments(INavigationLayout.REBUILD_FLAG_REBUILD_LAST);
@@ -3246,17 +3321,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                     }
                 } else {
                     if (actionBarLayout.getFragmentStack().isEmpty()) {
-                        BaseFragment mainFragment = FlexConfig.createMainFragment();
-                        DialogsActivity dialogsActivity;
-                        if (mainFragment instanceof MainTabsActivity) {
-                            dialogsActivity = ((MainTabsActivity) mainFragment).prepareDialogsActivity(null);
-                        } else {
-                            dialogsActivity = (DialogsActivity) mainFragment;
-                        }
-                        if (searchQuery != null) {
-                            dialogsActivity.setInitialSearchString(searchQuery);
-                        }
-                        actionBarLayout.addFragmentToStack(mainFragment, INavigationLayout.FORCE_NOT_ATTACH_VIEW);
+                        addMainFragmentToActionBarLayout(INavigationLayout.FORCE_NOT_ATTACH_VIEW, searchQuery);
                     }
                 }
             } else {
@@ -3264,17 +3329,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                     if (!UserConfig.getInstance(currentAccount).isClientActivated()) {
                         actionBarLayout.addFragmentToStack(getClientNotActivatedFragment(), INavigationLayout.FORCE_NOT_ATTACH_VIEW);
                     } else {
-                        BaseFragment mainFragment = FlexConfig.createMainFragment();
-                        DialogsActivity dialogsActivity;
-                        if (mainFragment instanceof MainTabsActivity) {
-                            dialogsActivity = ((MainTabsActivity) mainFragment).prepareDialogsActivity(null);
-                        } else {
-                            dialogsActivity = (DialogsActivity) mainFragment;
-                        }
-                        if (searchQuery != null) {
-                            dialogsActivity.setInitialSearchString(searchQuery);
-                        }
-                        actionBarLayout.addFragmentToStack(mainFragment, INavigationLayout.FORCE_NOT_ATTACH_VIEW);
+                        addMainFragmentToActionBarLayout(INavigationLayout.FORCE_NOT_ATTACH_VIEW, searchQuery);
                     }
                 }
             }
