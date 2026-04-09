@@ -16,10 +16,10 @@ class AudioOutputAndroid : public AudioOutput{
 public:
 
 	AudioOutputAndroid();
-	virtual ~AudioOutputAndroid();
-	virtual void Start();
-	virtual void Stop();
-	virtual bool IsPlaying() override;
+	~AudioOutputAndroid() override;
+	void Start() override;
+	void Stop() override;
+	bool IsPlaying() override;
 	void HandleCallback(JNIEnv* env, jbyteArray buffer);
 	static jmethodID initMethod;
 	static jmethodID releaseMethod;

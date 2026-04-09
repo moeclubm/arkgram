@@ -318,7 +318,8 @@ DataSaving parseDataSaving(JNIEnv *env, jint dataSaving) {
             throwNewJavaIllegalArgumentException(env, "DATA_SAVING_ROAMING is not supported");
             return DataSaving::Never;
         default:
-            throwNewJavaIllegalArgumentException(env, "Unknown data saving constant: " + dataSaving);
+            auto message = std::string("Unknown data saving constant: ") + std::to_string(dataSaving);
+            throwNewJavaIllegalArgumentException(env, message.c_str());
             return DataSaving::Never;
     }
 }
@@ -1269,7 +1270,7 @@ Java_org_telegram_messenger_voip_NativeInstance_setConferenceCallId(JNIEnv *env,
         DEBUG_D("setConferenceCallId failed, instance doesn't contain groupNativeInstance");
         return;
     }
-    DEBUG_D("setConferenceCallId %d", call_id);
+    DEBUG_D("setConferenceCallId %lld", static_cast<long long>(call_id));
     *instance->conferenceCallId = (long) call_id;
 }
 

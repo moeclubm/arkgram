@@ -917,7 +917,8 @@ JNIEXPORT void Java_org_telegram_messenger_Utilities_drawDitheredGradient(JNIEnv
     int reason;
 
     if ((reason = AndroidBitmap_getInfo(env, bitmap, &info)) != ANDROID_BITMAP_RESULT_SUCCESS) {
-        env->ThrowNew(jclass_RuntimeException, "AndroidBitmap_getInfo failed with a reason: " + reason);
+        auto message = std::string("AndroidBitmap_getInfo failed with a reason: ") + std::to_string(reason);
+        env->ThrowNew(jclass_RuntimeException, message.c_str());
         return;
     }
 
@@ -927,7 +928,8 @@ JNIEXPORT void Java_org_telegram_messenger_Utilities_drawDitheredGradient(JNIEnv
     }
 
     if ((reason = AndroidBitmap_lockPixels(env, bitmap, &pixelsBuffer)) != ANDROID_BITMAP_RESULT_SUCCESS) {
-        env->ThrowNew(jclass_RuntimeException, "AndroidBitmap_lockPixels failed with a reason: " + reason);
+        auto message = std::string("AndroidBitmap_lockPixels failed with a reason: ") + std::to_string(reason);
+        env->ThrowNew(jclass_RuntimeException, message.c_str());
         return;
     }
 
@@ -1009,7 +1011,8 @@ JNIEXPORT void Java_org_telegram_messenger_Utilities_drawDitheredGradient(JNIEnv
     delete[] pixelsComponentsF;
 
     if ((reason = AndroidBitmap_unlockPixels(env, bitmap)) != ANDROID_BITMAP_RESULT_SUCCESS) {
-        env->ThrowNew(jclass_RuntimeException, "AndroidBitmap_unlockPixels failed with a reason: " + reason);
+        auto message = std::string("AndroidBitmap_unlockPixels failed with a reason: ") + std::to_string(reason);
+        env->ThrowNew(jclass_RuntimeException, message.c_str());
         return;
     }
 }
@@ -1118,6 +1121,8 @@ JNIEXPORT void Java_org_telegram_messenger_Utilities_drawDitheredGradient(JNIEnv
 //    return outSize;*/
 //}
 
+}
+
 std::vector<std::pair<float, float>> gatherPositions(std::vector<std::pair<float, float>> list, int phase) {
     std::vector<std::pair<float, float>> result(4);
     for (int i = 0; i < 4; i++) {
@@ -1133,6 +1138,8 @@ std::vector<std::pair<float, float>> gatherPositions(std::vector<std::pair<float
 
 thread_local static float *pixelCache = nullptr;
 thread_local static int pixelCacheSize = 0;
+
+extern "C" {
 
 JNIEXPORT void Java_org_telegram_messenger_Utilities_generateGradient(JNIEnv *env, jclass clazz, jobject bitmap, jboolean unpin, jint phase, jfloat progress, jint width, jint height, jint stride, jintArray colors) {
     if (!bitmap) {
