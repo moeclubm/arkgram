@@ -1,4 +1,6 @@
-name: release
+name: Release Build
+
+run-name: Release Build · ${{ github.ref_name }} · @${{ github.actor }} · #${{ github.run_number }}
 
 on:
   push:

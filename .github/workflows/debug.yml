@@ -1,4 +1,6 @@
-name: debug
+name: Debug Build
+
+run-name: Debug Build · ${{ github.ref_name }} · @${{ github.actor }} · #${{ github.run_number }}
 
 on:
   workflow_dispatch:

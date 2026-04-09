@@ -1,5 +1,7 @@
 name: CodeQL
 
+run-name: CodeQL · ${{ github.head_ref || github.ref_name }} · @${{ github.actor }} · #${{ github.run_number }}
+
 on:
   push:
     branches:
