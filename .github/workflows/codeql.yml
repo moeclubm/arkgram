@@ -1,0 +1,106 @@
+name: codeql
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+  schedule:
+    - cron: '17 3 * * 1'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+  security-events: write
+
+concurrency:
+  group: codeql-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  analyze:
+    name: Analyze (${{ matrix.language }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      ORG_GRADLE_PROJECT_CI_ABI_FILTERS: arm64-v8a
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - language: java-kotlin
+            build-mode: manual
+          - language: c-cpp
+            build-mode: manual
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v4
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: ${{ matrix.build-mode }}
+
+      - name: Set up Java
+        if: ${{ matrix.build-mode == 'manual' }}
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK
+        if: ${{ matrix.build-mode == 'manual' }}
+        uses: android-actions/setup-android@v4
+        with:
+          packages: 'platforms;android-36 build-tools;36.0.0 ndk;21.4.7075529 cmake;3.22.1'
+
+      - name: Prepare local.properties
+        if: ${{ matrix.build-mode == 'manual' }}
+        shell: bash
+        run: |
+          sdk_root="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
+          printf 'sdk.dir=%s\n' "$sdk_root" > local.properties
+
+      - name: Create CI signing key
+        if: ${{ matrix.build-mode == 'manual' }}
+        shell: bash
+        run: |
+          ci_keystore="TMessagesProj/config/release.keystore"
+          rm -f "$ci_keystore"
+          keytool -genkeypair \
+            -v \
+            -storetype PKCS12 \
+            -keystore "$ci_keystore" \
+            -alias flexgram \
+            -storepass ci-debug-pass \
+            -keypass ci-debug-pass \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 3650 \
+            -dname "CN=Flexgram CI, OU=CI, O=Flexgram, L=CI, ST=CI, C=US"
+          echo "ORG_GRADLE_PROJECT_RELEASE_KEY_PASSWORD=ci-debug-pass" >> "$GITHUB_ENV"
+          echo "ORG_GRADLE_PROJECT_RELEASE_STORE_PASSWORD=ci-debug-pass" >> "$GITHUB_ENV"
+
+      - name: Compute CI version
+        if: ${{ matrix.build-mode == 'manual' }}
+        shell: bash
+        run: |
+          echo "ORG_GRADLE_PROJECT_APP_VERSION_CODE=$((6666 + GITHUB_RUN_NUMBER))" >> "$GITHUB_ENV"
+          echo "ORG_GRADLE_PROJECT_APP_VERSION_NAME=12.6.4-codeql.${GITHUB_RUN_NUMBER}" >> "$GITHUB_ENV"
+
+      - name: Build for CodeQL
+        if: ${{ matrix.build-mode == 'manual' }}
+        shell: bash
+        run: |
+          chmod +x gradlew
+          ./gradlew :TMessagesProj_App:assembleAfatDebug --stacktrace
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v4
+        with:
+          category: /language:${{ matrix.language }}
