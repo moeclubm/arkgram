@@ -526,6 +526,9 @@ public class SharedConfig {
             lastLocalId = preferences.getInt("lastLocalId", -210000);
             pushString = preferences.getString("pushString2", "");
             pushType = preferences.getInt("pushType", PushListenerController.PUSH_TYPE_FIREBASE);
+            if (pushType != PushListenerController.PUSH_TYPE_FIREBASE) {
+                pushType = PushListenerController.PUSH_TYPE_FIREBASE;
+            }
             pushStatSent = preferences.getBoolean("pushStatSent", false);
             passportConfigJson = preferences.getString("passportConfigJson", "");
             passportConfigHash = preferences.getInt("passportConfigHash", 0);
