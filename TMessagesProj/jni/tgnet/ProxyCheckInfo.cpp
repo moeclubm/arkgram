@@ -9,12 +9,26 @@
 #include "ProxyCheckInfo.h"
 #include "ConnectionsManager.h"
 #include "FileLog.h"
+#include <cstdlib>
+
+#ifdef ANDROID
+static JNIEnv *currentEnv() {
+    JNIEnv *env = nullptr;
+    if (javaVm->GetEnv((void **) &env, JNI_VERSION_1_6) != JNI_OK) {
+        if (javaVm->AttachCurrentThread(&env, nullptr) != JNI_OK) {
+            if (LOGS_ENABLED) DEBUG_E("can't attach current thread to jvm");
+            exit(1);
+        }
+    }
+    return env;
+}
+#endif
 
 ProxyCheckInfo::~ProxyCheckInfo() {
 #ifdef ANDROID
     if (ptr1 != nullptr) {
         DEBUG_DELREF("tgnet (2) request ptr1");
-        jniEnv[instanceNum]->DeleteGlobalRef(ptr1);
+        currentEnv()->DeleteGlobalRef(ptr1);
         ptr1 = nullptr;
     }
 #endif
