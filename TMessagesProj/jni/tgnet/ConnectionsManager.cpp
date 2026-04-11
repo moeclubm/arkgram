@@ -19,6 +19,7 @@
 #include <memory>
 #include <string>
 #include <cinttypes>
+#include <mutex>
 #include "ConnectionsManager.h"
 #include "FileLog.h"
 #include "EventObject.h"
@@ -136,24 +137,14 @@ ConnectionsManager::~ConnectionsManager() {
 }
 
 ConnectionsManager& ConnectionsManager::getInstance(int32_t instanceNum) {
-    switch (instanceNum) {
-        case 0:
-            static ConnectionsManager instance0(0);
-            return instance0;
-        case 1:
-            static ConnectionsManager instance1(1);
-            return instance1;
-        case 2:
-            static ConnectionsManager instance2(2);
-            return instance2;
-        case 3:
-            static ConnectionsManager instance3(3);
-            return instance3;
-        case 4:
-        default:
-            static ConnectionsManager instance4(4);
-            return instance4;
+    assert(instanceNum >= 0 && instanceNum < MAX_ACCOUNT_COUNT);
+    static std::unique_ptr<ConnectionsManager> instances[MAX_ACCOUNT_COUNT];
+    static std::mutex instancesMutex;
+    std::lock_guard<std::mutex> lock(instancesMutex);
+    if (instances[instanceNum] == nullptr) {
+        instances[instanceNum] = std::make_unique<ConnectionsManager>(instanceNum);
     }
+    return *instances[instanceNum];
 }
 
 int ConnectionsManager::callEvents(int64_t now) {
