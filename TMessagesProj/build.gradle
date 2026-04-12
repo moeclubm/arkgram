@@ -139,6 +139,13 @@ android {
             buildConfigField "int", "VERSION_NUM", "0"
         }
 
+        beta {
+            initWith debug
+            jniDebuggable false
+            minifyEnabled true
+            shrinkResources = false
+        }
+
         HA_private {
             jniDebuggable false
             minifyEnabled true

@@ -97,12 +97,19 @@ android {
             debuggable true
             jniDebuggable true
             signingConfig = signingConfigs.debug
-            applicationIdSuffix ".beta"
+            applicationIdSuffix ".debug"
             minifyEnabled false
             shrinkResources = false
             multiDexEnabled = true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), '../TMessagesProj/proguard-rules.pro', '../TMessagesProj/proguard-rules-beta.pro'
             ndk.debugSymbolLevel = 'FULL'
+        }
+
+        beta {
+            initWith release
+            signingConfig = signingConfigs.release
+            applicationIdSuffix ".beta"
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), '../TMessagesProj/proguard-rules.pro', '../TMessagesProj/proguard-rules-beta.pro'
         }
 
         standalone {
@@ -130,6 +137,10 @@ android {
     }
 
     sourceSets.debug {
+        manifest.srcFile '../TMessagesProj/config/release/AndroidManifest.xml'
+    }
+
+    sourceSets.beta {
         manifest.srcFile '../TMessagesProj/config/debug/AndroidManifest.xml'
     }
 
@@ -168,6 +179,9 @@ android {
                 abiFilters(*selectedAbiFilters)
             }
             sourceSets.debug {
+                manifest.srcFile '../TMessagesProj/config/release/AndroidManifest_SDK23.xml'
+            }
+            sourceSets.beta {
                 manifest.srcFile '../TMessagesProj/config/debug/AndroidManifest_SDK23.xml'
             }
             sourceSets.release {

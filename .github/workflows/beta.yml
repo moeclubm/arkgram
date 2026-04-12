@@ -66,18 +66,18 @@ jobs:
         shell: bash
         run: |
           chmod +x gradlew
-          ./gradlew :TMessagesProj_App:assembleAfatDebug :TMessagesProj_App:bundleAfatRelease --build-cache --configuration-cache --stacktrace
+          ./gradlew :TMessagesProj_App:assembleAfatBeta :TMessagesProj_App:bundleAfatBeta --build-cache --configuration-cache --stacktrace
 
-      - name: Upload beta debug APK
+      - name: Upload beta APK
         uses: actions/upload-artifact@v6
         with:
-          name: flexgram-beta-debug-${{ github.sha }}
-          path: TMessagesProj_App/build/outputs/apk/afat/debug/*.apk
+          name: flexgram-beta-apk-${{ github.sha }}
+          path: TMessagesProj_App/build/outputs/apk/afat/beta/*.apk
           if-no-files-found: error
 
-      - name: Upload beta release AAB
+      - name: Upload beta AAB
         uses: actions/upload-artifact@v6
         with:
           name: flexgram-beta-aab-${{ github.sha }}
-          path: TMessagesProj_App/build/outputs/bundle/afatRelease/*.aab
+          path: TMessagesProj_App/build/outputs/bundle/afatBeta/*.aab
           if-no-files-found: error
