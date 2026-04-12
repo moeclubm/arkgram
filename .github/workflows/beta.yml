@@ -79,7 +79,5 @@ jobs:
         uses: actions/upload-artifact@v6
         with:
           name: flexgram-beta-aab-${{ github.sha }}
-          path: |
-            TMessagesProj_App/build/outputs/bundle/bundleAfatRelease/*.aab
-            TMessagesProj_App/build/outputs/bundle/bundleAfatRelease/output-metadata.json
+          path: TMessagesProj_App/build/outputs/bundle/afatRelease/*.aab
           if-no-files-found: error
