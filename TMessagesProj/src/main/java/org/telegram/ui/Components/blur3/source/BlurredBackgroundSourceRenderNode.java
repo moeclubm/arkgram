@@ -10,6 +10,7 @@ import android.os.Build;
 
 import androidx.annotation.RequiresApi;
 
+import org.telegram.messenger.FlexConfig;
 import org.telegram.ui.Components.blur3.DownscaleScrollableNoiseSuppressor;
 import org.telegram.ui.Components.blur3.RenderNodeWithHash;
 import org.telegram.ui.Components.blur3.drawable.BlurredBackgroundDrawable;
@@ -58,9 +59,17 @@ public class BlurredBackgroundSourceRenderNode implements BlurredBackgroundSourc
         this.underSource = underSource;
     }
 
+    private float blurRadius;
+
     @RequiresApi(api = Build.VERSION_CODES.S)
     public void setBlur(float radius) {
-        renderNode.setRenderEffect(radius > 0 ? RenderEffect.createBlurEffect(radius, radius, Shader.TileMode.CLAMP) : null);
+        blurRadius = radius;
+        applyBlurEffect();
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.S)
+    private void applyBlurEffect() {
+        renderNode.setRenderEffect(blurRadius > 0 && !FlexConfig.isUiBlurDisabled() ? RenderEffect.createBlurEffect(blurRadius, blurRadius, Shader.TileMode.CLAMP) : null);
     }
 
     private boolean inRecording;
@@ -112,13 +121,16 @@ public class BlurredBackgroundSourceRenderNode implements BlurredBackgroundSourc
         if (inRecording) {
             throw new IllegalStateException();
         }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            applyBlurEffect();
+        }
 
         if (underSource != null) {
             underSource.draw(canvas, left, top, right, bottom);
         }
         canvas.save();
         canvas.clipRect(left, top, right, bottom);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && scrollableNoiseSuppressor != null) {
+        if (!FlexConfig.isUiBlurDisabled() && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && scrollableNoiseSuppressor != null) {
             scrollableNoiseSuppressor.drawInline(canvas, scrollableNoiseSuppressorIndex);
         } else {
             canvas.drawRenderNode(renderNode);

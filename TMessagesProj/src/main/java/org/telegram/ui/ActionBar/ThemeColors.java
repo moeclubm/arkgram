@@ -11,8 +11,12 @@ import java.util.HashMap;
 
 public class ThemeColors {
 
-    public static final int TELEGRAM_COLOR = 0xFFE8C88E;        // -1527666
-    public static final int TELEGRAM_COLOR_TEXT = 0xFF298ACF;   // -14054705
+    public static final int TELEGRAM_COLOR = 0xFFE8C88E;
+    public static final int TELEGRAM_COLOR_TEXT = 0xFFAF8144;
+    private static final int TELEGRAM_COLOR_LIGHT = 0xFFF0D9B0;
+    private static final int TELEGRAM_COLOR_LIGHTER = 0xFFF6E7CB;
+    private static final int TELEGRAM_COLOR_DARK = 0xFFC69B5F;
+    private static final int TELEGRAM_COLOR_DARKER = 0xFF9F733A;
     public static final int DEFAULT_BLACK_TEXT = 0xFF1A1D21;   // -15065823
 
     private static SparseArray<String> colorKeysMap;
@@ -24,12 +28,12 @@ public class ThemeColors {
         defaultColors[key_dialogBackground] = 0xffffffff;
         defaultColors[key_dialogBackgroundGray] = 0xfff0f0f0;
         defaultColors[key_dialogTextBlack] = DEFAULT_BLACK_TEXT;
-        defaultColors[key_dialogTextLink] = 0xff2678b6;
+        defaultColors[key_dialogTextLink] = TELEGRAM_COLOR_DARKER;
         defaultColors[key_dialogLinkSelection] = 0x3362a9e3;
-        defaultColors[key_dialogTextBlue] = 0xff2f8cc9;
-        defaultColors[key_dialogTextBlue2] = 0xff3a95d5;
-        defaultColors[key_dialogTextBlue4] = 0xff19a7e8;
-        defaultColors[key_dialogTextGray] = 0xff348bc1;
+        defaultColors[key_dialogTextBlue] = TELEGRAM_COLOR_TEXT;
+        defaultColors[key_dialogTextBlue2] = TELEGRAM_COLOR_LIGHT;
+        defaultColors[key_dialogTextBlue4] = TELEGRAM_COLOR_TEXT;
+        defaultColors[key_dialogTextGray] = TELEGRAM_COLOR_DARK;
         defaultColors[key_dialogTextGray2] = 0xff757575;
         defaultColors[key_dialogTextGray3] = 0xff999999;
         defaultColors[key_dialogTextGray4] = 0xffb3b3b3;
@@ -78,19 +82,19 @@ public class ThemeColors {
 
         defaultColors[key_windowBackgroundWhite] = 0xffffffff;
         defaultColors[key_windowBackgroundUnchecked] = 0xff96A2AD;
-        defaultColors[key_windowBackgroundChecked] = 0xff229AF0;
+        defaultColors[key_windowBackgroundChecked] = TELEGRAM_COLOR;
         defaultColors[key_windowBackgroundCheckText] = 0xffffffff;
-        defaultColors[key_progressCircle] = 0xff1c93e3;
+        defaultColors[key_progressCircle] = TELEGRAM_COLOR;
         defaultColors[key_windowBackgroundWhiteGrayIcon] = 0xff1a1d21;
-        defaultColors[key_windowBackgroundWhiteBlueText] = 0xff4092cd;
-        defaultColors[key_windowBackgroundWhiteBlueText2] = 0xff3a95d5;
-        defaultColors[key_windowBackgroundWhiteBlueText3] = 0xff2678b6;
-        defaultColors[key_windowBackgroundWhiteBlueText4] = 0xff1c93e3;
-        defaultColors[key_windowBackgroundWhiteBlueText5] = 0xff4c8eca;
-        defaultColors[key_windowBackgroundWhiteBlueText6] = 0xff3a8ccf;
-        defaultColors[key_windowBackgroundWhiteBlueText7] = 0xff377aae;
-        defaultColors[key_windowBackgroundWhiteBlueButton] = 0xff1e88d3;
-        defaultColors[key_windowBackgroundWhiteBlueIcon] = 0xff379de5;
+        defaultColors[key_windowBackgroundWhiteBlueText] = TELEGRAM_COLOR_TEXT;
+        defaultColors[key_windowBackgroundWhiteBlueText2] = TELEGRAM_COLOR_LIGHT;
+        defaultColors[key_windowBackgroundWhiteBlueText3] = TELEGRAM_COLOR_DARKER;
+        defaultColors[key_windowBackgroundWhiteBlueText4] = TELEGRAM_COLOR_DARK;
+        defaultColors[key_windowBackgroundWhiteBlueText5] = TELEGRAM_COLOR_LIGHT;
+        defaultColors[key_windowBackgroundWhiteBlueText6] = TELEGRAM_COLOR_DARK;
+        defaultColors[key_windowBackgroundWhiteBlueText7] = TELEGRAM_COLOR_DARKER;
+        defaultColors[key_windowBackgroundWhiteBlueButton] = TELEGRAM_COLOR_DARK;
+        defaultColors[key_windowBackgroundWhiteBlueIcon] = TELEGRAM_COLOR_TEXT;
         defaultColors[key_windowBackgroundWhiteGreenText] = 0xff26972c;
         defaultColors[key_windowBackgroundWhiteGreenText2] = 0xff37a818;
         defaultColors[key_text_RedRegular] = 0xffcc2929;
@@ -107,7 +111,7 @@ public class ThemeColors {
         defaultColors[key_windowBackgroundWhiteBlackText] = DEFAULT_BLACK_TEXT;
         defaultColors[key_windowBackgroundWhiteHintText] = 0xffa8a8a8;
         defaultColors[key_windowBackgroundWhiteValueText] = TELEGRAM_COLOR_TEXT;
-        defaultColors[key_windowBackgroundWhiteLinkText] = 0xff2678b6;
+        defaultColors[key_windowBackgroundWhiteLinkText] = TELEGRAM_COLOR_DARKER;
         defaultColors[key_windowBackgroundWhiteLinkSelection] = 0x3362a9e3;
         defaultColors[key_windowBackgroundWhiteBlueHeader] = TELEGRAM_COLOR_TEXT;
         defaultColors[key_windowBackgroundWhiteInputField] = 0xffdbdbdb;
@@ -115,7 +119,7 @@ public class ThemeColors {
         defaultColors[key_switchTrack] = 0xffa6adb3;
         defaultColors[key_switchTrackChecked] = TELEGRAM_COLOR;
         defaultColors[key_switchTrackBlue] = 0xff78828A;
-        defaultColors[key_switchTrackBlueChecked] = 0xff1079C4;
+        defaultColors[key_switchTrackBlueChecked] = TELEGRAM_COLOR_DARKER;
         defaultColors[key_switchTrackBlueThumb] = 0xffffffff;
         defaultColors[key_switchTrackBlueThumbChecked] = 0xffffffff;
         defaultColors[key_switchTrackBlueSelector] = 0x17404a53;
@@ -208,7 +212,7 @@ public class ThemeColors {
         defaultColors[key_actionBarTabActiveText] = TELEGRAM_COLOR_TEXT;
         defaultColors[key_actionBarTabUnactiveText] = 0xff777c7f;
         defaultColors[key_actionBarTabLine] = TELEGRAM_COLOR_TEXT;
-        defaultColors[key_chats_tabUnreadActiveBackground] = 0xFF66ade1; //TELEGRAM_COLOR_TEXT;
+        defaultColors[key_chats_tabUnreadActiveBackground] = TELEGRAM_COLOR_LIGHTER;
         defaultColors[key_chats_tabUnreadUnactiveBackground] = 0xffc5c9cc;
         defaultColors[key_actionBarTabSelector] = 0x121a1d21;
         defaultColors[key_actionBarBrowser] = 0xffffffff;
@@ -594,8 +598,8 @@ public class ThemeColors {
         defaultColors[key_featuredStickers_addedIcon] = TELEGRAM_COLOR;
         defaultColors[key_featuredStickers_buttonProgress] = 0xffffffff;
         defaultColors[key_featuredStickers_addButton] = TELEGRAM_COLOR;
-        defaultColors[key_featuredStickers_addButton2] = 0xFF56baf0;
-        defaultColors[key_featuredStickers_addButtonPressed] = 0xff2288d1;
+        defaultColors[key_featuredStickers_addButton2] = TELEGRAM_COLOR_LIGHT;
+        defaultColors[key_featuredStickers_addButtonPressed] = TELEGRAM_COLOR_DARK;
         defaultColors[key_featuredStickers_removeButtonText] = 0xff5093d3;
         defaultColors[key_featuredStickers_buttonText] = 0xffffffff;
         defaultColors[key_featuredStickers_unread] = 0xff4da6ea;

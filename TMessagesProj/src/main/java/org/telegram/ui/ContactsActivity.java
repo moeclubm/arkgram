@@ -62,6 +62,7 @@ import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.FileLog;
+import org.telegram.messenger.FlexConfig;
 import org.telegram.messenger.LiteMode;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
@@ -99,6 +100,7 @@ import org.telegram.ui.Components.EditTextBoldCursor;
 import org.telegram.ui.Components.FlickerLoadingView;
 import org.telegram.ui.Components.FragmentFloatingButton;
 import org.telegram.ui.Components.FragmentSearchField;
+import org.telegram.ui.Components.ItemOptions;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.NumberTextView;
 import org.telegram.ui.Components.RecyclerAnimationScrollHelper;
@@ -141,6 +143,7 @@ public class ContactsActivity extends BaseFragment implements FactorAnimator.Tar
     private SearchAdapter searchListViewAdapter;
 
     private ActionBarMenuItem sortItem;
+    private ActionBarMenuItem otherItem;
     private boolean sortByName;
 
     private FragmentFloatingButton floatingButton;
@@ -192,6 +195,7 @@ public class ContactsActivity extends BaseFragment implements FactorAnimator.Tar
 
     private final static int search_button = 0;
     private final static int sort_button = 1;
+    private final static int more_button = 2;
 
     private final static int delete = 100;
 
@@ -222,6 +226,7 @@ public class ContactsActivity extends BaseFragment implements FactorAnimator.Tar
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.updateInterfaces);
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.encryptedChatCreated);
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.closeChats);
+        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.mainTabsVisibilityToggled);
         checkPermission = UserConfig.getInstance(currentAccount).syncContacts;
         if (arguments != null) {
             onlyUsers = arguments.getBoolean("onlyUsers", false);
@@ -251,8 +256,7 @@ public class ContactsActivity extends BaseFragment implements FactorAnimator.Tar
         getContactsController().checkInviteText();
         getContactsController().reloadContactsStatusesMaybe(false);
 
-        additionNavigationBarHeight = hasMainTabs ? dp(DialogsActivity.MAIN_TABS_HEIGHT_WITH_MARGINS) : 0;
-        additionFloatingButtonOffset = hasMainTabs ? dp(DialogsActivity.MAIN_TABS_HEIGHT + DialogsActivity.MAIN_TABS_MARGIN) : 0;
+        updateMainTabsOffset();
 
         return true;
     }
@@ -264,6 +268,7 @@ public class ContactsActivity extends BaseFragment implements FactorAnimator.Tar
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.updateInterfaces);
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.encryptedChatCreated);
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.closeChats);
+        NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.mainTabsVisibilityToggled);
         delegate = null;
     }
 
@@ -352,6 +357,11 @@ public class ContactsActivity extends BaseFragment implements FactorAnimator.Tar
 
         searchItem = menu.addItem(search_button, R.drawable.outline_header_search);
         searchItem.setContentDescription(getString(R.string.SearchContacts));
+        if (hasMainTabs) {
+            otherItem = menu.addItem(more_button, R.drawable.ic_ab_other);
+            otherItem.setContentDescription(getString(R.string.AccDescrMoreOptions));
+            otherItem.setOnClickListener(v -> showItemOptions());
+        }
 
         searchField.editText.addTextChangedListener(new SearchTextWatcher(searchField.editText, new ActionBarMenuItem.ActionBarMenuItemSearchListener() {
             @Override
@@ -982,6 +992,7 @@ public class ContactsActivity extends BaseFragment implements FactorAnimator.Tar
         if (LaunchActivity.instance != null) {
             LaunchActivity.instance.getRootAnimatedInsetsListener().subscribeToWindowInsetsAnimation(this);
         }
+        updateMainTabsOffset();
         ViewCompat.setOnApplyWindowInsetsListener(fragmentView, this::onApplyWindowInsets);
         return fragmentView;
     }
@@ -1238,6 +1249,7 @@ public class ContactsActivity extends BaseFragment implements FactorAnimator.Tar
         if (listViewAdapter != null) {
             listViewAdapter.notifyDataSetChanged();
         }
+        updateMainTabsOffset();
     }
 
     @Override
@@ -1383,6 +1395,8 @@ public class ContactsActivity extends BaseFragment implements FactorAnimator.Tar
             if (!creatingChat) {
                 removeSelfFromStack(true);
             }
+        } else if (id == NotificationCenter.mainTabsVisibilityToggled) {
+            updateMainTabsOffset();
         }
     }
 
@@ -1664,6 +1678,42 @@ public class ContactsActivity extends BaseFragment implements FactorAnimator.Tar
         }
     }
 
+    private void showItemOptions() {
+        if (otherItem == null || !FlexConfig.isMainTabsHidden()) {
+            return;
+        }
+        ItemOptions.makeOptions(this, otherItem)
+            .add(R.drawable.msg_discussion, getString(R.string.MainTabsChats), () -> openMainTabsTab(MainTabsActivity.POSITION_CHATS))
+            .add(R.drawable.msg_contacts_name, getString(R.string.MainTabsContacts), () -> openMainTabsTab(MainTabsActivity.POSITION_CONTACTS))
+            .add(getUserConfig().showCallsTab ? R.drawable.msg_calls : R.drawable.msg_settings_old, getString(getUserConfig().showCallsTab ? R.string.MainTabsCalls : R.string.Settings), () -> openMainTabsTab(MainTabsActivity.POSITION_CALLS_OR_SETTINGS))
+            .add(R.drawable.msg_openprofile, getString(R.string.MainTabsProfile), () -> openMainTabsTab(MainTabsActivity.POSITION_PROFILE))
+            .show();
+    }
+
+    private void openMainTabsTab(int position) {
+        if (getParentLayout() == null) {
+            return;
+        }
+        BaseFragment lastFragment = getParentLayout().getLastFragment();
+        if (lastFragment instanceof MainTabsActivity) {
+            ((MainTabsActivity) lastFragment).openTab(position);
+        }
+    }
+
+    private void updateMainTabsOffset() {
+        additionNavigationBarHeight = hasMainTabs && !FlexConfig.isMainTabsHidden() ? dp(DialogsActivity.MAIN_TABS_HEIGHT_WITH_MARGINS) : 0;
+        additionFloatingButtonOffset = hasMainTabs && !FlexConfig.isMainTabsHidden() ? dp(DialogsActivity.MAIN_TABS_HEIGHT + DialogsActivity.MAIN_TABS_MARGIN) : 0;
+        if (otherItem != null) {
+            otherItem.setVisibility(FlexConfig.isMainTabsHidden() ? View.VISIBLE : View.GONE);
+        }
+        if (listView != null) {
+            checkUi_listViewPadding();
+            checkUi_floatingButtonPosition();
+            checkUi_emptyView();
+            blur3_InvalidateBlur();
+        }
+    }
+
     private void checkUi_floatingButtonVisible() {
         if (floatingButton != null && listViewAdapter != null) {
             floatingButton.setButtonVisible(floatingButtonVisibleByScroll && !searching && !listViewAdapter.isEmpty(), true);
@@ -1703,7 +1753,7 @@ public class ContactsActivity extends BaseFragment implements FactorAnimator.Tar
         iBlur3PositionMainTabs.set(0, mainTabTop, fragmentView.getMeasuredWidth(), mainTabBottom);
         iBlur3PositionMainTabs.inset(0, LiteMode.isEnabled(LiteMode.FLAG_LIQUID_GLASS) ? 0 : -dp(48));
 
-        scrollableViewNoiseSuppressor.setupRenderNodes(iBlur3Positions, hasMainTabs ? 2 : 1);
+        scrollableViewNoiseSuppressor.setupRenderNodes(iBlur3Positions, hasMainTabs && !FlexConfig.isMainTabsHidden() ? 2 : 1);
         scrollableViewNoiseSuppressor.invalidateResultRenderNodes(iBlur3Capture, fragmentView.getMeasuredWidth(), fragmentView.getMeasuredHeight());
     }
 

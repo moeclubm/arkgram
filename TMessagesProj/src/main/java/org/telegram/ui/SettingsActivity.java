@@ -70,6 +70,7 @@ import org.telegram.messenger.ChatThemeController;
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
+import org.telegram.messenger.FlexConfig;
 import org.telegram.messenger.ImageLoader;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.LiteMode;
@@ -88,6 +89,7 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.ActionBarMenuItem;
+import org.telegram.ui.ActionBar.ActionBarMenuSubItem;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.SimpleTextView;
@@ -146,6 +148,11 @@ import me.vkryl.android.animator.FactorAnimator;
 public class SettingsActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate, ImageUpdater.ImageUpdaterDelegate, MainTabsActivity.TabFragmentDelegate, FactorAnimator.Target {
 
     private static final int ANIMATOR_ID_SEARCH_PAGE_VISIBLE = 0;
+    private static final int MENU_ID_LOGOUT = 2;
+    private static final int MENU_ID_MAIN_TABS_CHATS = 3;
+    private static final int MENU_ID_MAIN_TABS_CONTACTS = 4;
+    private static final int MENU_ID_MAIN_TABS_CALLS_OR_SETTINGS = 5;
+    private static final int MENU_ID_MAIN_TABS_PROFILE = 6;
 
     private final BoolAnimator animatorSearchPageVisible = new BoolAnimator(ANIMATOR_ID_SEARCH_PAGE_VISIBLE,
             this, CubicBezierInterpolator.EASE_OUT_QUINT, 350);
@@ -155,6 +162,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
     private View actionBarBackground;
 
     private ActionBarMenuItem searchItem, otherItem;
+    private ActionBarMenuSubItem mainTabsCallsOrSettingsItem;
     private String query;
     private ProfileActivity.SearchAdapter search;
 
@@ -204,12 +212,14 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         getNotificationCenter().addObserver(this, NotificationCenter.updateInterfaces);
         getNotificationCenter().addObserver(this, NotificationCenter.starBalanceUpdated);
         getNotificationCenter().addObserver(this, NotificationCenter.newSuggestionsAvailable);
+        getNotificationCenter().addObserver(this, NotificationCenter.callTabsVisibleToggled);
+        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.mainTabsVisibilityToggled);
 
         if (arguments != null) {
             hasMainTabs = arguments.getBoolean("hasMainTabs", false);
         }
 
-        additionNavigationBarHeight = hasMainTabs ? dp(DialogsActivity.MAIN_TABS_HEIGHT_WITH_MARGINS) : 0;
+        updateMainTabsOffset();
         return super.onFragmentCreate();
     }
 
@@ -292,8 +302,16 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             public void onItemClick(int id) {
                 if (id == -1) {
                     finishFragment();
-                } else if (id == 2) {
+                } else if (id == MENU_ID_LOGOUT) {
                     presentFragment(new LogoutActivity());
+                } else if (id == MENU_ID_MAIN_TABS_CHATS) {
+                    openMainTabsTab(MainTabsActivity.POSITION_CHATS);
+                } else if (id == MENU_ID_MAIN_TABS_CONTACTS) {
+                    openMainTabsTab(MainTabsActivity.POSITION_CONTACTS);
+                } else if (id == MENU_ID_MAIN_TABS_CALLS_OR_SETTINGS) {
+                    openMainTabsTab(MainTabsActivity.POSITION_CALLS_OR_SETTINGS);
+                } else if (id == MENU_ID_MAIN_TABS_PROFILE) {
+                    openMainTabsTab(MainTabsActivity.POSITION_PROFILE);
                 }
             }
         });
@@ -328,7 +346,11 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         searchItem.setSearchFieldHint(getString(R.string.Search));
 
         otherItem = menu.addItem(1, R.drawable.ic_ab_other);
-        otherItem.addSubItem(2, R.drawable.msg_leave, getString(R.string.LogOut));
+        otherItem.addSubItem(MENU_ID_MAIN_TABS_CHATS, R.drawable.msg_discussion, getString(R.string.MainTabsChats));
+        otherItem.addSubItem(MENU_ID_MAIN_TABS_CONTACTS, R.drawable.msg_contacts_name, getString(R.string.MainTabsContacts));
+        mainTabsCallsOrSettingsItem = otherItem.addSubItem(MENU_ID_MAIN_TABS_CALLS_OR_SETTINGS, R.drawable.msg_settings_old, getString(R.string.Settings));
+        otherItem.addSubItem(MENU_ID_MAIN_TABS_PROFILE, R.drawable.msg_openprofile, getString(R.string.MainTabsProfile));
+        otherItem.addSubItem(MENU_ID_LOGOUT, R.drawable.msg_leave, getString(R.string.LogOut));
 
         search = new ProfileActivity.SearchAdapter(this, context) {
             @Override
@@ -484,6 +506,8 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         setInfo();
         updateColors();
         checkUi_menuItems();
+        updateMainTabsMenuItems();
+        updateMainTabsOffset();
 
         ViewCompat.setOnApplyWindowInsetsListener(contentView, this::onApplyWindowInsets);
         return fragmentView = contentView;
@@ -496,6 +520,8 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         getNotificationCenter().removeObserver(this, NotificationCenter.updateInterfaces);
         getNotificationCenter().removeObserver(this, NotificationCenter.starBalanceUpdated);
         getNotificationCenter().removeObserver(this, NotificationCenter.newSuggestionsAvailable);
+        getNotificationCenter().removeObserver(this, NotificationCenter.callTabsVisibleToggled);
+        NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.mainTabsVisibilityToggled);
     }
 
     @Override
@@ -511,7 +537,19 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             if (listView != null) {
                 listView.adapter.update(true);
             }
+        } else if (id == NotificationCenter.callTabsVisibleToggled) {
+            updateMainTabsMenuItems();
+        } else if (id == NotificationCenter.mainTabsVisibilityToggled) {
+            updateMainTabsMenuItems();
+            updateMainTabsOffset();
         }
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        updateMainTabsMenuItems();
+        updateMainTabsOffset();
     }
 
     public void setInfo() {
@@ -938,6 +976,46 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         navigationBarHeight = insets.getInsets(WindowInsetsCompat.Type.systemBars()).bottom;
         listView.setPadding(0, statusBarHeight + dp(12), 0, navigationBarHeight + additionNavigationBarHeight);
         return WindowInsetsCompat.CONSUMED;
+    }
+
+    private void openMainTabsTab(int position) {
+        if (getParentLayout() == null) {
+            return;
+        }
+        BaseFragment lastFragment = getParentLayout().getLastFragment();
+        if (lastFragment instanceof MainTabsActivity) {
+            ((MainTabsActivity) lastFragment).openTab(position);
+        }
+    }
+
+    private void updateMainTabsMenuItems() {
+        if (otherItem == null) {
+            return;
+        }
+        final boolean showMainTabsMenuItems = hasMainTabs && FlexConfig.isMainTabsHidden();
+        if (showMainTabsMenuItems) {
+            otherItem.showSubItem(MENU_ID_MAIN_TABS_CHATS);
+            otherItem.showSubItem(MENU_ID_MAIN_TABS_CONTACTS);
+            otherItem.showSubItem(MENU_ID_MAIN_TABS_CALLS_OR_SETTINGS);
+            otherItem.showSubItem(MENU_ID_MAIN_TABS_PROFILE);
+        } else {
+            otherItem.hideSubItem(MENU_ID_MAIN_TABS_CHATS);
+            otherItem.hideSubItem(MENU_ID_MAIN_TABS_CONTACTS);
+            otherItem.hideSubItem(MENU_ID_MAIN_TABS_CALLS_OR_SETTINGS);
+            otherItem.hideSubItem(MENU_ID_MAIN_TABS_PROFILE);
+        }
+        if (mainTabsCallsOrSettingsItem != null) {
+            final boolean showCallsTab = getUserConfig().showCallsTab;
+            mainTabsCallsOrSettingsItem.setTextAndIcon(getString(showCallsTab ? R.string.MainTabsCalls : R.string.Settings), showCallsTab ? R.drawable.msg_calls : R.drawable.msg_settings_old);
+        }
+    }
+
+    private void updateMainTabsOffset() {
+        additionNavigationBarHeight = hasMainTabs && !FlexConfig.isMainTabsHidden() ? dp(DialogsActivity.MAIN_TABS_HEIGHT_WITH_MARGINS) : 0;
+        if (listView != null) {
+            listView.setPadding(0, listView.getPaddingTop(), 0, navigationBarHeight + additionNavigationBarHeight);
+            blur3_InvalidateBlur();
+        }
     }
 
     public static class AccountCell extends LinearLayout implements Theme.Colorable {
@@ -2025,7 +2103,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         iBlur3PositionMainTabs.set(0, mainTabTop, fragmentView.getMeasuredWidth(), mainTabBottom);
         iBlur3PositionMainTabs.inset(0, LiteMode.isEnabled(LiteMode.FLAG_LIQUID_GLASS) ? 0 : -dp(48));
 
-        scrollableViewNoiseSuppressor.setupRenderNodes(iBlur3Positions, hasMainTabs ? 2 : 1);
+        scrollableViewNoiseSuppressor.setupRenderNodes(iBlur3Positions, hasMainTabs && !FlexConfig.isMainTabsHidden() ? 2 : 1);
         scrollableViewNoiseSuppressor.invalidateResultRenderNodes(iBlur3Capture, fragmentView.getMeasuredWidth(), fragmentView.getMeasuredHeight());
     }
 

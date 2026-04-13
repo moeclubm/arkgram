@@ -32,6 +32,7 @@ import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BuildConfig;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.FileLoader;
+import org.telegram.messenger.FlexConfig;
 import org.telegram.messenger.LiteMode;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
@@ -72,10 +73,10 @@ import me.vkryl.android.animator.FactorAnimator;
 
 public class MainTabsActivity extends ViewPagerActivity implements NotificationCenter.NotificationCenterDelegate, FactorAnimator.Target {
     public static final int TABS_COUNT = 4;
-    private static final int POSITION_CHATS = 0;
-    private static final int POSITION_CONTACTS = 1;
-    private static final int POSITION_CALLS_OR_SETTINGS = 2;
-    private static final int POSITION_PROFILE = 3;
+    public static final int POSITION_CHATS = 0;
+    public static final int POSITION_CONTACTS = 1;
+    public static final int POSITION_CALLS_OR_SETTINGS = 2;
+    public static final int POSITION_PROFILE = 3;
 
     private static final int INDEX_CHATS = 0;
     private static final int INDEX_CONTACTS = 1;
@@ -96,6 +97,7 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
 
     private IUpdateLayout updateLayout;
     private boolean dropCallsFragmentAfterPageScroll;
+    private boolean tabsVisibleRequested = true;
 
     private UpdateLayoutWrapper updateLayoutWrapper;
     private FrameLayout tabsViewWrapper;
@@ -202,11 +204,12 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         blur3_updateColors();
         checkContactsTabBadge();
         checkUnreadCount(true);
+        applyTabsVisible(false);
 
         Bulletin.Delegate delegate = new Bulletin.Delegate() {
             @Override
             public int getBottomOffset(int tag) {
-                return navigationBarHeight + dp(DialogsActivity.MAIN_TABS_HEIGHT + DialogsActivity.MAIN_TABS_MARGIN);
+                return navigationBarHeight + (FlexConfig.isMainTabsHidden() ? 0 : dp(DialogsActivity.MAIN_TABS_HEIGHT + DialogsActivity.MAIN_TABS_MARGIN));
             }
         };
 
@@ -286,6 +289,7 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         checkUi_callTabVisible(getUserConfig().showCallsTab, false);
 
         selectTab(viewPager.getCurrentPosition(), false);
+        applyTabsVisible(false);
 
         iBlur3SourceColor.setColor(getThemedColor(Theme.key_windowBackgroundWhite));
 
@@ -590,6 +594,21 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         tabsView.invalidate();
     }
 
+    public void openTab(int position) {
+        if (viewPager == null) {
+            return;
+        }
+        if (viewPager.getCurrentPosition() == position) {
+            final BaseFragment fragment = getCurrentVisibleFragment();
+            if (fragment instanceof TabFragmentDelegate) {
+                ((TabFragmentDelegate) fragment).onParentScrollToTop();
+            }
+            return;
+        }
+        selectTab(position, true);
+        viewPager.scrollToPosition(position);
+    }
+
 
     /* * */
 
@@ -670,6 +689,10 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         return super.onApplyWindowInsets(v, consumed);
     }
 
+    private void applyTabsVisible(boolean animated) {
+        animatorTabsVisible.setValue(tabsVisibleRequested && !FlexConfig.isMainTabsHidden(), animated);
+    }
+
     @Override
     public void didReceivedNotification(int id, int account, Object... args) {
         if (id == NotificationCenter.notificationsCountUpdated || id == NotificationCenter.updateInterfaces) {
@@ -715,6 +738,8 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
             } else {
                 dropFragmentAtPosition(POSITION_CALLS_OR_SETTINGS);
             }
+        } else if (id == NotificationCenter.mainTabsVisibilityToggled) {
+            applyTabsVisible(false);
         } else if (id == NotificationCenter.mainUserInfoChanged) {
             if (tabs != null && tabs[INDEX_PROFILE] != null) {
                 tabs[INDEX_PROFILE].updateUserAvatar(currentAccount);
@@ -736,6 +761,7 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.contactsPermissionBadgeCheck);
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.appUpdateAvailable);
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.appUpdateLoading);
+        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.mainTabsVisibilityToggled);
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.needSetDayNightTheme);
 
         return super.onFragmentCreate();
@@ -753,6 +779,7 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.contactsPermissionBadgeCheck);
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.appUpdateAvailable);
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.appUpdateLoading);
+        NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.mainTabsVisibilityToggled);
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.needSetDayNightTheme);
 
         super.onFragmentDestroy();
@@ -822,7 +849,8 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
     private class MainTabsActivityControllerImpl implements MainTabsActivityController {
         @Override
         public void setTabsVisible(boolean visible) {
-            animatorTabsVisible.setValue(visible, true);
+            tabsVisibleRequested = visible;
+            applyTabsVisible(true);
         }
     }
 
@@ -887,7 +915,7 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
                 accountSwitchHint.setCloseButton(true);
                 accountSwitchHint.setText(getString(R.string.SwitchAccountHint));
                 accountSwitchHint.setJoint(1, -translate + 7.33f);
-                contentView.addView(accountSwitchHint, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 100, Gravity.BOTTOM | Gravity.FILL_HORIZONTAL, 0, 0, 0, DialogsActivity.MAIN_TABS_HEIGHT_WITH_MARGINS));
+                contentView.addView(accountSwitchHint, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 100, Gravity.BOTTOM | Gravity.FILL_HORIZONTAL, 0, 0, 0, FlexConfig.isMainTabsHidden() ? 0 : DialogsActivity.MAIN_TABS_HEIGHT_WITH_MARGINS));
                 accountSwitchHint.setOnHiddenListener(() -> AndroidUtilities.removeFromParent(accountSwitchHint));
                 accountSwitchHint.setDuration(8000);
                 accountSwitchHint.show();

@@ -1,8 +1,7 @@
 package org.telegram.ui.Components.blur3.drawable.color;
 
-import androidx.core.graphics.ColorUtils;
-
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.FlexConfig;
 import org.telegram.messenger.LiteMode;
 import org.telegram.ui.ActionBar.Theme;
 
@@ -38,7 +37,7 @@ public class BlurredBackgroundColorProviderThemed implements BlurredBackgroundCo
 
     public void updateColors() {
         final int color = Theme.getColor(backgroundColorId, resourcesProvider);
-        backgroundColor = Theme.multAlpha(color, alpha);
+        backgroundColor = FlexConfig.isUiTransparencyDisabled() ? FlexConfig.resolveUiTransparencyColor(color) : Theme.multAlpha(color, alpha);
 
         if (isDark()) {
             strokeColorTop = 0x28FFFFFF;
@@ -71,4 +70,3 @@ public class BlurredBackgroundColorProviderThemed implements BlurredBackgroundCo
         return strokeColorBottom;
     }
 }
-

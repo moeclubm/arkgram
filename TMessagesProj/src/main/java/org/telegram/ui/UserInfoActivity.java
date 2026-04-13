@@ -28,7 +28,6 @@ import org.telegram.messenger.BotWebViewVibrationEffect;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.ContactsController;
-import org.telegram.messenger.FlexConfig;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
@@ -171,9 +170,8 @@ public class UserInfoActivity extends UniversalFragment implements NotificationC
     private static final int INFO_PHONE = 6;
     private static final int INFO_USERNAME = 7;
     private static final int INFO_BIRTHDAY = 8;
-    private static final int INFO_DC = 9;
-    private static final int BUTTON_ADD_ACCOUNT = 10;
-    private static final int BUTTON_LOGOUT = 11;
+    private static final int BUTTON_ADD_ACCOUNT = 9;
+    private static final int BUTTON_LOGOUT = 10;
 
     private final ArrayList<Integer> accountNumbers = new ArrayList<>();
     private void updateAccounts() {
@@ -225,9 +223,6 @@ public class UserInfoActivity extends UniversalFragment implements NotificationC
         if (user != null) {
             numberRow = items.size();
             items.add(InfoCell.Factory.of(INFO_PHONE, R.drawable.menu_phone, PhoneFormat.getInstance().format("+" + user.phone), getString(R.string.TapToChangePhone), 0));
-        }
-        if (FlexConfig.isDcInfoEnabled()) {
-            items.add(InfoCell.Factory.of(INFO_DC, R.drawable.msg2_data, LocaleController.formatString(R.string.FlexDatacenterLabel, ConnectionsManager.getInstance(currentAccount).getCurrentDatacenterId()), getString(R.string.FlexCurrentDatacenter), R.drawable.msg_copy));
         }
         usernameRow = items.size();
         if (UserObject.getPublicUsername(user) != null) {
@@ -396,9 +391,6 @@ public class UserInfoActivity extends UniversalFragment implements NotificationC
             presentFragment(new OpeningHoursActivity());
         } else if (item.id == INFO_PHONE) {
             presentFragment(new ActionIntroActivity(ActionIntroActivity.ACTION_TYPE_CHANGE_PHONE_NUMBER));
-        } else if (item.id == INFO_DC) {
-            AndroidUtilities.addToClipboard(String.valueOf(ConnectionsManager.getInstance(currentAccount).getCurrentDatacenterId()));
-            BulletinFactory.of(this).createCopyBulletin(getString(R.string.FlexDatacenterCopied)).show();
         } else if (item.id == INFO_USERNAME) {
             presentFragment(new ChangeUsernameActivity());
         } else if (item.id == BUTTON_LOGOUT) {

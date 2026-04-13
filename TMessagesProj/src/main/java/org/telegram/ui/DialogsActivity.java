@@ -108,6 +108,7 @@ import org.telegram.messenger.Emoji;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.FilesMigrationService;
+import org.telegram.messenger.FlexConfig;
 import org.telegram.messenger.ImageLoader;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.LiteMode;
@@ -2819,6 +2820,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
 
             getNotificationCenter().addObserver(this, NotificationCenter.dialogsNeedReload);
             NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.emojiLoaded);
+            NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.mainTabsVisibilityToggled);
             if (!onlySelect) {
                 NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.closeSearchByActiveAction);
                 NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.proxySettingsChanged);
@@ -2895,8 +2897,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         }
 
         BirthdayController.getInstance(currentAccount).check();
-        additionNavigationBarHeight = hasMainTabs ? dp(MAIN_TABS_HEIGHT_WITH_MARGINS) : 0;
-        additionFloatingButtonOffset = hasMainTabs ? dp(DialogsActivity.MAIN_TABS_HEIGHT + DialogsActivity.MAIN_TABS_MARGIN) : 0;
+        updateMainTabsOffset();
 
         return true;
     }
@@ -2990,6 +2991,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         if (searchString == null) {
             getNotificationCenter().removeObserver(this, NotificationCenter.dialogsNeedReload);
             NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.emojiLoaded);
+            NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.mainTabsVisibilityToggled);
             if (!onlySelect) {
                 NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.closeSearchByActiveAction);
                 NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.proxySettingsChanged);
@@ -6906,6 +6908,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
     @Override
     public void onResume() {
         super.onResume();
+        updateMainTabsOffset();
         if (dialogStoriesCell != null) {
             dialogStoriesCell.onResume();
         }
@@ -10268,7 +10271,9 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
     @SuppressWarnings("unchecked")
     @Override
     public void didReceivedNotification(int id, int account, Object... args) {
-        if (id == NotificationCenter.dialogsNeedReload) {
+        if (id == NotificationCenter.mainTabsVisibilityToggled) {
+            updateMainTabsOffset();
+        } else if (id == NotificationCenter.dialogsNeedReload) {
             if (viewPages == null || dialogsListFrozen) {
                 return;
             }
@@ -13170,6 +13175,13 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     presentFragment(new ThemeActivity(ThemeActivity.THEME_TYPE_NIGHT));
                 });
             });
+            if (hasMainTabs && FlexConfig.isMainTabsHidden()) {
+                io.addGap();
+                io.add(R.drawable.msg_discussion, getString(R.string.MainTabsChats), () -> openMainTabsTab(MainTabsActivity.POSITION_CHATS));
+                io.add(R.drawable.msg_contacts_name, getString(R.string.MainTabsContacts), () -> openMainTabsTab(MainTabsActivity.POSITION_CONTACTS));
+                io.add(getUserConfig().showCallsTab ? R.drawable.msg_calls : R.drawable.msg_settings_old, getString(getUserConfig().showCallsTab ? R.string.MainTabsCalls : R.string.Settings), () -> openMainTabsTab(MainTabsActivity.POSITION_CALLS_OR_SETTINGS));
+                io.add(R.drawable.msg_openprofile, getString(R.string.MainTabsProfile), () -> openMainTabsTab(MainTabsActivity.POSITION_PROFILE));
+            }
             io.addGap();
             io.add(R.drawable.outline_groups_24, getString(R.string.NewGroup), () -> {
                 Bundle args = new Bundle();
@@ -13460,6 +13472,34 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         }
     }
 
+    private void updateMainTabsOffset() {
+        additionNavigationBarHeight = hasMainTabs && !FlexConfig.isMainTabsHidden() ? dp(MAIN_TABS_HEIGHT_WITH_MARGINS) : 0;
+        additionFloatingButtonOffset = hasMainTabs && !FlexConfig.isMainTabsHidden() ? dp(DialogsActivity.MAIN_TABS_HEIGHT + DialogsActivity.MAIN_TABS_MARGIN) : 0;
+        if (fragmentView == null) {
+            return;
+        }
+        checkUi_chatListViewPaddingsBottom();
+        updateFloatingButtonOffset();
+        if (storyPremiumHint != null) {
+            storyPremiumHint.setTranslationY(-navigationBarHeight - additionNavigationBarHeight);
+        }
+        for (UndoView currentUndoView : undoView) {
+            if (currentUndoView != null) {
+                ViewGroup.MarginLayoutParams lp = (ViewGroup.MarginLayoutParams) currentUndoView.getLayoutParams();
+                if (lp != null) {
+                    final int bottomMargin = navigationBarHeight + additionNavigationBarHeight;
+                    if (lp.bottomMargin != bottomMargin) {
+                        lp.bottomMargin = bottomMargin;
+                        currentUndoView.setLayoutParams(lp);
+                    }
+                }
+            }
+        }
+        checkUi_mainTabsVisible();
+        blur3_InvalidateBlur();
+        fragmentView.invalidate();
+    }
+
     private void checkUi_searchFieldVisibility() {
         if (fragmentSearchField == null) {
             return;
@@ -13614,7 +13654,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         iBlur3PositionActionBar.set(0, -additionalList, fragmentView.getMeasuredWidth(), lerp(actionBarHeight, actionBarHeightSearch, animatorSearchVisible.getFloatValue()) + additionalList );
 
         boolean hasBottomBlur = false;
-        if (hasMainTabs) {
+        if (hasMainTabs && !FlexConfig.isMainTabsHidden()) {
             iBlur3PositionMainTabs.set(0, mainTabTop, fragmentView.getMeasuredWidth(), mainTabBottom);
             iBlur3PositionMainTabs.inset(0, LiteMode.isEnabled(LiteMode.FLAG_LIQUID_GLASS) ? 0 : -dp(48));
 
@@ -13666,6 +13706,16 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         pos[0] += optionsItem.getIconView().getMeasuredWidth() / 2;
         pos[1] += optionsItem.getIconView().getMeasuredHeight() / 2;
         NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.needSetDayNightTheme, themeInfo, false, pos, -1, toDark, null, null, null, true);
+    }
+
+    private void openMainTabsTab(int position) {
+        if (getParentLayout() == null) {
+            return;
+        }
+        BaseFragment lastFragment = getParentLayout().getLastFragment();
+        if (lastFragment instanceof MainTabsActivity) {
+            ((MainTabsActivity) lastFragment).openTab(position);
+        }
     }
 
     public float getTopPanelAnimatedHeight() {

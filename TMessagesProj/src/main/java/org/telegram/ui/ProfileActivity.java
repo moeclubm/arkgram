@@ -140,6 +140,7 @@ import org.telegram.messenger.Emoji;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.FlagSecureReason;
+import org.telegram.messenger.FlexConfig;
 import org.telegram.messenger.ImageLoader;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.ImageReceiver;
@@ -445,6 +446,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     private ActionBarMenuItem searchItem;
     private ActionBarMenuSubItem editColorItem;
     private ActionBarMenuSubItem linkItem;
+    private ActionBarMenuSubItem mainTabsCallsOrSettingsItem;
     private ActionBarMenuSubItem setUsernameItem;
     private ImageView ttlIconView;
     private ActionBarMenuSubItem autoDeleteItem;
@@ -593,6 +595,10 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     private final static int delete_group = 45;
     private final static int enable_no_forwards = 46;
     private final static int disable_no_forwards = 47;
+    private final static int main_tabs_chats = 48;
+    private final static int main_tabs_contacts = 49;
+    private final static int main_tabs_calls_or_settings = 50;
+    private final static int main_tabs_profile = 51;
 
     private Rect rect = new Rect();
 
@@ -606,6 +612,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     private int channelDividerRow;
     private int numberSectionRow;
     private int numberRow;
+    private int datacenterRow;
     public int birthdayRow;
     private int setUsernameRow;
     private int bioRow;
@@ -2219,7 +2226,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         getNotificationCenter().addObserver(this, NotificationCenter.starUserGiftsLoaded);
         getNotificationCenter().addObserver(this, NotificationCenter.profileMusicUpdated);
         getNotificationCenter().addObserver(this, NotificationCenter.updatedChatRanks);
+        getNotificationCenter().addObserver(this, NotificationCenter.callTabsVisibleToggled);
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.emojiLoaded);
+        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.mainTabsVisibilityToggled);
         updateRowsIds();
         if (listAdapter != null) {
             listAdapter.notifyDataSetChanged();
@@ -2271,8 +2280,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
 
         setActionsMode();
 
-        additionNavigationBarHeight = hasMainTabs ? dp(DialogsActivity.MAIN_TABS_HEIGHT_WITH_MARGINS) : 0;
-        additionFloatingButtonOffset = hasMainTabs ? dp(DialogsActivity.MAIN_TABS_HEIGHT + DialogsActivity.MAIN_TABS_MARGIN) : 0;
+        updateMainTabsOffset();
 
         return true;
     }
@@ -2360,7 +2368,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         getNotificationCenter().removeObserver(this, NotificationCenter.starUserGiftsLoaded);
         getNotificationCenter().removeObserver(this, NotificationCenter.profileMusicUpdated);
         getNotificationCenter().removeObserver(this, NotificationCenter.updatedChatRanks);
+        getNotificationCenter().removeObserver(this, NotificationCenter.callTabsVisibleToggled);
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.emojiLoaded);
+        NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.mainTabsVisibilityToggled);
         if (avatarsViewPager != null) {
             avatarsViewPager.onDestroy();
         }
@@ -2794,6 +2804,14 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     presentFragment(new ChangeUsernameActivity());
                 } else if (id == logout) {
                     presentFragment(new LogoutActivity());
+                } else if (id == main_tabs_chats) {
+                    openMainTabsTab(MainTabsActivity.POSITION_CHATS);
+                } else if (id == main_tabs_contacts) {
+                    openMainTabsTab(MainTabsActivity.POSITION_CONTACTS);
+                } else if (id == main_tabs_calls_or_settings) {
+                    openMainTabsTab(MainTabsActivity.POSITION_CALLS_OR_SETTINGS);
+                } else if (id == main_tabs_profile) {
+                    openMainTabsTab(MainTabsActivity.POSITION_PROFILE);
                 } else if (id == set_as_main) {
                     int position = avatarsViewPager.getRealPosition();
                     TLRPC.Photo photo = avatarsViewPager.getPhoto(position);
@@ -4480,6 +4498,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 presentFragment(new UserInfoActivity());
             } else if (position == numberRow) {
                 presentFragment(new ActionIntroActivity(ActionIntroActivity.ACTION_TYPE_CHANGE_PHONE_NUMBER));
+            } else if (position == datacenterRow) {
+                AndroidUtilities.addToClipboard(String.valueOf(ConnectionsManager.getInstance(currentAccount).getCurrentDatacenterId()));
+                BulletinFactory.of(this).createCopyBulletin(getString(R.string.FlexDatacenterCopied)).show();
             } else if (position == setAvatarRow) {
                 onWriteButtonClick();
             } else if (position == premiumRow) {
@@ -8961,8 +8982,11 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             chatInfo.online_count = (Integer) args[1];
             updateOnlineCount(true);
             updateProfileData(false);
-        } else if (id == NotificationCenter.contactsDidLoad || id == NotificationCenter.channelRightsUpdated) {
+        } else if (id == NotificationCenter.contactsDidLoad || id == NotificationCenter.channelRightsUpdated || id == NotificationCenter.callTabsVisibleToggled) {
             createActionBarMenu(true);
+        } else if (id == NotificationCenter.mainTabsVisibilityToggled) {
+            updateMainTabsMenuItems();
+            updateMainTabsOffset();
         } else if (id == NotificationCenter.encryptedChatCreated) {
             if (creatingChat) {
                 AndroidUtilities.runOnUIThread(() -> {
@@ -9395,6 +9419,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     @Override
     public void onResume() {
         super.onResume();
+        updateMainTabsMenuItems();
+        updateMainTabsOffset();
         if (sharedMediaLayout != null) {
             sharedMediaLayout.onResume();
         }
@@ -10261,6 +10287,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         setAvatarSectionRow = -1;
         numberSectionRow = -1;
         numberRow = -1;
+        datacenterRow = -1;
         birthdayRow = -1;
         setUsernameRow = -1;
         bioRow = -1;
@@ -10424,6 +10451,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 }
                 numberSectionRow = rowCount++;
                 numberRow = rowCount++;
+                if (FlexConfig.isDcInfoEnabled()) {
+                    datacenterRow = rowCount++;
+                }
                 setUsernameRow = rowCount++;
                 bioRow = rowCount++;
 
@@ -12081,6 +12111,13 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             }
         }
 
+        if (hasMainTabs) {
+            otherItem.addSubItem(main_tabs_chats, R.drawable.msg_discussion, getString(R.string.MainTabsChats));
+            otherItem.addSubItem(main_tabs_contacts, R.drawable.msg_contacts_name, getString(R.string.MainTabsContacts));
+            mainTabsCallsOrSettingsItem = otherItem.addSubItem(main_tabs_calls_or_settings, R.drawable.msg_settings_old, getString(R.string.Settings));
+            otherItem.addSubItem(main_tabs_profile, R.drawable.msg_openprofile, getString(R.string.MainTabsProfile));
+        }
+
         if (imageUpdater != null) {
             otherItem.addSubItem(set_as_main, R.drawable.msg_openprofile, LocaleController.getString(R.string.SetAsMain));
             otherItem.addSubItem(gallery_menu_save, R.drawable.msg_gallery, LocaleController.getString(R.string.SaveToGallery));
@@ -12103,6 +12140,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             otherItem.hideSubItem(edit_avatar);
             otherItem.hideSubItem(delete_avatar);
         }
+        updateMainTabsMenuItems();
 
         isCallAvailable = callItemVisible;
 
@@ -13344,6 +13382,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                         }
                         detailCell.setTextAndValue(value, LocaleController.getString(R.string.TapToChangePhone), true);
                         detailCell.setContentDescriptionValueFirst(false);
+                    } else if (position == datacenterRow) {
+                        detailCell.setTextAndValue(LocaleController.formatString(R.string.FlexDatacenterLabel, ConnectionsManager.getInstance(currentAccount).getCurrentDatacenterId()), LocaleController.getString(R.string.FlexCurrentDatacenter), true);
+                        detailCell.setContentDescriptionValueFirst(false);
                     } else if (position == setUsernameRow) {
                         TLRPC.User user = UserConfig.getInstance(currentAccount).getCurrentUser();
                         String text = "";
@@ -14018,7 +14059,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         public boolean isEnabled(RecyclerView.ViewHolder holder) {
             if (notificationRow != -1) {
                 int position = holder.getAdapterPosition();
-                return position == notificationRow || position == numberRow || position == privacyRow ||
+                return position == notificationRow || position == numberRow || position == datacenterRow || position == privacyRow ||
                         position == languageRow || position == setUsernameRow || position == bioRow ||
                         position == versionRow || position == dataRow || position == chatRow ||
                         position == questionRow || position == devicesRow || position == filtersRow || position == stickersRow ||
@@ -14054,7 +14095,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             if (position == infoHeaderRow || position == membersHeaderRow || position == settingsSectionRow2 ||
                     position == numberSectionRow || position == helpHeaderRow || position == debugHeaderRow || position == botPermissionsHeader) {
                 return VIEW_TYPE_HEADER;
-            } else if (position == phoneRow || position == locationRow || position == numberRow || position == birthdayRow) {
+            } else if (position == phoneRow || position == locationRow || position == numberRow || position == datacenterRow || position == birthdayRow) {
                 return VIEW_TYPE_TEXT_DETAIL;
             } else if (position == usernameRow || position == setUsernameRow) {
                 return VIEW_TYPE_TEXT_DETAIL_MULTILINE;
@@ -14536,6 +14577,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     new SearchResult(432, getString(R.string.FlexEnhancedDownload), getString(R.string.FlexSettings), R.drawable.msg_speed, () -> f.presentFragment(new FlexSettingsActivity())),
                     new SearchResult(433, getString(R.string.FlexMarkdownSettings), getString(R.string.FlexSettings), R.drawable.menu_feature_code, () -> f.presentFragment(new FlexMarkdownSettingsActivity())),
                     new SearchResult(434, getString(R.string.FlexTranslationSettings), getString(R.string.FlexSettings), R.drawable.msg_translate, () -> f.presentFragment(new FlexTranslateSettingsActivity())),
+                    new SearchResult(435, getString(R.string.FlexLlmSettings), getString(R.string.FlexSettings), R.drawable.outline_ai_translate2, () -> f.presentFragment(new FlexLlmSettingsActivity())),
+                    new SearchResult(436, getString(R.string.FlexTranslationLlmSettings), getString(R.string.FlexLlmSettings), R.drawable.msg_translate, () -> f.presentFragment(new FlexLlmFeatureSettingsActivity(false))),
+                    new SearchResult(437, getString(R.string.FlexAiSummarySettings), getString(R.string.FlexLlmSettings), R.drawable.outline_ai_translate2, () -> f.presentFragment(new FlexLlmFeatureSettingsActivity(true))),
 
                     new SearchResult(402, getString(R.string.AskAQuestion), getString(R.string.SettingsHelp), R.drawable.msg2_help, () -> f.showDialog(AlertsCreator.createSupportAlert(f, null))).withLink("tg://settings/ask-question"),
                     new SearchResult(403, getString(R.string.TelegramFAQ), getString(R.string.SettingsHelp), R.drawable.msg2_help, () -> Browser.openUrl(f.getParentActivity(), getString(R.string.TelegramFaqUrl))).withLink("tg://settings/faq"),
@@ -15413,6 +15457,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             put(++pointer, setAvatarSectionRow, sparseIntArray);
             put(++pointer, numberSectionRow, sparseIntArray);
             put(++pointer, numberRow, sparseIntArray);
+            put(++pointer, datacenterRow, sparseIntArray);
             put(++pointer, setUsernameRow, sparseIntArray);
             put(++pointer, bioRow, sparseIntArray);
             put(++pointer, phoneSuggestionRow, sparseIntArray);
@@ -16603,31 +16648,66 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     private int additionFloatingButtonOffset;
     private int navigationBarHeight;
 
-    @NonNull
-    private WindowInsetsCompat onApplyWindowInsets(@NonNull View v, @NonNull WindowInsetsCompat insets) {
-        navigationBarHeight = insets.getInsets(WindowInsetsCompat.Type.systemBars()).bottom;
+    private void openMainTabsTab(int position) {
+        if (getParentLayout() == null) {
+            return;
+        }
+        BaseFragment lastFragment = getParentLayout().getLastFragment();
+        if (lastFragment instanceof MainTabsActivity) {
+            ((MainTabsActivity) lastFragment).openTab(position);
+        }
+    }
+
+    private void updateMainTabsMenuItems() {
+        if (otherItem == null) {
+            return;
+        }
+        final boolean showMainTabsMenuItems = hasMainTabs && FlexConfig.isMainTabsHidden();
+        if (showMainTabsMenuItems) {
+            otherItem.showSubItem(main_tabs_chats);
+            otherItem.showSubItem(main_tabs_contacts);
+            otherItem.showSubItem(main_tabs_calls_or_settings);
+            otherItem.showSubItem(main_tabs_profile);
+        } else {
+            otherItem.hideSubItem(main_tabs_chats);
+            otherItem.hideSubItem(main_tabs_contacts);
+            otherItem.hideSubItem(main_tabs_calls_or_settings);
+            otherItem.hideSubItem(main_tabs_profile);
+        }
+        if (mainTabsCallsOrSettingsItem != null) {
+            final boolean showCallsTab = getUserConfig().showCallsTab;
+            mainTabsCallsOrSettingsItem.setTextAndIcon(getString(showCallsTab ? R.string.MainTabsCalls : R.string.Settings), showCallsTab ? R.drawable.msg_calls : R.drawable.msg_settings_old);
+        }
+    }
+
+    private void updateMainTabsOffset() {
+        additionNavigationBarHeight = hasMainTabs && !FlexConfig.isMainTabsHidden() ? dp(DialogsActivity.MAIN_TABS_HEIGHT_WITH_MARGINS) : 0;
+        additionFloatingButtonOffset = hasMainTabs && !FlexConfig.isMainTabsHidden() ? dp(DialogsActivity.MAIN_TABS_HEIGHT + DialogsActivity.MAIN_TABS_MARGIN) : 0;
 
         ViewGroup.MarginLayoutParams lp;
-
         if (bottomButtonsContainer != null) {
             lp = (ViewGroup.MarginLayoutParams) bottomButtonsContainer.getLayoutParams();
-
             final int bottomMargin = navigationBarHeight + additionFloatingButtonOffset;
             if (lp != null && lp.bottomMargin != bottomMargin) {
                 lp.bottomMargin = bottomMargin;
                 bottomButtonsContainer.setLayoutParams(lp);
             }
         }
-
         if (sharedMediaLayout != null) {
             sharedMediaLayout.setPagesPaddingBottom(navigationBarHeight + additionNavigationBarHeight);
-
             if (sharedMediaLayout.giftsContainer != null) {
                 sharedMediaLayout.giftsContainer.setButtonOffset(navigationBarHeight + additionFloatingButtonOffset);
             }
         }
+        if (fragmentView != null) {
+            blur3_InvalidateBlur();
+        }
+    }
 
-        // listView.setPadding(0, 0, 0, navigationBarHeight + additionNavigationBarHeight);
+    @NonNull
+    private WindowInsetsCompat onApplyWindowInsets(@NonNull View v, @NonNull WindowInsetsCompat insets) {
+        navigationBarHeight = insets.getInsets(WindowInsetsCompat.Type.systemBars()).bottom;
+        updateMainTabsOffset();
         return WindowInsetsCompat.CONSUMED;
     }
 
@@ -16674,7 +16754,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         iBlur3PositionMainTabs.set(0, mainTabTop, fragmentView.getMeasuredWidth(), mainTabBottom);
         iBlur3PositionMainTabs.inset(0, LiteMode.isEnabled(LiteMode.FLAG_LIQUID_GLASS) ? 0 : -dp(48));
 
-        scrollableViewNoiseSuppressor.setupRenderNodes(iBlur3Positions, 2);
+        scrollableViewNoiseSuppressor.setupRenderNodes(iBlur3Positions, hasMainTabs && !FlexConfig.isMainTabsHidden() ? 2 : 1);
         scrollableViewNoiseSuppressor.invalidateResultRenderNodes(iBlur3Capture, fragmentView.getMeasuredWidth(), fragmentView.getMeasuredHeight());
     }
 

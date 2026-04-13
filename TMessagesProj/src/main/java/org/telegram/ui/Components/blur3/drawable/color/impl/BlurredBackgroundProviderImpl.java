@@ -7,6 +7,7 @@ import android.graphics.Color;
 import androidx.core.graphics.ColorUtils;
 import androidx.core.math.MathUtils;
 
+import org.telegram.messenger.FlexConfig;
 import org.telegram.messenger.LiteMode;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.SharedConfig;
@@ -19,10 +20,9 @@ public class BlurredBackgroundProviderImpl {
     public static BlurredBackgroundProvider mainTabs(Theme.ResourcesProvider resourcesProvider) {
         return new BlurredBackgroundProviderBuilder(resourcesProvider)
             .setBackgroundColor((r, isDark) -> {
-                final float alpha = LiteMode.isEnabled(LiteMode.FLAG_LIQUID_GLASS) ? 0.85f : 0.76f;
                 final int colorBg = Theme.getColor(Theme.key_windowBackgroundWhite, r);
                 final int colorTarget = Theme.getColor(Theme.key_glass_targetMainTabs, r);
-                return solveSrcColor(colorBg, colorTarget, alpha);
+                return resolveTargetBackgroundColor(colorBg, colorTarget);
             })
             .setStrokeColorTop(0x11000000, 0x06FFFFFF)
             .setStrokeColorBottom(0x20000000, 0x11FFFFFF)
@@ -35,10 +35,9 @@ public class BlurredBackgroundProviderImpl {
     public static BlurredBackgroundProvider topPanel(Theme.ResourcesProvider resourcesProvider) {
         return new BlurredBackgroundProviderBuilder(resourcesProvider)
             .setBackgroundColor((r, isDark) -> {
-                final float alpha = LiteMode.isEnabled(LiteMode.FLAG_LIQUID_GLASS) ? 0.85f : 0.76f;
                 final int colorBg = Theme.getColor(Theme.key_windowBackgroundWhite, r);
                 final int colorTarget = Theme.getColor(Theme.key_glass_targetMainTopPanel, r);
-                return solveSrcColor(colorBg, colorTarget, alpha);
+                return resolveTargetBackgroundColor(colorBg, colorTarget);
             })
             .setStrokeColorTop(0x17000000, 0x17FFFFFF)
             .setStrokeColorBottom(0x17000000, 0x17FFFFFF)
@@ -51,7 +50,7 @@ public class BlurredBackgroundProviderImpl {
     public static BlurredBackgroundProvider scrimMenuBackground(Theme.ResourcesProvider resourcesProvider) {
         return new BlurredBackgroundProviderBuilder(resourcesProvider)
             .setBackgroundColor((r, isDark) ->
-                Theme.multAlpha(Theme.getColor(Theme.key_actionBarDefaultSubmenuBackground), isDark ? 0.85f : 0.76f))
+                resolveAlphaColor(Theme.getColor(Theme.key_actionBarDefaultSubmenuBackground), isDark ? 0.85f : 0.76f))
             .setStrokeColorTop(0xFFFFFFFF, 0)
             .setStrokeColorBottom(0xFFFFFFFF, 0)
             .setShadowColor(0x26000000, 0)
@@ -63,9 +62,8 @@ public class BlurredBackgroundProviderImpl {
     public static BlurredBackgroundProvider attachMenuSearch(Theme.ResourcesProvider resourcesProvider) {
         return new BlurredBackgroundProviderBuilder(resourcesProvider)
                 .setBackgroundColor((r, isDark) -> {
-                    final float alpha = LiteMode.isEnabled(LiteMode.FLAG_LIQUID_GLASS) ? 0.85f : 0.76f;
                     final int colorBg = Theme.getColor(Theme.key_windowBackgroundWhite, r);
-                    return Theme.multAlpha(colorBg, alpha);
+                    return resolveAlphaColor(colorBg);
                 })
                 .setStrokeColorTop(0x17000000, 0x17FFFFFF)
                 .setStrokeColorBottom(0x17000000, 0x17FFFFFF)
@@ -77,7 +75,7 @@ public class BlurredBackgroundProviderImpl {
 
     public static BlurredBackgroundProvider searchFloatingDate(Theme.ResourcesProvider resourcesProvider) {
         return new BlurredBackgroundProviderBuilder(resourcesProvider)
-                .setBackgroundColor((r, isDark) -> 0x33000000)
+                .setBackgroundColor((r, isDark) -> FlexConfig.resolveUiTransparencyColor(0x33000000))
                 .setStrokeColorTop(0x17000000, 0x17FFFFFF)
                 .setStrokeColorBottom(0x17000000, 0x17FFFFFF)
                 .setShadowColor(0, 0)
@@ -93,9 +91,8 @@ public class BlurredBackgroundProviderImpl {
                             Theme.key_actionBarDefault : Theme.key_chat_topPanelBackground, r), 255);
                     }
 
-                    final float alpha = LiteMode.isEnabled(LiteMode.FLAG_LIQUID_GLASS) ? 0.85f : 0.76f;
                     final int colorBg = Theme.getColor(Theme.key_chat_topPanelBackground, r);
-                    return Theme.multAlpha(colorBg, alpha);
+                    return resolveAlphaColor(colorBg);
                 })
                 .setStrokeColorTop(0xFFFFFFFF, 0x28FFFFFF)
                 .setStrokeColorBottom(0xFFFFFFFF, 0x14FFFFFF)
@@ -108,9 +105,8 @@ public class BlurredBackgroundProviderImpl {
     public static BlurredBackgroundProvider bulletin(Theme.ResourcesProvider resourcesProvider) {
         return new BlurredBackgroundProviderBuilder(resourcesProvider)
             .setBackgroundColor((r, isDark) -> {
-                final float alpha = LiteMode.isEnabled(LiteMode.FLAG_LIQUID_GLASS) ? 0.85f : 0.76f;
                 final int colorBg = Theme.getColor(Theme.key_undo_background, r);
-                return Theme.multAlpha(colorBg, alpha);
+                return resolveAlphaColor(colorBg);
             })
             //.setStrokeColorTop(0xFFFFFFFF, 0x28FFFFFF)
             //.setStrokeColorBottom(0xFFFFFFFF, 0x14FFFFFF)
@@ -127,10 +123,9 @@ public class BlurredBackgroundProviderImpl {
     public static BlurredBackgroundProvider inputFieldShareAlert(Theme.ResourcesProvider resourcesProvider) {
         return new BlurredBackgroundProviderBuilder(resourcesProvider)
                 .setBackgroundColor((r, isDark) -> {
-                    final float alpha = LiteMode.isEnabled(LiteMode.FLAG_LIQUID_GLASS) ? 0.85f : 0.76f;
                     final int colorBg = Theme.getColor(Theme.key_windowBackgroundWhite, r);
                     final int colorTarget = Theme.getColor(Theme.key_chat_messagePanelBackground, r);
-                    return solveSrcColor(colorBg, colorTarget, alpha);
+                    return resolveTargetBackgroundColor(colorBg, colorTarget);
                 })
                 .setStrokeColorTop(0x17000000, 0x17FFFFFF)
                 .setStrokeColorBottom(0x17000000, 0x17FFFFFF)
@@ -143,10 +138,8 @@ public class BlurredBackgroundProviderImpl {
     public static BlurredBackgroundProvider photoViewer(Theme.ResourcesProvider resourcesProvider) {
         return new BlurredBackgroundProviderBuilder(resourcesProvider)
                 .setBackgroundColor((r, isDark) -> {
-                    final float alpha = LiteMode.isEnabled(LiteMode.FLAG_LIQUID_GLASS) ? 0.85f : 0.76f;
-                    final int colorBg = 0xFF000000;
                     final int colorTarget = 0xFF1A1A1A;
-                    return 0; // solveSrcColor(colorBg, colorTarget, alpha);
+                    return FlexConfig.isUiTransparencyDisabled() ? colorTarget : 0; // solveSrcColor(colorBg, colorTarget, alpha);
                 })
                 .setStrokeColorTop(0x28FFFFFF, 0x28FFFFFF)
                 .setStrokeColorBottom(0x14FFFFFF, 0x14FFFFFF)
@@ -156,7 +149,7 @@ public class BlurredBackgroundProviderImpl {
 
     public static BlurredBackgroundProvider photoViewerMenu(Theme.ResourcesProvider resourcesProvider) {
         return new BlurredBackgroundProviderBuilder(resourcesProvider)
-                .setBackgroundColor((r, isDark) -> 0x40000000)
+                .setBackgroundColor((r, isDark) -> FlexConfig.resolveUiTransparencyColor(0x40000000))
                 .setStrokeColorTop(0x28FFFFFF, 0x28FFFFFF)
                 .setStrokeColorBottom(0x14FFFFFF, 0x14FFFFFF)
                 .setStrokeWidth(dpf2(2 / 3f), dpf2(2 / 3f))
@@ -166,7 +159,7 @@ public class BlurredBackgroundProviderImpl {
     public static BlurredBackgroundProvider premiumButton(Theme.ResourcesProvider resourcesProvider) {
         return new BlurredBackgroundProviderBuilder(resourcesProvider)
             .setBackgroundColor((r, isDark) ->
-                Theme.multAlpha(Theme.getColor(Theme.key_dialogBackground, r), 0.78f))
+                resolveAlphaColor(Theme.getColor(Theme.key_dialogBackground, r), 0.78f))
             .setStrokeColorTop(0xFFFFFFFF, 0x20FFFFFF)
             .setStrokeColorBottom(0, 0x20FFFFFF)
             .setShadowColor(0x30000000, 0x04FFFFFF)
@@ -213,6 +206,22 @@ public class BlurredBackgroundProviderImpl {
         final int a8 = MathUtils.clamp(Math.round(alpha * 255f), 0, 255);
 
         return Color.argb(a8, srcR, srcG, srcB);
+    }
+
+    private static float getGlassAlpha() {
+        return LiteMode.isEnabled(LiteMode.FLAG_LIQUID_GLASS) ? 0.85f : 0.76f;
+    }
+
+    private static int resolveTargetBackgroundColor(int colorBg, int colorTarget) {
+        return FlexConfig.isUiTransparencyDisabled() ? ColorUtils.setAlphaComponent(colorTarget, 255) : solveSrcColor(colorBg, colorTarget, getGlassAlpha());
+    }
+
+    private static int resolveAlphaColor(int color) {
+        return resolveAlphaColor(color, getGlassAlpha());
+    }
+
+    private static int resolveAlphaColor(int color, float alpha) {
+        return FlexConfig.isUiTransparencyDisabled() ? FlexConfig.resolveUiTransparencyColor(color) : Theme.multAlpha(color, alpha);
     }
 
     public static boolean checkBlurEnabled(Theme.ResourcesProvider resourcesProvider) {

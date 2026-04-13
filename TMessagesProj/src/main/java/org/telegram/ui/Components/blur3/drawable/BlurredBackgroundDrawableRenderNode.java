@@ -14,6 +14,7 @@ import android.os.Build;
 import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
 
+import org.telegram.messenger.FlexConfig;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.blur3.LiquidGlassEffect;
 import org.telegram.ui.Components.blur3.source.BlurredBackgroundSource;
@@ -101,6 +102,7 @@ public class BlurredBackgroundDrawableRenderNode extends BlurredBackgroundDrawab
     private void updateDisplayList() {
         final float offsetX = sourceOffsetX;
         final float offsetY = sourceOffsetY;
+        final boolean liquidGlassEnabled = liquidGlassEffect != null && Build.VERSION.SDK_INT >= 33 && !FlexConfig.isUiBlurDisabled();
 
         Canvas c;
 
@@ -112,7 +114,7 @@ public class BlurredBackgroundDrawableRenderNode extends BlurredBackgroundDrawab
         c = renderNodeFill.beginRecording();
         c.save();
         c.translate(-sL, -sT);
-        if (liquidGlassEffect != null && Build.VERSION.SDK_INT >= 33) {
+        if (liquidGlassEnabled) {
             liquidGlassEffect.update(
                 0, 0, boundProps.boundsWithPadding.width(), boundProps.boundsWithPadding.height(),
                 boundProps.shaderRadii[0], boundProps.shaderRadii[2], boundProps.shaderRadii[4], boundProps.shaderRadii[6],
@@ -132,7 +134,7 @@ public class BlurredBackgroundDrawableRenderNode extends BlurredBackgroundDrawab
             c.drawColor(backgroundColor);
         } else {
             c.drawRenderNode(renderNodeFill);
-            if (liquidGlassEffect == null && Color.alpha(backgroundColor) != 0) {
+            if (!liquidGlassEnabled && Color.alpha(backgroundColor) != 0) {
                 c.drawColor(backgroundColor);
             }
         }
@@ -164,6 +166,9 @@ public class BlurredBackgroundDrawableRenderNode extends BlurredBackgroundDrawab
     public void draw(@NonNull Canvas canvas) {
         if (boundProps.boundsWithPadding.isEmpty()) {
             return;
+        }
+        if (colorProvider != null) {
+            updateColors();
         }
 
         if (!canvas.isHardwareAccelerated()) {

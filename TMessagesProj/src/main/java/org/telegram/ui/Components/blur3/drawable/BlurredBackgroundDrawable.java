@@ -502,6 +502,9 @@ public abstract class BlurredBackgroundDrawable extends Drawable {
         if (boundProps.boundsWithPadding.isEmpty()) {
             return;
         }
+        if (colorProvider != null) {
+            updateColors();
+        }
 
         if (Color.alpha(backgroundColor) == 255) {
             drawSourceColorImpl(canvas, 0);

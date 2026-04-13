@@ -45,6 +45,7 @@ import androidx.annotation.NonNull;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.DispatchQueue;
 import org.telegram.messenger.FileLog;
+import org.telegram.messenger.FlexConfig;
 import org.telegram.messenger.LiteMode;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.Utilities;
@@ -996,7 +997,19 @@ public class SizeNotifierFrameLayout extends FrameLayout implements Theme.Colora
     }
 
     public void drawBlurRect(Canvas canvas, float y, Rect rectTmp, Paint blurScrimPaint, boolean top, int blurAlpha) {
+        final boolean disableTransparency = FlexConfig.isUiTransparencyDisabled();
+        if (disableTransparency) {
+            blurAlpha = 255;
+        }
         if (!SharedConfig.chatBlurEnabled()) {
+            if (disableTransparency) {
+                blurScrimPaint.setAlpha(255);
+            }
+            canvas.drawRect(rectTmp, blurScrimPaint);
+            return;
+        }
+        if (blurAlpha >= 255) {
+            blurScrimPaint.setAlpha(255);
             canvas.drawRect(rectTmp, blurScrimPaint);
             return;
         }
@@ -1089,7 +1102,19 @@ public class SizeNotifierFrameLayout extends FrameLayout implements Theme.Colora
 
     public void drawBlurCircle(Canvas canvas, float viewY, float cx, float cy, float radius, Paint blurScrimPaint, boolean top) {
         int blurAlpha = Color.alpha(Theme.getColor(DRAW_USING_RENDERNODE() ? Theme.key_chat_BlurAlpha : Theme.key_chat_BlurAlphaSlow));
+        final boolean disableTransparency = FlexConfig.isUiTransparencyDisabled();
+        if (disableTransparency) {
+            blurAlpha = 255;
+        }
         if (currentBitmap == null || !SharedConfig.chatBlurEnabled()) {
+            if (disableTransparency) {
+                blurScrimPaint.setAlpha(255);
+            }
+            canvas.drawCircle(cx, cy, radius, blurScrimPaint);
+            return;
+        }
+        if (blurAlpha >= 255) {
+            blurScrimPaint.setAlpha(255);
             canvas.drawCircle(cx, cy, radius, blurScrimPaint);
             return;
         }

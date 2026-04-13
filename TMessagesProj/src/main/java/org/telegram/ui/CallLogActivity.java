@@ -41,6 +41,7 @@ import android.widget.TextView;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.DialogObject;
+import org.telegram.messenger.FlexConfig;
 import org.telegram.messenger.LiteMode;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
@@ -380,9 +381,7 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 					listView.adapter.update(true);
 				}
 			}
-			if (otherItem != null) {
-				otherItem.setVisibility(calls.isEmpty() ? View.GONE : View.VISIBLE);
-			}
+			updateOtherItemVisibility();
 		} else if (id == NotificationCenter.messagesDeleted) {
 			if (!firstLoaded) {
 				return;
@@ -437,6 +436,8 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 				VoIPHelper.startCall(lastCallChat, null, null, false, getParentActivity(), CallLogActivity.this, getAccountInstance());
 				waitingForCallChatId = null;
 			}
+		} else if (id == NotificationCenter.mainTabsVisibilityToggled) {
+			updateMainTabsOffset();
 		}
 	}
 
@@ -699,14 +700,14 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 		getNotificationCenter().addObserver(this, NotificationCenter.activeGroupCallsUpdated);
 		getNotificationCenter().addObserver(this, NotificationCenter.chatInfoDidLoad);
 		getNotificationCenter().addObserver(this, NotificationCenter.groupCallUpdated);
+		NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.mainTabsVisibilityToggled);
 
 		if (arguments != null) {
 			needFinishFragment = arguments.getBoolean("needFinishFragment", true);
 			hasMainTabs = arguments.getBoolean("hasMainTabs", false);
 		}
 
-		additionNavigationBarHeight = hasMainTabs ? dp(DialogsActivity.MAIN_TABS_HEIGHT_WITH_MARGINS) : 0;
-		additionFloatingButtonOffset = hasMainTabs ? dp(DialogsActivity.MAIN_TABS_HEIGHT + DialogsActivity.MAIN_TABS_MARGIN) : 0;
+		updateMainTabsOffset();
 
 		return true;
 	}
@@ -719,6 +720,7 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 		getNotificationCenter().removeObserver(this, NotificationCenter.activeGroupCallsUpdated);
 		getNotificationCenter().removeObserver(this, NotificationCenter.chatInfoDidLoad);
 		getNotificationCenter().removeObserver(this, NotificationCenter.groupCallUpdated);
+		NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.mainTabsVisibilityToggled);
 	}
 
 	@SuppressLint("UseCompatLoadingForDrawables")
@@ -1172,7 +1174,7 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 				calls.clear();
 				loading = false;
 				endReached = true;
-				otherItem.setVisibility(View.GONE);
+				updateOtherItemVisibility();
 				listView.adapter.update(true);
 			} else {
 				getMessagesController().deleteMessages(new ArrayList<>(selectedIds), null, null, 0, 0, checks[0], 0);
@@ -1441,7 +1443,7 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 				resumeDelayedFragmentAnimation();
 			}
 			firstLoaded = true;
-			otherItem.setVisibility(calls.isEmpty() ? View.GONE : View.VISIBLE);
+			updateOtherItemVisibility();
 			if (emptyView != null) {
 				emptyView.showTextView();
 			}
@@ -1458,6 +1460,7 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 		if (listView != null) {
 			listView.adapter.update(true);
 		}
+		updateMainTabsOffset();
 	}
 
 	@Override
@@ -2013,6 +2016,13 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 		ItemOptions io = ItemOptions.makeOptions(this, otherItem);
 		// io.setColors(getThemedColor(Theme.key_actionBarDefaultTitle), getThemedColor(Theme.key_actionBarDefaultTitle));
 		io.setDimAlpha(0x08);
+		if (hasMainTabs && FlexConfig.isMainTabsHidden()) {
+			io.add(R.drawable.msg_discussion, getString(R.string.MainTabsChats), () -> openMainTabsTab(MainTabsActivity.POSITION_CHATS));
+			io.add(R.drawable.msg_contacts_name, getString(R.string.MainTabsContacts), () -> openMainTabsTab(MainTabsActivity.POSITION_CONTACTS));
+			io.add(getUserConfig().showCallsTab ? R.drawable.msg_calls : R.drawable.msg_settings_old, getString(getUserConfig().showCallsTab ? R.string.MainTabsCalls : R.string.Settings), () -> openMainTabsTab(MainTabsActivity.POSITION_CALLS_OR_SETTINGS));
+			io.add(R.drawable.msg_openprofile, getString(R.string.MainTabsProfile), () -> openMainTabsTab(MainTabsActivity.POSITION_PROFILE));
+			io.addGap();
+		}
 		if (getUserConfig().showCallsTab) {
 			io.add(R.drawable.msg_archive_hide, getString(R.string.HideCallTab), () -> {
 				setCallsTabVisible(false);
@@ -2036,6 +2046,37 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 		getUserConfig().setShowCallsTab(visible);
 		listView.adapter.update(true);
 		NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.callTabsVisibleToggled);
+	}
+
+	private void openMainTabsTab(int position) {
+		if (getParentLayout() == null) {
+			return;
+		}
+		BaseFragment lastFragment = getParentLayout().getLastFragment();
+		if (lastFragment instanceof MainTabsActivity) {
+			((MainTabsActivity) lastFragment).openTab(position);
+		}
+	}
+
+	private void updateMainTabsOffset() {
+		additionNavigationBarHeight = hasMainTabs && !FlexConfig.isMainTabsHidden() ? dp(DialogsActivity.MAIN_TABS_HEIGHT_WITH_MARGINS) : 0;
+		additionFloatingButtonOffset = hasMainTabs && !FlexConfig.isMainTabsHidden() ? dp(DialogsActivity.MAIN_TABS_HEIGHT + DialogsActivity.MAIN_TABS_MARGIN) : 0;
+		updateOtherItemVisibility();
+		if (listView != null) {
+			checkUi_listViewPadding();
+		}
+		if (floatingButton != null) {
+			checkUi_floatingButton();
+		}
+		if (fragmentView != null) {
+			blur3_InvalidateBlur();
+		}
+	}
+
+	private void updateOtherItemVisibility() {
+		if (otherItem != null) {
+			otherItem.setVisibility(!calls.isEmpty() || hasMainTabs && FlexConfig.isMainTabsHidden() ? View.VISIBLE : View.GONE);
+		}
 	}
 
 
@@ -2071,7 +2112,7 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 		iBlur3PositionMainTabs.set(0, mainTabTop, fragmentView.getMeasuredWidth(), mainTabBottom);
 		iBlur3PositionMainTabs.inset(0, LiteMode.isEnabled(LiteMode.FLAG_LIQUID_GLASS) ? 0 : -dp(48));
 
-		scrollableViewNoiseSuppressor.setupRenderNodes(iBlur3Positions, hasMainTabs ? 2 : 1);
+		scrollableViewNoiseSuppressor.setupRenderNodes(iBlur3Positions, hasMainTabs && !FlexConfig.isMainTabsHidden() ? 2 : 1);
 		scrollableViewNoiseSuppressor.invalidateResultRenderNodes(iBlur3Capture, fragmentView.getMeasuredWidth(), fragmentView.getMeasuredHeight());
 	}
 
