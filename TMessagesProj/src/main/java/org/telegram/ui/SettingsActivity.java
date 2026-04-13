@@ -501,6 +501,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         navigationBar = new View(context);
 //        fragmentView.addView(navigationBar, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 0, Gravity.BOTTOM | Gravity.FILL_HORIZONTAL));
 
+        fragmentView = contentView;
         updateActionBarVisible(true, false);
         listView.adapter.update(false);
         setInfo();
@@ -510,7 +511,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         updateMainTabsOffset();
 
         ViewCompat.setOnApplyWindowInsetsListener(contentView, this::onApplyWindowInsets);
-        return fragmentView = contentView;
+        return fragmentView;
     }
 
     @Override

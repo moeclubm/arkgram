@@ -13175,7 +13175,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     presentFragment(new ThemeActivity(ThemeActivity.THEME_TYPE_NIGHT));
                 });
             });
-            if (hasMainTabs && FlexConfig.isMainTabsHidden()) {
+            if (FlexConfig.isMainTabsHidden()) {
                 io.addGap();
                 io.add(R.drawable.msg_discussion, getString(R.string.MainTabsChats), () -> openMainTabsTab(MainTabsActivity.POSITION_CHATS));
                 io.add(R.drawable.msg_contacts_name, getString(R.string.MainTabsContacts), () -> openMainTabsTab(MainTabsActivity.POSITION_CONTACTS));

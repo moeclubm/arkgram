@@ -29,7 +29,7 @@ public class ThemeColors {
         defaultColors[key_dialogBackgroundGray] = 0xfff0f0f0;
         defaultColors[key_dialogTextBlack] = DEFAULT_BLACK_TEXT;
         defaultColors[key_dialogTextLink] = TELEGRAM_COLOR_DARKER;
-        defaultColors[key_dialogLinkSelection] = 0x3362a9e3;
+        defaultColors[key_dialogLinkSelection] = ColorUtils.setAlphaComponent(TELEGRAM_COLOR, 0x33);
         defaultColors[key_dialogTextBlue] = TELEGRAM_COLOR_TEXT;
         defaultColors[key_dialogTextBlue2] = TELEGRAM_COLOR_LIGHT;
         defaultColors[key_dialogTextBlue4] = TELEGRAM_COLOR_TEXT;
@@ -112,7 +112,7 @@ public class ThemeColors {
         defaultColors[key_windowBackgroundWhiteHintText] = 0xffa8a8a8;
         defaultColors[key_windowBackgroundWhiteValueText] = TELEGRAM_COLOR_TEXT;
         defaultColors[key_windowBackgroundWhiteLinkText] = TELEGRAM_COLOR_DARKER;
-        defaultColors[key_windowBackgroundWhiteLinkSelection] = 0x3362a9e3;
+        defaultColors[key_windowBackgroundWhiteLinkSelection] = ColorUtils.setAlphaComponent(TELEGRAM_COLOR, 0x33);
         defaultColors[key_windowBackgroundWhiteBlueHeader] = TELEGRAM_COLOR_TEXT;
         defaultColors[key_windowBackgroundWhiteInputField] = 0xffdbdbdb;
         defaultColors[key_windowBackgroundWhiteInputFieldActivated] = TELEGRAM_COLOR;
@@ -318,8 +318,8 @@ public class ThemeColors {
         defaultColors[key_chat_outMediaIconSelected] = 0xffe1f8cf;
         defaultColors[key_chat_messageTextIn] = 0xff000000;
         defaultColors[key_chat_messageTextOut] = 0xff000000;
-        defaultColors[key_chat_messageLinkIn] = 0xff2678b6;
-        defaultColors[key_chat_messageLinkOut] = 0xff2678b6;
+        defaultColors[key_chat_messageLinkIn] = TELEGRAM_COLOR_DARKER;
+        defaultColors[key_chat_messageLinkOut] = TELEGRAM_COLOR_DARKER;
         defaultColors[key_chat_serviceText] = 0xffffffff;
         defaultColors[key_chat_serviceLink] = 0xffffffff;
         defaultColors[key_chat_serviceIcon] = 0xffffffff;
@@ -446,9 +446,9 @@ public class ThemeColors {
         defaultColors[key_chat_inVenueInfoSelectedText] = 0xff89b4c1;
         defaultColors[key_chat_outVenueInfoSelectedText] = 0xff65b05b;
         defaultColors[key_chat_mediaInfoText] = 0xffffffff;
-        defaultColors[key_chat_linkSelectBackground] = 0x3362a9e3;
-        defaultColors[key_chat_outLinkSelectBackground] = 0x3362a9e3;
-        defaultColors[key_chat_textSelectBackground] = 0x6662a9e3;
+        defaultColors[key_chat_linkSelectBackground] = ColorUtils.setAlphaComponent(TELEGRAM_COLOR, 0x33);
+        defaultColors[key_chat_outLinkSelectBackground] = ColorUtils.setAlphaComponent(TELEGRAM_COLOR, 0x33);
+        defaultColors[key_chat_textSelectBackground] = ColorUtils.setAlphaComponent(TELEGRAM_COLOR, 0x66);
         defaultColors[key_chat_emojiPanelBackground] = 0xfff0f2f5;
         defaultColors[key_chat_emojiSearchBackground] = 0xffe5e9ee;
         defaultColors[key_chat_emojiSearchIcon] = 0xff94a1af;
@@ -656,7 +656,7 @@ public class ThemeColors {
         defaultColors[key_undo_infoColor] = 0xffffffff;
 
         defaultColors[key_chat_outTextSelectionHighlight] = 0x2E3F9923;
-        defaultColors[key_chat_inTextSelectionHighlight] = 0x5062A9E3;
+        defaultColors[key_chat_inTextSelectionHighlight] = ColorUtils.setAlphaComponent(TELEGRAM_COLOR, 0x50);
         defaultColors[key_chat_TextSelectionCursor] = 0xFF419FE8;
         defaultColors[key_chat_outTextSelectionCursor] = 0xFF419FE8;
         defaultColors[key_chat_outBubbleLocationPlaceholder] = 0x1e307311;
@@ -835,7 +835,7 @@ public class ThemeColors {
         defaultColors[key_botKeyboard_button_primary] = TELEGRAM_COLOR;
         defaultColors[key_botKeyboard_button_success] = 0xFF40b135;
 
-        defaultColors[key_telegram_color_dialogsLogo] = 0xFF168bdb;
+        defaultColors[key_telegram_color_dialogsLogo] = TELEGRAM_COLOR_TEXT;
         defaultColors[key_telegram_color] = TELEGRAM_COLOR;
         defaultColors[key_telegram_color_text] = TELEGRAM_COLOR_TEXT;
 
