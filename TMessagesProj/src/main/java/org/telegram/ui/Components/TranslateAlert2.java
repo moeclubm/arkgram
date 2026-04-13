@@ -41,6 +41,8 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.common.base.Charsets;
+import com.zqc.opencc.android.lib.ChineseConverter;
+import com.zqc.opencc.android.lib.ConversionType;
 //import com.google.mlkit.common.model.RemoteModelManager;
 //import com.google.mlkit.nl.translate.TranslateLanguage;
 //import com.google.mlkit.nl.translate.TranslateRemoteModel;
@@ -49,10 +51,14 @@ import com.google.common.base.Charsets;
 //import com.google.mlkit.nl.translate.TranslatorOptions;
 
 import org.json.JSONArray;
+import org.json.JSONObject;
 import org.json.JSONTokener;
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.Emoji;
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.FlexConfig;
+import org.telegram.messenger.FlexLlmHelper;
 import org.telegram.messenger.LanguageDetector;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
@@ -74,6 +80,7 @@ import org.telegram.ui.ActionBar.Theme;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.io.Reader;
 import java.net.HttpURLConnection;
 import java.net.URI;
@@ -282,6 +289,18 @@ public class TranslateAlert2 extends BottomSheet implements NotificationCenter.N
             reqId = null;
         }
 
+        ConversionType openCCConversionType = !reqSum && FlexConfig.isOpenCCAutoConversionEnabled() && isChineseLanguage(fromLanguage) && containsChineseCharacters(reqText == null ? "" : reqText.toString()) ? getDirectOpenCCConversionType(fromLanguage, toLanguage) : null;
+        if (openCCConversionType != null) {
+            CharSequence translated = SpannableStringBuilder.valueOf(convertWithOpenCC(reqText == null ? "" : reqText.toString(), openCCConversionType));
+            if (reqMessageEntities != null) {
+                MessageObject.addEntitiesToText(translated, reqMessageEntities, false, true, false, false);
+            }
+            firstTranslation = false;
+            textView.setText(preprocessText(translated));
+            adapter.updateMainView(textViewContainer);
+            return;
+        }
+
         String method = MessagesController.getInstance(currentAccount).translationsManualEnabled;
         if (!FlexConfig.isTelegramTranslatePreferred()) {
             method = "alternative";
@@ -321,7 +340,7 @@ public class TranslateAlert2 extends BottomSheet implements NotificationCenter.N
                 } else if (res != null) {
                     firstTranslation = false;
                     TLRPC.TL_textWithEntities text = preprocess(textWithEntities, res);
-                    CharSequence translated = SpannableStringBuilder.valueOf(text.text);
+                    CharSequence translated = SpannableStringBuilder.valueOf(postProcessTranslationResult(text.text, toLanguage));
                     MessageObject.addEntitiesToText(translated, text.entities, false, true, false, false);
                     translated = preprocessText(translated);
                     textView.setText(translated);
@@ -364,7 +383,7 @@ public class TranslateAlert2 extends BottomSheet implements NotificationCenter.N
                 ) {
                     firstTranslation = false;
                     TLRPC.TL_textWithEntities text = preprocess(textWithEntities, ((TLRPC.TL_messages_translateResult) res).result.get(0));
-                    CharSequence translated = SpannableStringBuilder.valueOf(text.text);
+                    CharSequence translated = SpannableStringBuilder.valueOf(postProcessTranslationResult(text.text, toLanguage));
                     MessageObject.addEntitiesToText(translated, text.entities, false, true, false, false);
                     translated = preprocessText(translated);
                     textView.setText(translated);
@@ -408,22 +427,23 @@ public class TranslateAlert2 extends BottomSheet implements NotificationCenter.N
         }
         final String toLng = _toLng;
 
-        alternativeTranslate(text, fromLng, toLng, (res, rateLimit) -> {
+        alternativeTranslate(text, fromLng, toLng, (res, rateLimit, error) -> {
             if (res != null) {
                 firstTranslation = false;
                 textView.setText(preprocessText(res));
                 adapter.updateMainView(textViewContainer);
             } else {
                 if (isDismissed()) return;
+                final String errorText = error != null ? error : LocaleController.getString(rateLimit ? R.string.TranslationFailedAlert1 : R.string.TranslationFailedAlert2);
 //                if ("system".equals(MessagesController.getInstance(currentAccount).translationsManualEnabled)) {
 //                    translateSystem();
 //                    return;
 //                }
                 if (firstTranslation) {
                     dismiss();
-                    NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.showBulletin, Bulletin.TYPE_ERROR, LocaleController.getString(rateLimit ? R.string.TranslationFailedAlert1 : R.string.TranslationFailedAlert2));
+                    NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.showBulletin, Bulletin.TYPE_ERROR, errorText);
                 } else {
-                    BulletinFactory.of((FrameLayout) containerView, resourcesProvider).createErrorBulletin(LocaleController.getString(rateLimit ? R.string.TranslationFailedAlert1 : R.string.TranslationFailedAlert2)).show();
+                    BulletinFactory.of((FrameLayout) containerView, resourcesProvider).createErrorBulletin(errorText).show();
                     headerView.toLanguageTextView.setText(languageName(toLanguage = prevToLanguage));
                     adapter.updateMainView(textViewContainer);
                 }
@@ -459,9 +479,22 @@ public class TranslateAlert2 extends BottomSheet implements NotificationCenter.N
         return result;
     }
 
-    public static void alternativeTranslate(String text, String fromLng, String toLng, Utilities.Callback2<String, Boolean> done) {
+    public static void alternativeTranslate(String text, String fromLng, String toLng, Utilities.Callback3<String, Boolean, String> done) {
         if (done == null) return;
-        if (fromLng == null) {
+        ConversionType openCCConversionType = FlexConfig.isOpenCCAutoConversionEnabled() && isChineseLanguage(fromLng) && containsChineseCharacters(text) ? getDirectOpenCCConversionType(fromLng, toLng) : null;
+        if (openCCConversionType != null) {
+            try {
+                done.run(convertWithOpenCC(text, openCCConversionType), false, null);
+            } catch (Exception e) {
+                done.run(null, false, e.getMessage());
+            }
+            return;
+        }
+        int provider = FlexConfig.getTranslationProvider();
+        if (provider == FlexConfig.TRANSLATION_PROVIDER_TELEGRAM) {
+            provider = FlexConfig.TRANSLATION_PROVIDER_GOOGLE;
+        }
+        if ((provider == FlexConfig.TRANSLATION_PROVIDER_GOOGLE || provider == FlexConfig.TRANSLATION_PROVIDER_GOOGLE_CN) && fromLng == null) {
             LanguageDetector.detectLanguage(text, lng -> {
                 alternativeTranslate(text, lng, toLng, done);
             }, e -> {
@@ -469,78 +502,344 @@ public class TranslateAlert2 extends BottomSheet implements NotificationCenter.N
             });
             return;
         }
-        final String etext = Uri.encode(text);
-        if (etext.length() > 5000) {
-            ArrayList<String> parts = cut(etext, 5000);
-            ArrayList<String> results = new ArrayList<>();
-            for (int i = 0; i < parts.size(); ++i) {
-                results.add(null);
-            }
+        if (provider == FlexConfig.TRANSLATION_PROVIDER_GOOGLE || provider == FlexConfig.TRANSLATION_PROVIDER_GOOGLE_CN) {
+            final String etext = Uri.encode(text);
+            if (etext.length() > 5000) {
+                ArrayList<String> parts = cut(etext, 5000);
+                ArrayList<String> results = new ArrayList<>();
+                for (int i = 0; i < parts.size(); ++i) {
+                    results.add(null);
+                }
 
-            final boolean[] fullyDone = new boolean[1];
-            for (int i = 0; i < parts.size(); ++i) {
-                final int index = i;
-                alternativeTranslateInternal(parts.get(i), fromLng, toLng, (res, rateLimit) -> {
-                    if (fullyDone[0]) return;
-                    if (res != null) {
-                        results.set(index, res);
-                        boolean allDone = true;
-                        for (int j = 0; j < results.size(); ++j) {
-                            if (results.get(j) == null) {
-                                allDone = false;
-                                break;
+                final boolean[] fullyDone = new boolean[1];
+                for (int i = 0; i < parts.size(); ++i) {
+                    final int index = i;
+                    alternativeTranslateInternal(parts.get(i), fromLng, toLng, (res, rateLimit, error) -> {
+                        if (fullyDone[0]) return;
+                        if (res != null) {
+                            results.set(index, res);
+                            boolean allDone = true;
+                            for (int j = 0; j < results.size(); ++j) {
+                                if (results.get(j) == null) {
+                                    allDone = false;
+                                    break;
+                                }
                             }
-                        }
-                        if (allDone) {
+                            if (allDone) {
+                                fullyDone[0] = true;
+                                done.run(TextUtils.join("", results), false, null);
+                            }
+                        } else {
                             fullyDone[0] = true;
-                            done.run(TextUtils.join("", results), false);
+                            done.run(null, rateLimit, error);
                         }
-                    } else {
-                        fullyDone[0] = true;
-                        done.run(null, rateLimit);
-                    }
-                });
+                    });
+                }
+                return;
             }
-        } else {
             alternativeTranslateInternal(etext, fromLng, toLng, done);
+            return;
+        }
+        alternativeTranslateInternal(text, fromLng, toLng, done);
+    }
+
+    private static String readConnectionText(HttpURLConnection connection, boolean errorStream) throws IOException {
+        if (connection == null) {
+            return null;
+        }
+        Reader reader = null;
+        try {
+            reader = new BufferedReader(new InputStreamReader(errorStream ? connection.getErrorStream() : connection.getInputStream(), Charsets.UTF_8));
+            StringBuilder builder = new StringBuilder();
+            int c;
+            while ((c = reader.read()) != -1) {
+                builder.append((char) c);
+            }
+            return builder.toString();
+        } finally {
+            if (reader != null) {
+                reader.close();
+            }
         }
     }
-    private static void alternativeTranslateInternal(String text, String fromLng, String toLng, Utilities.Callback2<String, Boolean> done) {
+
+    private static String getProviderErrorMessage(int provider, HttpURLConnection connection, String responseText) {
+        try {
+            if (!TextUtils.isEmpty(responseText)) {
+                JSONObject object = new JSONObject(responseText);
+                if (provider == FlexConfig.TRANSLATION_PROVIDER_DEEPL) {
+                    String message = object.optString("message", null);
+                    if (!TextUtils.isEmpty(message)) {
+                        return message;
+                    }
+                } else if (provider == FlexConfig.TRANSLATION_PROVIDER_LLM) {
+                    JSONObject error = object.optJSONObject("error");
+                    if (error != null) {
+                        String message = error.optString("message", null);
+                        if (!TextUtils.isEmpty(message)) {
+                            return message;
+                        }
+                    }
+                    String message = object.optString("message", null);
+                    if (!TextUtils.isEmpty(message)) {
+                        return message;
+                    }
+                }
+            }
+        } catch (Exception ignore) {
+        }
+        try {
+            int responseCode = connection != null ? connection.getResponseCode() : 0;
+            if (responseCode > 0) {
+                return LocaleController.getString(R.string.FlexTranslationRequestFailed) + " (" + responseCode + ")";
+            }
+        } catch (Exception ignore) {
+        }
+        return LocaleController.getString(R.string.FlexTranslationRequestFailed);
+    }
+
+    private static String getDeepLLanguage(String language, boolean target) {
+        if (TextUtils.isEmpty(language)) {
+            return null;
+        }
+        String normalized = language.toLowerCase(Locale.US).replace('_', '-');
+        if ("nb".equals(normalized)) {
+            normalized = "no";
+        }
+        if ("zh".equals(normalized) || normalized.startsWith("zh-")) {
+            return "ZH";
+        }
+        if ("pt-br".equals(normalized)) {
+            return target ? "PT-BR" : "PT";
+        }
+        if ("pt".equals(normalized) || "pt-pt".equals(normalized)) {
+            return target ? "PT-PT" : "PT";
+        }
+        if ("en-gb".equals(normalized)) {
+            return target ? "EN-GB" : "EN";
+        }
+        if ("en".equals(normalized) || "en-us".equals(normalized)) {
+            return target ? "EN-US" : "EN";
+        }
+        if ("no".equals(normalized)) {
+            return "NB";
+        }
+        int divider = normalized.indexOf('-');
+        if (divider >= 0) {
+            normalized = normalized.substring(0, divider);
+        }
+        return normalized.toUpperCase(Locale.US);
+    }
+
+    private static String getLanguageDisplayName(String language) {
+        if (TextUtils.isEmpty(language)) {
+            return "";
+        }
+        String name = languageName(language);
+        return TextUtils.isEmpty(name) ? language : name;
+    }
+
+    private static boolean containsChineseCharacters(String text) {
+        if (TextUtils.isEmpty(text)) {
+            return false;
+        }
+        for (int i = 0; i < text.length(); i++) {
+            if (Character.UnicodeScript.of(text.charAt(i)) == Character.UnicodeScript.HAN) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean isChineseLanguage(String language) {
+        if (TextUtils.isEmpty(language) || TranslateController.UNKNOWN_LANGUAGE.equals(language) || "auto".equals(language)) {
+            return false;
+        }
+        String normalized = language.toLowerCase(Locale.US).replace('_', '-');
+        return "zh".equals(normalized) || normalized.startsWith("zh-");
+    }
+
+    private static ConversionType getDirectOpenCCConversionType(String fromLng, String toLng) {
+        String conversion = FlexConfig.getOpenCCConversion();
+        if (!FlexConfig.OPENCC_CONVERSION_AUTO.equals(conversion)) {
+            return ConversionType.valueOf(conversion);
+        }
+        if (!isChineseLanguage(fromLng) || !isChineseLanguage(toLng)) {
+            return null;
+        }
+
+        String from = fromLng.toLowerCase(Locale.US).replace('_', '-');
+        String to = toLng.toLowerCase(Locale.US).replace('_', '-');
+        boolean fromTw = from.contains("tw");
+        boolean fromHk = from.contains("hk") || from.contains("mo");
+        boolean fromTraditional = fromTw || fromHk || from.contains("hant");
+
+        if (to.contains("tw")) {
+            if (fromTw) {
+                return null;
+            }
+            return fromTraditional ? ConversionType.T2TW : ConversionType.S2TW;
+        }
+        if (to.contains("hk") || to.contains("mo")) {
+            if (fromHk) {
+                return null;
+            }
+            return fromTraditional ? ConversionType.T2HK : ConversionType.S2HK;
+        }
+        if (to.contains("hant")) {
+            if (fromTw) {
+                return ConversionType.TW2T;
+            }
+            if (fromHk) {
+                return ConversionType.HK2T;
+            }
+            return fromTraditional ? null : ConversionType.S2T;
+        }
+        if ("zh".equals(to) || to.contains("cn") || to.contains("hans") || to.contains("sg") || to.contains("my")) {
+            if (fromTw) {
+                return ConversionType.TW2S;
+            }
+            if (fromHk) {
+                return ConversionType.HK2S;
+            }
+            return fromTraditional ? ConversionType.T2S : null;
+        }
+        return null;
+    }
+
+    private static ConversionType getOpenCCConversionType(String toLng) {
+        String conversion = FlexConfig.getOpenCCConversion();
+        if (!FlexConfig.OPENCC_CONVERSION_AUTO.equals(conversion)) {
+            return ConversionType.valueOf(conversion);
+        }
+        if (TextUtils.isEmpty(toLng)) {
+            return null;
+        }
+        String normalized = toLng.toLowerCase(Locale.US).replace('_', '-');
+        if (normalized.contains("tw")) {
+            return ConversionType.S2TW;
+        }
+        if (normalized.contains("hk") || normalized.contains("mo")) {
+            return ConversionType.S2HK;
+        }
+        if (normalized.contains("hant")) {
+            return ConversionType.S2T;
+        }
+        if ("zh".equals(normalized) || normalized.contains("cn") || normalized.contains("hans") || normalized.contains("sg") || normalized.contains("my")) {
+            return ConversionType.T2S;
+        }
+        return null;
+    }
+
+    private static String convertWithOpenCC(String text, ConversionType conversionType) {
+        String result = ChineseConverter.convert(text, conversionType, ApplicationLoader.applicationContext);
+        if (result == null) {
+            throw new IllegalStateException(LocaleController.getString(R.string.FlexTranslationInvalidResponse));
+        }
+        return result;
+    }
+
+    private static String postProcessTranslationResult(String text, String toLng) {
+        if (!FlexConfig.isOpenCCAutoConversionEnabled() || TextUtils.isEmpty(text) || !containsChineseCharacters(text)) {
+            return text;
+        }
+        ConversionType conversionType = getOpenCCConversionType(toLng);
+        if (conversionType == null) {
+            return text;
+        }
+        return convertWithOpenCC(text, conversionType);
+    }
+
+    private static void alternativeTranslateInternal(String text, String fromLng, String toLng, Utilities.Callback3<String, Boolean, String> done) {
         if (done == null) return;
+        int provider = FlexConfig.getTranslationProvider();
+        if (provider == FlexConfig.TRANSLATION_PROVIDER_TELEGRAM) {
+            provider = FlexConfig.TRANSLATION_PROVIDER_GOOGLE;
+        }
+        final int finalProvider = provider;
         new Thread() {
             @Override
             public void run() {
-                String uri;
                 HttpURLConnection connection = null;
+                String responseText = null;
                 try {
-                    uri = "https://";
-                    uri += FlexConfig.getTranslationProvider() == 2 ? "translate.google.cn" : "translate.googleapis.com";
+                    if (finalProvider == FlexConfig.TRANSLATION_PROVIDER_DEEPL) {
+                        String apiKey = FlexConfig.getDeepLApiKey();
+                        if (TextUtils.isEmpty(apiKey)) {
+                            AndroidUtilities.runOnUIThread(() -> done.run(null, false, LocaleController.getString(R.string.FlexTranslationDeepLApiKeyMissing)));
+                            return;
+                        }
+                        String apiUrl = FlexConfig.getDeepLApiUrl();
+                        String targetLanguage = getDeepLLanguage(toLng, true);
+                        String sourceLanguage = getDeepLLanguage(fromLng, false);
+                        connection = (HttpURLConnection) new URI(apiUrl).toURL().openConnection();
+                        connection.setConnectTimeout(15000);
+                        connection.setReadTimeout(30000);
+                        connection.setRequestMethod("POST");
+                        connection.setDoOutput(true);
+                        connection.setRequestProperty("Authorization", "DeepL-Auth-Key " + apiKey);
+                        connection.setRequestProperty("User-Agent", userAgents[(int) Math.round(Math.random() * (userAgents.length - 1))]);
+                        connection.setRequestProperty("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8");
+
+                        String body = "text=" + Uri.encode(text) + "&target_lang=" + Uri.encode(targetLanguage) + "&preserve_formatting=1";
+                        if (!TextUtils.isEmpty(sourceLanguage)) {
+                            body += "&source_lang=" + Uri.encode(sourceLanguage);
+                        }
+                        try (OutputStream outputStream = connection.getOutputStream()) {
+                            outputStream.write(body.getBytes(Charsets.UTF_8));
+                        }
+
+                        responseText = readConnectionText(connection, false);
+                        JSONArray translations = new JSONObject(responseText).optJSONArray("translations");
+                        if (translations == null || translations.length() <= 0) {
+                            throw new IllegalStateException(LocaleController.getString(R.string.FlexTranslationInvalidResponse));
+                        }
+                        String result = translations.optJSONObject(0) != null ? translations.optJSONObject(0).optString("text", null) : null;
+                        if (TextUtils.isEmpty(result)) {
+                            throw new IllegalStateException(LocaleController.getString(R.string.FlexTranslationInvalidResponse));
+                        }
+                        final String finalResult = postProcessTranslationResult(result, toLng);
+                        AndroidUtilities.runOnUIThread(() -> done.run(finalResult, false, null));
+                        return;
+                    }
+                    if (finalProvider == FlexConfig.TRANSLATION_PROVIDER_LLM) {
+                        String apiUrl = FlexConfig.getLlmApiUrl();
+                        String model = FlexConfig.getLlmModel();
+                        StringBuilder prompt = new StringBuilder();
+                        if (!TextUtils.isEmpty(fromLng) && !TranslateController.UNKNOWN_LANGUAGE.equals(fromLng)) {
+                            prompt.append("Source language: ").append(getLanguageDisplayName(fromLng)).append('\n');
+                        }
+                        prompt.append("Target language: ").append(getLanguageDisplayName(toLng)).append('\n');
+                        prompt.append("Text:\n").append(text);
+                        FlexLlmHelper.requestText(apiUrl, FlexConfig.getLlmApiKey(), model, FlexConfig.getLlmPrompt(), prompt.toString(), 0, (result, error) -> {
+                            if (error != null || result == null) {
+                                done.run(result, false, error);
+                                return;
+                            }
+                            try {
+                                done.run(postProcessTranslationResult(result, toLng), false, null);
+                            } catch (Exception e) {
+                                done.run(null, false, e.getMessage());
+                            }
+                        });
+                        return;
+                    }
+
+                    String uri = "https://";
+                    uri += finalProvider == FlexConfig.TRANSLATION_PROVIDER_GOOGLE_CN ? "translate.google.cn" : "translate.googleapis.com";
                     uri += "/translate_a/single?client=gtx&sl=" + Uri.encode(fromLng) + "&tl=" + Uri.encode(toLng) + "&dt=t" + "&ie=UTF-8&oe=UTF-8&otf=1&ssel=0&tsel=0&kc=7&dt=at&dt=bd&dt=ex&dt=ld&dt=md&dt=qca&dt=rw&dt=rm&dt=ss&q=";
                     uri += text;
                     connection = (HttpURLConnection) new URI(uri).toURL().openConnection();
+                    connection.setConnectTimeout(15000);
+                    connection.setReadTimeout(30000);
                     connection.setRequestMethod("GET");
                     connection.setRequestProperty("User-Agent", userAgents[(int) Math.round(Math.random() * (userAgents.length - 1))]);
                     connection.setRequestProperty("Content-Type", "application/json");
 
-                    StringBuilder textBuilder = new StringBuilder();
-                    try (Reader reader = new BufferedReader(new InputStreamReader(connection.getInputStream(), Charsets.UTF_8))) {
-                        int c = 0;
-                        while ((c = reader.read()) != -1) {
-                            textBuilder.append((char) c);
-                        }
-                    }
-                    String jsonString = textBuilder.toString();
-
-                    JSONTokener tokener = new JSONTokener(jsonString);
+                    responseText = readConnectionText(connection, false);
+                    JSONTokener tokener = new JSONTokener(responseText);
                     JSONArray array = new JSONArray(tokener);
                     JSONArray array1 = array.getJSONArray(0);
-                    String sourceLanguage = null;
-                    try {
-                        sourceLanguage = array.getString(2);
-                    } catch (Exception e2) {}
-                    if (sourceLanguage != null && sourceLanguage.contains("-")) {
-                        sourceLanguage = sourceLanguage.substring(0, sourceLanguage.indexOf("-"));
-                    }
                     String result = "";
                     for (int i = 0; i < array1.length(); ++i) {
                         String blockText = array1.getJSONArray(i).getString(0);
@@ -549,27 +848,31 @@ public class TranslateAlert2 extends BottomSheet implements NotificationCenter.N
                     }
                     if (text.length() > 0 && text.charAt(0) == '\n')
                         result = "\n" + result;
-                    final String finalResult = result;
+                    final String finalResult = postProcessTranslationResult(result, toLng);
                     AndroidUtilities.runOnUIThread(() -> {
                         if (done != null)
-                            done.run(finalResult, false);
+                            done.run(finalResult, false, null);
                     });
                 } catch (Exception e) {
-                    try {
-                        Log.e("translate", "failed to translate a text " + (connection != null ? connection.getResponseCode() : null) + " " + (connection != null ? connection.getResponseMessage() : null));
-                    } catch (IOException ioException) {
-                        ioException.printStackTrace();
+                    String errorMessage = e.getMessage();
+                    if (TextUtils.isEmpty(errorMessage) || errorMessage.startsWith("org.json.")) {
+                        try {
+                            responseText = readConnectionText(connection, true);
+                        } catch (Exception ignore) {
+                        }
+                        errorMessage = getProviderErrorMessage(finalProvider, connection, responseText);
                     }
-                    e.printStackTrace();
-
+                    FileLog.e(e);
                     try {
                         final boolean rateLimit = connection != null && connection.getResponseCode() == 429;
+                        final String finalErrorMessage = errorMessage;
                         AndroidUtilities.runOnUIThread(() -> {
-                            done.run(null, rateLimit);
+                            done.run(null, rateLimit, finalErrorMessage);
                         });
                     } catch (Exception e2) {
+                        final String finalErrorMessage = errorMessage;
                         AndroidUtilities.runOnUIThread(() -> {
-                            done.run(null, false);
+                            done.run(null, false, finalErrorMessage);
                         });
                     }
                 }

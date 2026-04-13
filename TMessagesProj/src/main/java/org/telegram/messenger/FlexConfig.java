@@ -1,15 +1,61 @@
 package org.telegram.messenger;
 
+import android.graphics.Color;
 import android.content.SharedPreferences;
+
+import androidx.core.graphics.ColorUtils;
 
 public class FlexConfig {
 
     public static final int BOOST_NONE = 0;
     public static final int BOOST_AVERAGE = 1;
     public static final int BOOST_EXTREME = 2;
+    public static final int TRANSLATION_PROVIDER_TELEGRAM = 0;
+    public static final int TRANSLATION_PROVIDER_GOOGLE = 1;
+    public static final int TRANSLATION_PROVIDER_GOOGLE_CN = 2;
+    public static final int TRANSLATION_PROVIDER_DEEPL = 3;
+    public static final int TRANSLATION_PROVIDER_LLM = 4;
+    public static final int LLM_PROVIDER_CUSTOM = 0;
+    public static final int LLM_PROVIDER_OPENAI = 1;
+    public static final int LLM_PROVIDER_OPENROUTER = 2;
+    public static final int LLM_PROVIDER_DEEPSEEK = 3;
+    public static final int LLM_PROVIDER_GROQ = 4;
+    public static final int LLM_PROVIDER_SILICONFLOW = 5;
+    public static final String DEFAULT_DEEPL_API_URL = "https://api-free.deepl.com/v2/translate";
+    public static final String DEFAULT_TRANSLATION_LLM_PROMPT = "You are a professional translation engine. Translate the user's text into the requested target language. Return only the translated text. Preserve line breaks, markdown, URLs, mentions, hashtags, emoji, punctuation, and list structure. Do not add explanations.";
+    public static final String DEFAULT_AI_SUMMARY_PROMPT = "You analyze group and channel discussions. Write a structured report in the requested output language based only on the provided messages and local statistics. Cover overview, main topics, hotspots, participant activity, timeline changes, decisions or action items, and unresolved questions. If the messages do not support a conclusion, state that explicitly.";
+    public static final String OPENCC_CONVERSION_AUTO = "AUTO";
 
     private static SharedPreferences prefs() {
         return MessagesController.getGlobalMainSettings();
+    }
+
+    private static String clean(String value) {
+        return value == null ? "" : value.trim();
+    }
+
+    public static String getLlmProviderDefaultApiUrl(int provider) {
+        if (provider == LLM_PROVIDER_OPENAI) {
+            return "https://api.openai.com/v1/chat/completions";
+        }
+        if (provider == LLM_PROVIDER_OPENROUTER) {
+            return "https://openrouter.ai/api/v1/chat/completions";
+        }
+        if (provider == LLM_PROVIDER_DEEPSEEK) {
+            return "https://api.deepseek.com/chat/completions";
+        }
+        if (provider == LLM_PROVIDER_GROQ) {
+            return "https://api.groq.com/openai/v1/chat/completions";
+        }
+        if (provider == LLM_PROVIDER_SILICONFLOW) {
+            return "https://api.siliconflow.cn/v1/chat/completions";
+        }
+        return "";
+    }
+
+    private static String resolveLlmApiUrl(int provider, String customValue) {
+        String value = clean(customValue);
+        return value.isEmpty() ? getLlmProviderDefaultApiUrl(provider) : value;
     }
 
     public static int getDownloadSpeedBoost() {
@@ -44,6 +90,38 @@ public class FlexConfig {
         prefs().edit().putBoolean("flex_show_dc_info", value).apply();
     }
 
+    public static boolean isMainTabsHidden() {
+        return prefs().getBoolean("flex_hide_main_tabs", false);
+    }
+
+    public static void setMainTabsHidden(boolean value) {
+        prefs().edit().putBoolean("flex_hide_main_tabs", value).apply();
+    }
+
+    public static boolean isUiTransparencyDisabled() {
+        return prefs().getBoolean("flex_disable_ui_transparency", false);
+    }
+
+    public static void setUiTransparencyDisabled(boolean value) {
+        prefs().edit().putBoolean("flex_disable_ui_transparency", value).apply();
+    }
+
+    public static boolean isUiBlurDisabled() {
+        return prefs().getBoolean("flex_disable_ui_blur", false);
+    }
+
+    public static void setUiBlurDisabled(boolean value) {
+        prefs().edit().putBoolean("flex_disable_ui_blur", value).apply();
+    }
+
+    public static int resolveUiTransparencyColor(int color) {
+        if (!isUiTransparencyDisabled()) {
+            return color;
+        }
+        final int alpha = Color.alpha(color);
+        return alpha == 0 || alpha == 255 ? color : ColorUtils.setAlphaComponent(color, 255);
+    }
+
     public static boolean isMarkdownDisabled() {
         return prefs().getBoolean("flex_disable_markdown", false);
     }
@@ -70,12 +148,12 @@ public class FlexConfig {
 
     public static int getTranslationProvider() {
         if (prefs().contains("flex_translation_provider")) {
-            return prefs().getInt("flex_translation_provider", 0);
+            return prefs().getInt("flex_translation_provider", TRANSLATION_PROVIDER_TELEGRAM);
         }
         if (prefs().contains("flex_prefer_telegram_translate")) {
-            return prefs().getBoolean("flex_prefer_telegram_translate", true) ? 0 : 1;
+            return prefs().getBoolean("flex_prefer_telegram_translate", true) ? TRANSLATION_PROVIDER_TELEGRAM : TRANSLATION_PROVIDER_GOOGLE;
         }
-        return 0;
+        return TRANSLATION_PROVIDER_TELEGRAM;
     }
 
     public static void setTranslationProvider(int value) {
@@ -83,6 +161,135 @@ public class FlexConfig {
     }
 
     public static boolean isTelegramTranslatePreferred() {
-        return getTranslationProvider() == 0;
+        return getTranslationProvider() == TRANSLATION_PROVIDER_TELEGRAM;
+    }
+
+    public static boolean usesExternalTranslationProvider() {
+        return getTranslationProvider() != TRANSLATION_PROVIDER_TELEGRAM;
+    }
+
+    public static boolean isOpenCCAutoConversionEnabled() {
+        return prefs().getBoolean("flex_opencc_auto_conversion", false);
+    }
+
+    public static void setOpenCCAutoConversionEnabled(boolean value) {
+        prefs().edit().putBoolean("flex_opencc_auto_conversion", value).apply();
+    }
+
+    public static String getDeepLApiUrl() {
+        String value = prefs().getString("flex_translation_deepl_api_url", DEFAULT_DEEPL_API_URL);
+        return value == null || value.trim().isEmpty() ? DEFAULT_DEEPL_API_URL : value.trim();
+    }
+
+    public static void setDeepLApiUrl(String value) {
+        prefs().edit().putString("flex_translation_deepl_api_url", value == null || value.trim().isEmpty() ? DEFAULT_DEEPL_API_URL : value.trim()).apply();
+    }
+
+    public static String getDeepLApiKey() {
+        String value = prefs().getString("flex_translation_deepl_api_key", "");
+        return value == null ? "" : value.trim();
+    }
+
+    public static void setDeepLApiKey(String value) {
+        prefs().edit().putString("flex_translation_deepl_api_key", value == null ? "" : value.trim()).apply();
+    }
+
+    public static int getTranslationLlmProvider() {
+        return prefs().getInt("flex_translation_llm_provider", LLM_PROVIDER_OPENAI);
+    }
+
+    public static void setTranslationLlmProvider(int value) {
+        prefs().edit().putInt("flex_translation_llm_provider", value).apply();
+    }
+
+    public static String getLlmApiUrl() {
+        return resolveLlmApiUrl(getTranslationLlmProvider(), prefs().getString("flex_translation_llm_api_url", ""));
+    }
+
+    public static String getStoredLlmApiUrl() {
+        return clean(prefs().getString("flex_translation_llm_api_url", ""));
+    }
+
+    public static void setLlmApiUrl(String value) {
+        prefs().edit().putString("flex_translation_llm_api_url", clean(value)).apply();
+    }
+
+    public static String getLlmApiKey() {
+        return clean(prefs().getString("flex_translation_llm_api_key", ""));
+    }
+
+    public static void setLlmApiKey(String value) {
+        prefs().edit().putString("flex_translation_llm_api_key", clean(value)).apply();
+    }
+
+    public static String getLlmModel() {
+        return clean(prefs().getString("flex_translation_llm_model", ""));
+    }
+
+    public static void setLlmModel(String value) {
+        prefs().edit().putString("flex_translation_llm_model", clean(value)).apply();
+    }
+
+    public static String getLlmPrompt() {
+        String value = clean(prefs().getString("flex_translation_llm_prompt", ""));
+        return value.isEmpty() ? DEFAULT_TRANSLATION_LLM_PROMPT : value;
+    }
+
+    public static void setLlmPrompt(String value) {
+        prefs().edit().putString("flex_translation_llm_prompt", clean(value)).apply();
+    }
+
+    public static String getOpenCCConversion() {
+        String value = clean(prefs().getString("flex_opencc_conversion", OPENCC_CONVERSION_AUTO));
+        return value.isEmpty() ? OPENCC_CONVERSION_AUTO : value;
+    }
+
+    public static void setOpenCCConversion(String value) {
+        prefs().edit().putString("flex_opencc_conversion", clean(value).isEmpty() ? OPENCC_CONVERSION_AUTO : clean(value)).apply();
+    }
+
+    public static int getAiSummaryLlmProvider() {
+        return prefs().getInt("flex_ai_summary_llm_provider", LLM_PROVIDER_OPENAI);
+    }
+
+    public static void setAiSummaryLlmProvider(int value) {
+        prefs().edit().putInt("flex_ai_summary_llm_provider", value).apply();
+    }
+
+    public static String getAiSummaryLlmApiUrl() {
+        return resolveLlmApiUrl(getAiSummaryLlmProvider(), prefs().getString("flex_ai_summary_llm_api_url", ""));
+    }
+
+    public static String getStoredAiSummaryLlmApiUrl() {
+        return clean(prefs().getString("flex_ai_summary_llm_api_url", ""));
+    }
+
+    public static void setAiSummaryLlmApiUrl(String value) {
+        prefs().edit().putString("flex_ai_summary_llm_api_url", clean(value)).apply();
+    }
+
+    public static String getAiSummaryLlmApiKey() {
+        return clean(prefs().getString("flex_ai_summary_llm_api_key", ""));
+    }
+
+    public static void setAiSummaryLlmApiKey(String value) {
+        prefs().edit().putString("flex_ai_summary_llm_api_key", clean(value)).apply();
+    }
+
+    public static String getAiSummaryLlmModel() {
+        return clean(prefs().getString("flex_ai_summary_llm_model", ""));
+    }
+
+    public static void setAiSummaryLlmModel(String value) {
+        prefs().edit().putString("flex_ai_summary_llm_model", clean(value)).apply();
+    }
+
+    public static String getAiSummaryLlmPrompt() {
+        String value = clean(prefs().getString("flex_ai_summary_llm_prompt", ""));
+        return value.isEmpty() ? DEFAULT_AI_SUMMARY_PROMPT : value;
+    }
+
+    public static void setAiSummaryLlmPrompt(String value) {
+        prefs().edit().putString("flex_ai_summary_llm_prompt", clean(value)).apply();
     }
 }

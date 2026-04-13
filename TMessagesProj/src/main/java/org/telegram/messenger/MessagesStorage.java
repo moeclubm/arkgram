@@ -8621,6 +8621,53 @@ public class MessagesStorage extends BaseController {
         });
     }
 
+    public void getMessagesForAiSummary(long dialogId, long topicId, int limit, int startDate, int endDate, Utilities.Callback<ArrayList<TLRPC.Message>> callback) {
+        storageQueue.postRunnable(() -> {
+            SQLiteCursor cursor = null;
+            ArrayList<TLRPC.Message> result = new ArrayList<>();
+            try {
+                String table = topicId != 0 ? "messages_topics" : "messages_v2";
+                StringBuilder query = new StringBuilder("SELECT data FROM ").append(table).append(" WHERE uid = ").append(dialogId).append(" AND mid > 0");
+                if (topicId != 0) {
+                    query.append(" AND topic_id = ").append(topicId);
+                }
+                if (startDate > 0) {
+                    query.append(" AND date >= ").append(startDate);
+                }
+                if (endDate > 0) {
+                    query.append(" AND date <= ").append(endDate);
+                }
+                query.append(" ORDER BY date DESC, mid DESC");
+                if (limit > 0) {
+                    query.append(" LIMIT ").append(limit);
+                }
+                cursor = database.queryFinalized(query.toString());
+                while (cursor.next()) {
+                    NativeByteBuffer data = cursor.byteBufferValue(0);
+                    TLRPC.Message message = TLRPC.Message.TLdeserialize(data, data.readInt32(false), false);
+                    if (message == null) {
+                        continue;
+                    }
+                    message.readAttachPath(data, getUserConfig().clientUserId);
+                    result.add(message);
+                }
+                Collections.reverse(result);
+                if (callback != null) {
+                    AndroidUtilities.runOnUIThread(() -> callback.run(result));
+                }
+            } catch (Exception e) {
+                checkSQLException(e);
+                if (callback != null) {
+                    AndroidUtilities.runOnUIThread(() -> callback.run(result));
+                }
+            } finally {
+                if (cursor != null) {
+                    cursor.dispose();
+                }
+            }
+        });
+    }
+
     public Runnable getMessagesInternal(long dialogId, long mergeDialogId, int count, int max_id, int offset_date, int minDate, int classGuid, int load_type, int mode, long threadMessageId, int loadIndex, boolean processMessages, boolean isTopic, Timer loaderLogger) {
         TLRPC.TL_messages_messages res = new TLRPC.TL_messages_messages();
         long currentUserId = getUserConfig().clientUserId;

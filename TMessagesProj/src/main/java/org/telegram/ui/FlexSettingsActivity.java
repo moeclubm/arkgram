@@ -5,8 +5,10 @@ import static org.telegram.messenger.LocaleController.getString;
 import android.view.View;
 
 import org.telegram.messenger.FlexConfig;
+import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.AlertDialog;
+import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.UItem;
 import org.telegram.ui.Components.UniversalAdapter;
 import org.telegram.ui.Components.UniversalFragment;
@@ -20,6 +22,11 @@ public class FlexSettingsActivity extends UniversalFragment {
     private static final int ID_SHOW_DC_INFO = 4;
     private static final int ID_MARKDOWN = 5;
     private static final int ID_TRANSLATE = 6;
+    private static final int ID_HIDE_MAIN_TABS = 7;
+    private static final int ID_DISABLE_UI_TRANSPARENCY = 8;
+    private static final int ID_DISABLE_UI_BLUR = 9;
+    private static final int ID_LLM_SETTINGS = 10;
+    private static final int ID_FILE_MANAGEMENT = 11;
     private static final int ID_CHAT = 100;
     private static final int ID_DATA = 101;
     private static final int ID_LANGUAGE = 102;
@@ -36,8 +43,14 @@ public class FlexSettingsActivity extends UniversalFragment {
         items.add(UItem.asButton(ID_ENHANCED_DOWNLOAD, R.drawable.msg_speed, getString(R.string.FlexEnhancedDownload), getDownloadSpeedBoostTitle()));
         items.add(UItem.asCheck(ID_DISABLE_WEBRTC, getString(R.string.FlexDisableWebrtc)).setChecked(FlexConfig.isWebRtcDisabled()));
         items.add(UItem.asCheck(ID_SHOW_DC_INFO, getString(R.string.FlexShowDcInfo)).setChecked(FlexConfig.isDcInfoEnabled()));
+        items.add(UItem.asCheck(ID_HIDE_MAIN_TABS, getString(R.string.FlexHideMainTabs)).setChecked(FlexConfig.isMainTabsHidden()));
+        items.add(UItem.asCheck(ID_DISABLE_UI_TRANSPARENCY, getString(R.string.FlexDisableUiTransparency)).setChecked(FlexConfig.isUiTransparencyDisabled()));
+        items.add(UItem.asCheck(ID_DISABLE_UI_BLUR, getString(R.string.FlexDisableUiBlur)).setChecked(FlexConfig.isUiBlurDisabled()));
         items.add(UItem.asButton(ID_MARKDOWN, R.drawable.menu_feature_code, getString(R.string.FlexMarkdownSettings)));
         items.add(UItem.asButton(ID_TRANSLATE, R.drawable.msg_translate, getString(R.string.FlexTranslationSettings)));
+        items.add(UItem.asButton(ID_FILE_MANAGEMENT, R.drawable.msg2_data, getString(R.string.FlexFileManagement)));
+        items.add(UItem.asButton(ID_LLM_SETTINGS, R.drawable.outline_ai_translate2, getString(R.string.FlexLlmSettings)));
+        items.add(UItem.asShadow(getString(R.string.FlexHideMainTabsInfo)));
         items.add(UItem.asShadow(getString(R.string.FlexFeaturesInfo)));
 
         items.add(UItem.asHeader(getString(R.string.FlexQuickAccess)));
@@ -58,10 +71,26 @@ public class FlexSettingsActivity extends UniversalFragment {
         } else if (item.id == ID_SHOW_DC_INFO) {
             FlexConfig.setDcInfoEnabled(!FlexConfig.isDcInfoEnabled());
             listView.adapter.update(true);
+        } else if (item.id == ID_HIDE_MAIN_TABS) {
+            FlexConfig.setMainTabsHidden(!FlexConfig.isMainTabsHidden());
+            NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.mainTabsVisibilityToggled);
+            listView.adapter.update(true);
+        } else if (item.id == ID_DISABLE_UI_TRANSPARENCY) {
+            FlexConfig.setUiTransparencyDisabled(!FlexConfig.isUiTransparencyDisabled());
+            Theme.refreshThemeColors();
+            listView.adapter.update(true);
+        } else if (item.id == ID_DISABLE_UI_BLUR) {
+            FlexConfig.setUiBlurDisabled(!FlexConfig.isUiBlurDisabled());
+            Theme.refreshThemeColors();
+            listView.adapter.update(true);
         } else if (item.id == ID_MARKDOWN) {
             presentFragment(new FlexMarkdownSettingsActivity());
         } else if (item.id == ID_TRANSLATE) {
             presentFragment(new FlexTranslateSettingsActivity());
+        } else if (item.id == ID_FILE_MANAGEMENT) {
+            presentFragment(new FlexFileSettingsActivity());
+        } else if (item.id == ID_LLM_SETTINGS) {
+            presentFragment(new FlexLlmSettingsActivity());
         } else if (item.id == ID_CHAT) {
             presentFragment(new ThemeActivity(ThemeActivity.THEME_TYPE_BASIC));
         } else if (item.id == ID_DATA) {

@@ -90,12 +90,15 @@ public class TranslateController extends BaseController {
     }
 
     public boolean isFeatureAvailable() {
-        return isChatTranslateEnabled() && UserConfig.getInstance(currentAccount).isPremium();
+        return isChatTranslateEnabled() && (FlexConfig.usesExternalTranslationProvider() || UserConfig.getInstance(currentAccount).isPremium());
     }
 
     public boolean isFeatureAvailable(long dialogId) {
         if (!isChatTranslateEnabled()) {
             return false;
+        }
+        if (FlexConfig.usesExternalTranslationProvider()) {
+            return true;
         }
         final TLRPC.Chat chat = getMessagesController().getChat(-dialogId);
         return (
@@ -108,7 +111,7 @@ public class TranslateController extends BaseController {
     private Boolean contextTranslateEnabled;
 
     public boolean isChatTranslateEnabled() {
-        if (!getMessagesController().isTranslationsAutoEnabled()) {
+        if (!FlexConfig.usesExternalTranslationProvider() && !getMessagesController().isTranslationsAutoEnabled()) {
             return false;
         }
         if (chatTranslateEnabled == null) {
@@ -118,7 +121,7 @@ public class TranslateController extends BaseController {
     }
 
     public boolean isContextTranslateEnabled() {
-        if (!getMessagesController().isTranslationsManualEnabled()) {
+        if (!FlexConfig.usesExternalTranslationProvider() && !getMessagesController().isTranslationsManualEnabled()) {
             return false;
         }
         if (contextTranslateEnabled == null) {
@@ -1060,14 +1063,14 @@ public class TranslateController extends BaseController {
                         final int id = pendingTranslation1.messageIds.get(i);
                         final Utilities.Callback4<Boolean, Integer, TLRPC.TL_textWithEntities, String> _callback = pendingTranslation1.callbacks.get(i);
                         final String _text = pendingTranslation1.messageTexts.get(i).text;
-                        TranslateAlert2.alternativeTranslate(_text, null, toLanguage, (result, rateLimit) -> {
+                        TranslateAlert2.alternativeTranslate(_text, null, toLanguage, (result, rateLimit, error) -> {
                             if (result != null) {
                                 final TLRPC.TL_textWithEntities resultWithEntities = new TLRPC.TL_textWithEntities();
                                 resultWithEntities.text = result;
                                 _callback.run(isTranscription, id, resultWithEntities, toLanguage);
                             } else {
                                 toggleTranslatingDialog(dialogId, false);
-                                NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.showBulletin, Bulletin.TYPE_ERROR, getString(rateLimit ? R.string.TranslationFailedAlert1 : R.string.TranslationFailedAlert2));
+                                NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.showBulletin, Bulletin.TYPE_ERROR, error != null ? error : getString(rateLimit ? R.string.TranslationFailedAlert1 : R.string.TranslationFailedAlert2));
                             }
                         });
                     }
@@ -1125,14 +1128,14 @@ public class TranslateController extends BaseController {
                             final int id = ids.get(i);
                             final Utilities.Callback4<Boolean, Integer, TLRPC.TL_textWithEntities, String> _callback = callbacks.get(i);
                             final String _text = texts.get(i).text;
-                            TranslateAlert2.alternativeTranslate(_text, null, toLanguage, (result, rateLimit) -> {
+                            TranslateAlert2.alternativeTranslate(_text, null, toLanguage, (result, rateLimit, error) -> {
                                 if (result != null) {
                                     final TLRPC.TL_textWithEntities resultWithEntities = new TLRPC.TL_textWithEntities();
                                     resultWithEntities.text = result;
                                     _callback.run(isTranscription, id, resultWithEntities, toLanguage);
                                 } else {
                                     toggleTranslatingDialog(dialogId, false);
-                                    NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.showBulletin, Bulletin.TYPE_ERROR, getString(rateLimit ? R.string.TranslationFailedAlert1 : R.string.TranslationFailedAlert2));
+                                    NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.showBulletin, Bulletin.TYPE_ERROR, error != null ? error : getString(rateLimit ? R.string.TranslationFailedAlert1 : R.string.TranslationFailedAlert2));
                                 }
                             });
                         }
