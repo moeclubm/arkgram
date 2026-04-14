@@ -3,19 +3,32 @@ package org.telegram.ui;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.os.Build;
 
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.R;
 
+import java.util.ArrayList;
+
 public class LauncherIconController {
     public static void tryFixLauncherIconIfNeeded() {
+        Context ctx = ApplicationLoader.applicationContext;
+        PackageManager pm = ctx.getPackageManager();
+        int enabledCount = 0;
+        LauncherIcon enabledIcon = null;
         for (LauncherIcon icon : LauncherIcon.values()) {
-            if (isEnabled(icon)) {
-                return;
+            int state = pm.getComponentEnabledSetting(icon.getComponentName(ctx));
+            if (state == PackageManager.COMPONENT_ENABLED_STATE_ENABLED) {
+                enabledCount++;
+                enabledIcon = icon;
+            } else if (state == PackageManager.COMPONENT_ENABLED_STATE_DEFAULT && icon == LauncherIcon.DEFAULT) {
+                enabledCount++;
             }
         }
-
-        setIcon(LauncherIcon.DEFAULT);
+        if (enabledCount == 1) {
+            return;
+        }
+        setIcon(enabledIcon != null ? enabledIcon : LauncherIcon.DEFAULT);
     }
 
     public static boolean isEnabled(LauncherIcon icon) {
@@ -27,9 +40,22 @@ public class LauncherIconController {
     public static void setIcon(LauncherIcon icon) {
         Context ctx = ApplicationLoader.applicationContext;
         PackageManager pm = ctx.getPackageManager();
+        int flags = PackageManager.DONT_KILL_APP | PackageManager.SYNCHRONOUS;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            ArrayList<PackageManager.ComponentEnabledSetting> settings = new ArrayList<>(LauncherIcon.values().length);
+            for (LauncherIcon i : LauncherIcon.values()) {
+                settings.add(new PackageManager.ComponentEnabledSetting(i.getComponentName(ctx), i == icon ? PackageManager.COMPONENT_ENABLED_STATE_ENABLED :
+                        PackageManager.COMPONENT_ENABLED_STATE_DISABLED, flags));
+            }
+            pm.setComponentEnabledSettings(settings);
+            return;
+        }
+        pm.setComponentEnabledSetting(icon.getComponentName(ctx), PackageManager.COMPONENT_ENABLED_STATE_ENABLED, flags);
         for (LauncherIcon i : LauncherIcon.values()) {
-            pm.setComponentEnabledSetting(i.getComponentName(ctx), i == icon ? PackageManager.COMPONENT_ENABLED_STATE_ENABLED :
-                    PackageManager.COMPONENT_ENABLED_STATE_DISABLED, PackageManager.DONT_KILL_APP);
+            if (i == icon) {
+                continue;
+            }
+            pm.setComponentEnabledSetting(i.getComponentName(ctx), PackageManager.COMPONENT_ENABLED_STATE_DISABLED, flags);
         }
     }
 
