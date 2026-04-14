@@ -41,8 +41,6 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.common.base.Charsets;
-import com.zqc.opencc.android.lib.ChineseConverter;
-import com.zqc.opencc.android.lib.ConversionType;
 //import com.google.mlkit.common.model.RemoteModelManager;
 //import com.google.mlkit.nl.translate.TranslateLanguage;
 //import com.google.mlkit.nl.translate.TranslateRemoteModel;
@@ -54,7 +52,6 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import org.json.JSONTokener;
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.FlexConfig;
@@ -289,18 +286,6 @@ public class TranslateAlert2 extends BottomSheet implements NotificationCenter.N
             reqId = null;
         }
 
-        ConversionType openCCConversionType = !reqSum && FlexConfig.isOpenCCAutoConversionEnabled() && isChineseLanguage(fromLanguage) && containsChineseCharacters(reqText == null ? "" : reqText.toString()) ? getDirectOpenCCConversionType(fromLanguage, toLanguage) : null;
-        if (openCCConversionType != null) {
-            CharSequence translated = SpannableStringBuilder.valueOf(convertWithOpenCC(reqText == null ? "" : reqText.toString(), openCCConversionType));
-            if (reqMessageEntities != null) {
-                MessageObject.addEntitiesToText(translated, reqMessageEntities, false, true, false, false);
-            }
-            firstTranslation = false;
-            textView.setText(preprocessText(translated));
-            adapter.updateMainView(textViewContainer);
-            return;
-        }
-
         String method = MessagesController.getInstance(currentAccount).translationsManualEnabled;
         if (!FlexConfig.isTelegramTranslatePreferred()) {
             method = "alternative";
@@ -340,7 +325,7 @@ public class TranslateAlert2 extends BottomSheet implements NotificationCenter.N
                 } else if (res != null) {
                     firstTranslation = false;
                     TLRPC.TL_textWithEntities text = preprocess(textWithEntities, res);
-                    CharSequence translated = SpannableStringBuilder.valueOf(postProcessTranslationResult(text.text, toLanguage));
+                    CharSequence translated = SpannableStringBuilder.valueOf(text.text);
                     MessageObject.addEntitiesToText(translated, text.entities, false, true, false, false);
                     translated = preprocessText(translated);
                     textView.setText(translated);
@@ -383,7 +368,7 @@ public class TranslateAlert2 extends BottomSheet implements NotificationCenter.N
                 ) {
                     firstTranslation = false;
                     TLRPC.TL_textWithEntities text = preprocess(textWithEntities, ((TLRPC.TL_messages_translateResult) res).result.get(0));
-                    CharSequence translated = SpannableStringBuilder.valueOf(postProcessTranslationResult(text.text, toLanguage));
+                    CharSequence translated = SpannableStringBuilder.valueOf(text.text);
                     MessageObject.addEntitiesToText(translated, text.entities, false, true, false, false);
                     translated = preprocessText(translated);
                     textView.setText(translated);
@@ -481,15 +466,6 @@ public class TranslateAlert2 extends BottomSheet implements NotificationCenter.N
 
     public static void alternativeTranslate(String text, String fromLng, String toLng, Utilities.Callback3<String, Boolean, String> done) {
         if (done == null) return;
-        ConversionType openCCConversionType = FlexConfig.isOpenCCAutoConversionEnabled() && isChineseLanguage(fromLng) && containsChineseCharacters(text) ? getDirectOpenCCConversionType(fromLng, toLng) : null;
-        if (openCCConversionType != null) {
-            try {
-                done.run(convertWithOpenCC(text, openCCConversionType), false, null);
-            } catch (Exception e) {
-                done.run(null, false, e.getMessage());
-            }
-            return;
-        }
         int provider = FlexConfig.getTranslationProvider();
         if (provider == FlexConfig.TRANSLATION_PROVIDER_TELEGRAM) {
             provider = FlexConfig.TRANSLATION_PROVIDER_GOOGLE;
@@ -639,117 +615,6 @@ public class TranslateAlert2 extends BottomSheet implements NotificationCenter.N
         return TextUtils.isEmpty(name) ? language : name;
     }
 
-    private static boolean containsChineseCharacters(String text) {
-        if (TextUtils.isEmpty(text)) {
-            return false;
-        }
-        for (int i = 0; i < text.length(); i++) {
-            if (Character.UnicodeScript.of(text.charAt(i)) == Character.UnicodeScript.HAN) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private static boolean isChineseLanguage(String language) {
-        if (TextUtils.isEmpty(language) || TranslateController.UNKNOWN_LANGUAGE.equals(language) || "auto".equals(language)) {
-            return false;
-        }
-        String normalized = language.toLowerCase(Locale.US).replace('_', '-');
-        return "zh".equals(normalized) || normalized.startsWith("zh-");
-    }
-
-    private static ConversionType getDirectOpenCCConversionType(String fromLng, String toLng) {
-        String conversion = FlexConfig.getOpenCCConversion();
-        if (!FlexConfig.OPENCC_CONVERSION_AUTO.equals(conversion)) {
-            return ConversionType.valueOf(conversion);
-        }
-        if (!isChineseLanguage(fromLng) || !isChineseLanguage(toLng)) {
-            return null;
-        }
-
-        String from = fromLng.toLowerCase(Locale.US).replace('_', '-');
-        String to = toLng.toLowerCase(Locale.US).replace('_', '-');
-        boolean fromTw = from.contains("tw");
-        boolean fromHk = from.contains("hk") || from.contains("mo");
-        boolean fromTraditional = fromTw || fromHk || from.contains("hant");
-
-        if (to.contains("tw")) {
-            if (fromTw) {
-                return null;
-            }
-            return fromTraditional ? ConversionType.T2TW : ConversionType.S2TW;
-        }
-        if (to.contains("hk") || to.contains("mo")) {
-            if (fromHk) {
-                return null;
-            }
-            return fromTraditional ? ConversionType.T2HK : ConversionType.S2HK;
-        }
-        if (to.contains("hant")) {
-            if (fromTw) {
-                return ConversionType.TW2T;
-            }
-            if (fromHk) {
-                return ConversionType.HK2T;
-            }
-            return fromTraditional ? null : ConversionType.S2T;
-        }
-        if ("zh".equals(to) || to.contains("cn") || to.contains("hans") || to.contains("sg") || to.contains("my")) {
-            if (fromTw) {
-                return ConversionType.TW2S;
-            }
-            if (fromHk) {
-                return ConversionType.HK2S;
-            }
-            return fromTraditional ? ConversionType.T2S : null;
-        }
-        return null;
-    }
-
-    private static ConversionType getOpenCCConversionType(String toLng) {
-        String conversion = FlexConfig.getOpenCCConversion();
-        if (!FlexConfig.OPENCC_CONVERSION_AUTO.equals(conversion)) {
-            return ConversionType.valueOf(conversion);
-        }
-        if (TextUtils.isEmpty(toLng)) {
-            return null;
-        }
-        String normalized = toLng.toLowerCase(Locale.US).replace('_', '-');
-        if (normalized.contains("tw")) {
-            return ConversionType.S2TW;
-        }
-        if (normalized.contains("hk") || normalized.contains("mo")) {
-            return ConversionType.S2HK;
-        }
-        if (normalized.contains("hant")) {
-            return ConversionType.S2T;
-        }
-        if ("zh".equals(normalized) || normalized.contains("cn") || normalized.contains("hans") || normalized.contains("sg") || normalized.contains("my")) {
-            return ConversionType.T2S;
-        }
-        return null;
-    }
-
-    private static String convertWithOpenCC(String text, ConversionType conversionType) {
-        String result = ChineseConverter.convert(text, conversionType, ApplicationLoader.applicationContext);
-        if (result == null) {
-            throw new IllegalStateException(LocaleController.getString(R.string.FlexTranslationInvalidResponse));
-        }
-        return result;
-    }
-
-    private static String postProcessTranslationResult(String text, String toLng) {
-        if (!FlexConfig.isOpenCCAutoConversionEnabled() || TextUtils.isEmpty(text) || !containsChineseCharacters(text)) {
-            return text;
-        }
-        ConversionType conversionType = getOpenCCConversionType(toLng);
-        if (conversionType == null) {
-            return text;
-        }
-        return convertWithOpenCC(text, conversionType);
-    }
-
     private static void alternativeTranslateInternal(String text, String fromLng, String toLng, Utilities.Callback3<String, Boolean, String> done) {
         if (done == null) return;
         int provider = FlexConfig.getTranslationProvider();
@@ -798,8 +663,7 @@ public class TranslateAlert2 extends BottomSheet implements NotificationCenter.N
                         if (TextUtils.isEmpty(result)) {
                             throw new IllegalStateException(LocaleController.getString(R.string.FlexTranslationInvalidResponse));
                         }
-                        final String finalResult = postProcessTranslationResult(result, toLng);
-                        AndroidUtilities.runOnUIThread(() -> done.run(finalResult, false, null));
+                        AndroidUtilities.runOnUIThread(() -> done.run(result, false, null));
                         return;
                     }
                     if (finalProvider == FlexConfig.TRANSLATION_PROVIDER_LLM) {
@@ -817,7 +681,7 @@ public class TranslateAlert2 extends BottomSheet implements NotificationCenter.N
                                 return;
                             }
                             try {
-                                done.run(postProcessTranslationResult(result, toLng), false, null);
+                                done.run(result, false, null);
                             } catch (Exception e) {
                                 done.run(null, false, e.getMessage());
                             }
@@ -848,7 +712,7 @@ public class TranslateAlert2 extends BottomSheet implements NotificationCenter.N
                     }
                     if (text.length() > 0 && text.charAt(0) == '\n')
                         result = "\n" + result;
-                    final String finalResult = postProcessTranslationResult(result, toLng);
+                    final String finalResult = result;
                     AndroidUtilities.runOnUIThread(() -> {
                         if (done != null)
                             done.run(finalResult, false, null);

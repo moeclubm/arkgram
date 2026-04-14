@@ -35,9 +35,6 @@ public class FlexTranslateSettingsActivity extends UniversalFragment {
     private static final int ID_DEEPL_API_URL = 5;
     private static final int ID_DEEPL_API_KEY = 6;
     private static final int ID_LLM_SETTINGS = 7;
-    private static final int ID_OPENCC_AUTO_CONVERSION = 8;
-    private static final int ID_OPENCC_CONVERSION = 9;
-
     @Override
     protected CharSequence getTitle() {
         return getString(R.string.FlexTranslationSettings);
@@ -66,9 +63,6 @@ public class FlexTranslateSettingsActivity extends UniversalFragment {
             items.add(UItem.asButton(ID_LLM_SETTINGS, R.drawable.outline_ai_translate2, getString(R.string.FlexTranslationLlmSettings), getLlmSettingsValue()));
             items.add(UItem.asShadow(getString(R.string.FlexTranslationLlmSettingsInfo)));
         }
-        items.add(UItem.asCheck(ID_OPENCC_AUTO_CONVERSION, getString(R.string.FlexTranslationOpenCCAutoConversion)).setChecked(FlexConfig.isOpenCCAutoConversionEnabled()));
-        items.add(UItem.asButton(ID_OPENCC_CONVERSION, R.drawable.msg2_language, getString(R.string.FlexTranslationOpenCCConversion), getOpenCCConversionValue()));
-        items.add(UItem.asShadow(getString(R.string.FlexTranslationOpenCCInfo)));
         items.add(UItem.asShadow(getString(R.string.FlexTranslationInfo)));
     }
 
@@ -97,11 +91,6 @@ public class FlexTranslateSettingsActivity extends UniversalFragment {
             });
         } else if (item.id == ID_LLM_SETTINGS) {
             presentFragment(new FlexLlmFeatureSettingsActivity(false));
-        } else if (item.id == ID_OPENCC_AUTO_CONVERSION) {
-            FlexConfig.setOpenCCAutoConversionEnabled(!FlexConfig.isOpenCCAutoConversionEnabled());
-            listView.adapter.update(true);
-        } else if (item.id == ID_OPENCC_CONVERSION) {
-            showOpenCCConversionDialog();
         }
     }
 
@@ -174,91 +163,6 @@ public class FlexTranslateSettingsActivity extends UniversalFragment {
         String model = FlexConfig.getLlmModel();
         CharSequence provider = FlexLlmFeatureSettingsActivity.getProviderTitle(FlexConfig.getTranslationLlmProvider());
         return TextUtils.isEmpty(model) ? provider : provider + " / " + model;
-    }
-
-    private CharSequence getOpenCCConversionValue() {
-        return formatOpenCCConversion(FlexConfig.getOpenCCConversion());
-    }
-
-    private void showOpenCCConversionDialog() {
-        String[] values = new String[] {
-            FlexConfig.OPENCC_CONVERSION_AUTO,
-            "S2T",
-            "S2TW",
-            "S2TWP",
-            "S2HK",
-            "T2S",
-            "T2TW",
-            "T2HK",
-            "TW2S",
-            "TW2SP",
-            "TW2T",
-            "HK2S",
-            "HK2T",
-            "JP2T",
-            "T2JP"
-        };
-        CharSequence[] items = new CharSequence[values.length];
-        for (int i = 0; i < values.length; i++) {
-            items[i] = formatOpenCCConversion(values[i]);
-        }
-
-        AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
-        builder.setTitle(getString(R.string.FlexTranslationOpenCCConversion));
-        builder.setItems(items, (dialog, which) -> {
-            FlexConfig.setOpenCCConversion(values[which]);
-            listView.adapter.update(true);
-        });
-        showDialog(builder.create());
-    }
-
-    private CharSequence formatOpenCCConversion(String value) {
-        if (FlexConfig.OPENCC_CONVERSION_AUTO.equals(value)) {
-            return getString(R.string.FlexTranslationOpenCCAuto);
-        }
-        if ("S2T".equals(value)) {
-            return "S2T / Simplified -> Traditional";
-        }
-        if ("S2TW".equals(value)) {
-            return "S2TW / Simplified -> Taiwanese Traditional";
-        }
-        if ("S2TWP".equals(value)) {
-            return "S2TWP / Simplified -> Taiwanese Traditional (phrases)";
-        }
-        if ("S2HK".equals(value)) {
-            return "S2HK / Simplified -> Hong Kong Traditional";
-        }
-        if ("T2S".equals(value)) {
-            return "T2S / Traditional -> Simplified";
-        }
-        if ("T2TW".equals(value)) {
-            return "T2TW / Traditional -> Taiwanese Traditional";
-        }
-        if ("T2HK".equals(value)) {
-            return "T2HK / Traditional -> Hong Kong Traditional";
-        }
-        if ("TW2S".equals(value)) {
-            return "TW2S / Taiwanese Traditional -> Simplified";
-        }
-        if ("TW2SP".equals(value)) {
-            return "TW2SP / Taiwanese Traditional -> Simplified (phrases)";
-        }
-        if ("TW2T".equals(value)) {
-            return "TW2T / Taiwanese Traditional -> Traditional";
-        }
-        if ("HK2S".equals(value)) {
-            return "HK2S / Hong Kong Traditional -> Simplified";
-        }
-        if ("HK2T".equals(value)) {
-            return "HK2T / Hong Kong Traditional -> Traditional";
-        }
-        if ("JP2T".equals(value)) {
-            return "JP2T / Japanese Shinjitai -> Traditional";
-        }
-        if ("T2JP".equals(value)) {
-            return "T2JP / Traditional -> Japanese Shinjitai";
-        }
-        return value;
     }
 
     private void showTextValueDialog(String title, String hint, String value, int inputType, Utilities.Callback<String> onSave) {
