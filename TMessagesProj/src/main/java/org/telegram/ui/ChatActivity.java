@@ -30102,6 +30102,8 @@ public class ChatActivity extends BaseFragment implements
         allowPin = allowPin && message.getId() > 0 && (message.messageOwner.action == null || message.messageOwner.action instanceof TLRPC.TL_messageActionEmpty) && !message.isExpiredStory() && message.type != MessageObject.TYPE_STORY_MENTION;
         boolean noforwards = isPeerNoForwards() || message.messageOwner.noforwards || getDialogId() == UserObject.VERIFY;
         boolean noforwardsOrPaidMedia = noforwards || message.type == MessageObject.TYPE_PAID_MEDIA;
+        boolean noforwardsForSave = FlexConfig.isNoForwardsBlocked(isPeerNoForwards(), message.messageOwner.noforwards) || getDialogId() == UserObject.VERIFY;
+        boolean noforwardsOrPaidMediaForSave = noforwardsForSave || message.type == MessageObject.TYPE_PAID_MEDIA;
         boolean allowUnpin = message.getDialogId() != mergeDialogId && allowPin && (pinnedMessageObjects.containsKey(message.getId()) || groupedMessages != null && !groupedMessages.messages.isEmpty() && pinnedMessageObjects.containsKey(groupedMessages.messages.get(0).getId())) && !message.isExpiredStory();
         boolean allowEdit = message.canEditMessage(currentChat) && !chatActivityEnterView.hasAudioToSend() && message.getDialogId() != mergeDialogId && message.type != MessageObject.TYPE_STORY && message.type != MessageObject.TYPE_POLL;
         if (allowEdit && groupedMessages != null) {
@@ -32357,7 +32359,18 @@ public class ChatActivity extends BaseFragment implements
     }
 
     private void saveMessageToGallery(MessageObject messageObject) {
-        String path = messageObject.messageOwner.attachPath;
+        VideoPlayer.Quality quality = messageObject.hasVideoQualities(true) ? VideoPlayer.getSavedOrDefaultQuality(messageObject.videoQualities, messageObject) : null;
+        TLRPC.Document preferredDocument = messageObject.qualityToSave != null ? messageObject.qualityToSave : quality != null ? quality.getDownloadDocument() : null;
+        String path = null;
+        if (preferredDocument != null) {
+            File f = FileLoader.getInstance(currentAccount).getPathToAttach(preferredDocument, null, false, true);
+            if (f != null && f.exists()) {
+                path = f.getPath();
+            }
+        }
+        if (TextUtils.isEmpty(path)) {
+            path = messageObject.messageOwner.attachPath;
+        }
         if (!TextUtils.isEmpty(path)) {
             File temp = new File(path);
             if (!temp.exists()) {
@@ -32372,12 +32385,6 @@ public class ChatActivity extends BaseFragment implements
         }
         if (TextUtils.isEmpty(path) && messageObject.cachedQuality != null && messageObject.cachedQuality.isCached()) {
             File f = new File(messageObject.cachedQuality.uri.getPath());
-            if (f != null && f.exists()) {
-                path = f.getPath();
-            }
-        }
-        if (TextUtils.isEmpty(path) && messageObject.qualityToSave != null) {
-            File f = FileLoader.getInstance(currentAccount).getPathToAttach(messageObject.qualityToSave, null, false, true);
             if (f != null && f.exists()) {
                 path = f.getPath();
             }
@@ -32598,7 +32605,18 @@ public class ChatActivity extends BaseFragment implements
                 break;
             }
             case OPTION_SAVE_TO_GALLERY2: {
-                String path = selectedObject.messageOwner.attachPath;
+                VideoPlayer.Quality quality = selectedObject.hasVideoQualities(true) ? VideoPlayer.getSavedOrDefaultQuality(selectedObject.videoQualities, selectedObject) : null;
+                TLRPC.Document preferredDocument = selectedObject.qualityToSave != null ? selectedObject.qualityToSave : quality != null ? quality.getDownloadDocument() : null;
+                String path = null;
+                if (preferredDocument != null) {
+                    File f = FileLoader.getInstance(currentAccount).getPathToAttach(preferredDocument, null, false, true);
+                    if (f != null && f.exists()) {
+                        path = f.getPath();
+                    }
+                }
+                if (TextUtils.isEmpty(path)) {
+                    path = selectedObject.messageOwner.attachPath;
+                }
                 if (path != null && path.length() > 0) {
                     File temp = new File(path);
                     if (!temp.exists()) {
@@ -32619,12 +32637,6 @@ public class ChatActivity extends BaseFragment implements
                 }
                 if (TextUtils.isEmpty(path) && selectedObject.cachedQuality != null && selectedObject.cachedQuality.isCached()) {
                     File f = new File(selectedObject.cachedQuality.uri.getPath());
-                    if (f != null && f.exists()) {
-                        path = f.getPath();
-                    }
-                }
-                if (TextUtils.isEmpty(path) && selectedObject.qualityToSave != null) {
-                    File f = FileLoader.getInstance(currentAccount).getPathToAttach(selectedObject.qualityToSave, null, false, true);
                     if (f != null && f.exists()) {
                         path = f.getPath();
                     }
@@ -32752,7 +32764,18 @@ public class ChatActivity extends BaseFragment implements
                     if (TextUtils.isEmpty(fileName)) {
                         fileName = selectedObject.getFileName();
                     }
-                    String path = selectedObject.messageOwner.attachPath;
+                    VideoPlayer.Quality quality = selectedObject.hasVideoQualities(true) ? VideoPlayer.getSavedOrDefaultQuality(selectedObject.videoQualities, selectedObject) : null;
+                    TLRPC.Document preferredDocument = selectedObject.qualityToSave != null ? selectedObject.qualityToSave : quality != null ? quality.getDownloadDocument() : null;
+                    String path = null;
+                    if (preferredDocument != null) {
+                        File f = FileLoader.getInstance(currentAccount).getPathToAttach(preferredDocument, null, false, true);
+                        if (f != null && f.exists()) {
+                            path = f.getPath();
+                        }
+                    }
+                    if (TextUtils.isEmpty(path)) {
+                        path = selectedObject.messageOwner.attachPath;
+                    }
                     if (path != null && path.length() > 0) {
                         File temp = new File(path);
                         if (!temp.exists()) {
@@ -32767,12 +32790,6 @@ public class ChatActivity extends BaseFragment implements
                     }
                     if (TextUtils.isEmpty(path) && selectedObject.cachedQuality != null && selectedObject.cachedQuality.isCached()) {
                         File f = new File(selectedObject.cachedQuality.uri.getPath());
-                        if (f != null && f.exists()) {
-                            path = f.getPath();
-                        }
-                    }
-                    if (TextUtils.isEmpty(path) && selectedObject.qualityToSave != null) {
-                        File f = FileLoader.getInstance(currentAccount).getPathToAttach(selectedObject.qualityToSave, null, false, true);
                         if (f != null && f.exists()) {
                             path = f.getPath();
                         }
@@ -44263,6 +44280,8 @@ public class ChatActivity extends BaseFragment implements
         allowPin = allowPin && message.getId() > 0 && (message.messageOwner.action == null || message.messageOwner.action instanceof TLRPC.TL_messageActionEmpty) && !message.isExpiredStory() && message.type != MessageObject.TYPE_STORY_MENTION;
         boolean noforwards = isPeerNoForwards() || message.messageOwner.noforwards || getDialogId() == UserObject.VERIFY;
         boolean noforwardsOrPaidMedia = noforwards || message.type == MessageObject.TYPE_PAID_MEDIA;
+        boolean noforwardsForSave = FlexConfig.isNoForwardsBlocked(isPeerNoForwards(), message.messageOwner.noforwards) || getDialogId() == UserObject.VERIFY;
+        boolean noforwardsOrPaidMediaForSave = noforwardsForSave || message.type == MessageObject.TYPE_PAID_MEDIA;
         boolean allowUnpin = message.getDialogId() != mergeDialogId && allowPin && (pinnedMessageObjects.containsKey(message.getId()) || groupedMessages != null && !groupedMessages.messages.isEmpty() && pinnedMessageObjects.containsKey(groupedMessages.messages.get(0).getId())) && !message.isExpiredStory();
         boolean allowEdit = message.canEditMessage(currentChat) && !chatActivityEnterView.hasAudioToSend() && message.getDialogId() != mergeDialogId && message.type != MessageObject.TYPE_STORY && message.type != MessageObject.TYPE_POLL;
         if (allowEdit && groupedMessages != null) {
@@ -44280,8 +44299,6 @@ public class ChatActivity extends BaseFragment implements
         }
         if (message.isExpiredStory() || chatMode == MODE_SCHEDULED || threadMessageObjects != null && threadMessageObjects.contains(message) ||
             message.isSponsored() || type == 1 && message.getDialogId() == mergeDialogId ||
-        boolean noforwardsForSave = FlexConfig.isNoForwardsBlocked(isPeerNoForwards(), message.messageOwner.noforwards) || getDialogId() == UserObject.VERIFY;
-        boolean noforwardsOrPaidMediaForSave = noforwardsForSave || message.type == MessageObject.TYPE_PAID_MEDIA;
             message.messageOwner.action instanceof TLRPC.TL_messageActionSecureValuesSent ||
             currentEncryptedChat == null && message.getId() < 0 ||
             bottomChannelButtonsLayout != null && bottomChannelButtonsLayout.getVisibility() == View.VISIBLE && !(bottomOverlayChatWaitsReply && selectedObject != null && (MessageObject.getTopicId(currentAccount, selectedObject.messageOwner, ChatObject.isForum(currentChat)) != 0 || selectedObject.wasJustSent))) {

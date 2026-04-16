@@ -76,6 +76,8 @@ public class ChooseDownloadQualityLayout {
         if (!messageObject.hasVideoQualities()) return false;
 
         ArrayList<VideoPlayer.Quality> qualities = VideoPlayer.getQualities(messageObject.currentAccount, messageObject.messageOwner.media.document, messageObject.messageOwner.media.alt_documents, 0, false);
+        VideoPlayer.Quality defaultQuality = messageObject.qualityToSave == null ? VideoPlayer.getSavedOrDefaultQuality(qualities, messageObject) : null;
+        TLRPC.Document selectedDocument = messageObject.qualityToSave;
 
         buttonsLayout.removeAllViews();
         for (int i = 0; i < qualities.size(); ++i) {
@@ -98,6 +100,7 @@ public class ChooseDownloadQualityLayout {
             }
             ActionBarMenuSubItem item = ActionBarMenuItem.addItem(buttonsLayout, 0, title, false, null);
             item.setSubtext(subtitle);
+            item.setChecked(selectedDocument != null ? uri.document != null && uri.document.id == selectedDocument.id : q == defaultQuality);
             item.setColors(0xfffafafa, 0xfffafafa);
             item.subtextView.setPadding(0, 0, 0, 0);
             item.setOnClickListener((view) -> {

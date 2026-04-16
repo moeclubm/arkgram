@@ -10,6 +10,9 @@ public class FlexConfig {
     public static final int BOOST_NONE = 0;
     public static final int BOOST_AVERAGE = 1;
     public static final int BOOST_EXTREME = 2;
+    public static final int VIDEO_QUALITY_DEFAULT_HIGHEST = -2;
+    public static final int VIDEO_QUALITY_DEFAULT_AUTO = -1;
+    public static final int VIDEO_QUALITY_DEFAULT_ORIGINAL = 0;
     public static final int TRANSLATION_PROVIDER_TELEGRAM = 0;
     public static final int TRANSLATION_PROVIDER_GOOGLE = 1;
     public static final int TRANSLATION_PROVIDER_GOOGLE_CN = 2;
@@ -64,6 +67,14 @@ public class FlexConfig {
 
     public static void setDownloadSpeedBoost(int value) {
         prefs().edit().putInt("flex_download_speed_boost", value).remove("flex_enhanced_file_loader").apply();
+    }
+
+    public static int getDefaultVideoQuality() {
+        return prefs().getInt("flex_default_video_quality", VIDEO_QUALITY_DEFAULT_AUTO);
+    }
+
+    public static void setDefaultVideoQuality(int value) {
+        prefs().edit().putInt("flex_default_video_quality", value).apply();
     }
 
     public static boolean isEnhancedFileLoaderEnabled() {

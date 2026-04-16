@@ -83,6 +83,7 @@ import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.DispatchQueue;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
+import org.telegram.messenger.FlexConfig;
 import org.telegram.messenger.FourierTransform;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
@@ -439,6 +440,11 @@ public class VideoPlayer implements Player.Listener, VideoListener, AnalyticsLis
         return getSavedQuality(qualities, messageObject.getDialogId(), messageObject.getId());
     }
 
+    public static Quality getSavedOrDefaultQuality(ArrayList<Quality> qualities, MessageObject messageObject) {
+        Quality quality = getSavedQuality(qualities, messageObject);
+        return quality != null ? quality : getDefaultQuality(qualities);
+    }
+
     public static Quality getSavedQuality(ArrayList<Quality> qualities, long did, int mid) {
         final SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("media_saved_pos", Activity.MODE_PRIVATE);
         final String setting = preferences.getString(did + "_" + mid + "q2", "");
@@ -448,6 +454,43 @@ public class VideoPlayer implements Player.Listener, VideoListener, AnalyticsLis
             if (TextUtils.equals(setting, idx)) return q;
         }
         return null;
+    }
+
+    public static Quality getDefaultQuality(ArrayList<Quality> qualities) {
+        if (qualities == null || qualities.isEmpty()) return null;
+        int defaultQuality = FlexConfig.getDefaultVideoQuality();
+        if (defaultQuality == FlexConfig.VIDEO_QUALITY_DEFAULT_AUTO) return null;
+        Quality original = null;
+        Quality highest = null;
+        Quality lower = null;
+        Quality higher = null;
+        for (int i = 0; i < qualities.size(); ++i) {
+            Quality quality = qualities.get(i);
+            if (quality.original) {
+                original = quality;
+                if (defaultQuality == FlexConfig.VIDEO_QUALITY_DEFAULT_ORIGINAL) {
+                    return quality;
+                }
+            } else if (highest == null || highest.width * highest.height < quality.width * quality.height) {
+                highest = quality;
+            }
+            int p = quality.p();
+            if (p == defaultQuality) {
+                return quality;
+            }
+            if (p < defaultQuality && (lower == null || lower.p() < p)) {
+                lower = quality;
+            } else if (p > defaultQuality && (higher == null || higher.p() > p)) {
+                higher = quality;
+            }
+        }
+        if (defaultQuality == FlexConfig.VIDEO_QUALITY_DEFAULT_HIGHEST) {
+            return highest != null ? highest : original;
+        }
+        if (defaultQuality == FlexConfig.VIDEO_QUALITY_DEFAULT_ORIGINAL) {
+            return original != null ? original : lower != null ? lower : higher;
+        }
+        return lower != null ? lower : higher != null ? higher : original;
     }
 
     public static void saveQuality(Quality q, MessageObject messageObject) {

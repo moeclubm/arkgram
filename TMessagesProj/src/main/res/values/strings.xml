@@ -3218,6 +3218,7 @@
     <string name="QualityList">Video Quality</string>
     <string name="QualityAuto">Auto</string>
     <string name="QualityOriginal">Original</string>
+    <string name="FlexDefaultVideoQualityHighest">Highest</string>
     <string name="Quality2160">Ultra High</string>
     <string name="Quality1440">Ultra High</string>
     <string name="Quality1080">High</string>

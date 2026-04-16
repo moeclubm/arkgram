@@ -43,9 +43,10 @@ public class FlexSettingsActivity extends UniversalFragment {
     protected void fillItems(ArrayList<UItem> items, UniversalAdapter adapter) {
         items.add(UItem.asHeader(getString(R.string.FlexFeatures)));
         items.add(UItem.asButton(ID_ENHANCED_DOWNLOAD, R.drawable.msg_speed, getString(R.string.FlexEnhancedDownload), getDownloadSpeedBoostTitle()));
+        items.add(UItem.asButton(ID_DEFAULT_VIDEO_QUALITY, R.drawable.video_settings, getString(R.string.FlexDefaultVideoQuality), getDefaultVideoQualityTitle()));
         items.add(UItem.asCheck(ID_DISABLE_WEBRTC, getString(R.string.FlexDisableWebrtc)).setChecked(FlexConfig.isWebRtcDisabled()));
-        items.add(UItem.asCheck(ID_SHOW_DC_INFO, getString(R.string.FlexShowDcInfo)).setChecked(FlexConfig.isDcInfoEnabled()));
         items.add(UItem.asCheck(ID_DISABLE_NO_FORWARDS_RESTRICTIONS, getString(R.string.FlexDisableNoForwardsRestrictions)).setChecked(FlexConfig.isNoForwardsRestrictionsDisabled()));
+        items.add(UItem.asCheck(ID_SHOW_DC_INFO, getString(R.string.FlexShowDcInfo)).setChecked(FlexConfig.isDcInfoEnabled()));
         items.add(UItem.asCheck(ID_HIDE_MAIN_TABS, getString(R.string.FlexHideMainTabs)).setChecked(FlexConfig.isMainTabsHidden()));
         items.add(UItem.asCheck(ID_DISABLE_UI_TRANSPARENCY, getString(R.string.FlexDisableUiTransparency)).setChecked(FlexConfig.isUiTransparencyDisabled()));
         items.add(UItem.asCheck(ID_DISABLE_UI_BLUR, getString(R.string.FlexDisableUiBlur)).setChecked(FlexConfig.isUiBlurDisabled()));
@@ -53,6 +54,8 @@ public class FlexSettingsActivity extends UniversalFragment {
         items.add(UItem.asButton(ID_TRANSLATE, R.drawable.msg_translate, getString(R.string.FlexTranslationSettings)));
         items.add(UItem.asButton(ID_FILE_MANAGEMENT, R.drawable.msg2_data, getString(R.string.FlexFileManagement)));
         items.add(UItem.asButton(ID_LLM_SETTINGS, R.drawable.outline_ai_translate2, getString(R.string.FlexLlmSettings)));
+        items.add(UItem.asShadow(getString(R.string.FlexDefaultVideoQualityInfo)));
+        items.add(UItem.asShadow(getString(R.string.FlexDisableNoForwardsRestrictionsInfo)));
         items.add(UItem.asShadow(getString(R.string.FlexHideMainTabsInfo)));
         items.add(UItem.asShadow(getString(R.string.FlexFeaturesInfo)));
 
@@ -68,17 +71,19 @@ public class FlexSettingsActivity extends UniversalFragment {
     protected void onClick(UItem item, View view, int position, float x, float y) {
         if (item.id == ID_ENHANCED_DOWNLOAD) {
             showDownloadSpeedBoostDialog();
+        } else if (item.id == ID_DEFAULT_VIDEO_QUALITY) {
+            showDefaultVideoQualityDialog();
         } else if (item.id == ID_DISABLE_WEBRTC) {
             FlexConfig.setWebRtcDisabled(!FlexConfig.isWebRtcDisabled());
+            listView.adapter.update(true);
+        } else if (item.id == ID_DISABLE_NO_FORWARDS_RESTRICTIONS) {
+            FlexConfig.setNoForwardsRestrictionsDisabled(!FlexConfig.isNoForwardsRestrictionsDisabled());
             listView.adapter.update(true);
         } else if (item.id == ID_SHOW_DC_INFO) {
             FlexConfig.setDcInfoEnabled(!FlexConfig.isDcInfoEnabled());
             listView.adapter.update(true);
         } else if (item.id == ID_HIDE_MAIN_TABS) {
             FlexConfig.setMainTabsHidden(!FlexConfig.isMainTabsHidden());
-        } else if (item.id == ID_DISABLE_NO_FORWARDS_RESTRICTIONS) {
-            FlexConfig.setNoForwardsRestrictionsDisabled(!FlexConfig.isNoForwardsRestrictionsDisabled());
-            listView.adapter.update(true);
             NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.mainTabsVisibilityToggled);
             listView.adapter.update(true);
         } else if (item.id == ID_DISABLE_UI_TRANSPARENCY) {
@@ -137,5 +142,49 @@ public class FlexSettingsActivity extends UniversalFragment {
             return getString(R.string.FlexDownloadSpeedBoostAverage);
         }
         return getString(R.string.FlexDownloadSpeedBoostOff);
+    }
+
+    private void showDefaultVideoQualityDialog() {
+        int[] values = new int[] {
+            FlexConfig.VIDEO_QUALITY_DEFAULT_HIGHEST,
+            FlexConfig.VIDEO_QUALITY_DEFAULT_AUTO,
+            FlexConfig.VIDEO_QUALITY_DEFAULT_ORIGINAL,
+            2160,
+            1440,
+            1080,
+            720,
+            480,
+            360,
+            240,
+            144
+        };
+        CharSequence[] items = new CharSequence[values.length];
+        for (int i = 0; i < values.length; ++i) {
+            items[i] = getDefaultVideoQualityTitle(values[i]);
+        }
+        AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
+        builder.setTitle(getString(R.string.FlexDefaultVideoQuality));
+        builder.setItems(items, (dialog, which) -> {
+            FlexConfig.setDefaultVideoQuality(values[which]);
+            listView.adapter.update(true);
+        });
+        showDialog(builder.create());
+    }
+
+    private CharSequence getDefaultVideoQualityTitle() {
+        return getDefaultVideoQualityTitle(FlexConfig.getDefaultVideoQuality());
+    }
+
+    private CharSequence getDefaultVideoQualityTitle(int value) {
+        if (value == FlexConfig.VIDEO_QUALITY_DEFAULT_HIGHEST) {
+            return getString(R.string.FlexDefaultVideoQualityHighest);
+        }
+        if (value == FlexConfig.VIDEO_QUALITY_DEFAULT_AUTO) {
+            return getString(R.string.QualityAuto);
+        }
+        if (value == FlexConfig.VIDEO_QUALITY_DEFAULT_ORIGINAL) {
+            return getString(R.string.QualityOriginal);
+        }
+        return value + "p";
     }
 }

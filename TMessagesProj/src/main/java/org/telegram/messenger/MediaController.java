@@ -5036,8 +5036,10 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                             MessageObject message = messageObjects.get(b);
                             String path = message.messageOwner.attachPath;
                             TLRPC.Document document = message.getDocument();
-                            if (message.qualityToSave != null) {
-                                document = message.qualityToSave;
+                            VideoPlayer.Quality quality = message.hasVideoQualities(true) ? VideoPlayer.getSavedOrDefaultQuality(message.videoQualities, message) : null;
+                            TLRPC.Document preferredDocument = message.qualityToSave != null ? message.qualityToSave : quality != null ? quality.getDownloadDocument() : null;
+                            if (preferredDocument != null) {
+                                document = preferredDocument;
                                 path = null;
                             }
                             String name = FileLoader.getDocumentFileName(document);
@@ -5051,8 +5053,8 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                                 final FileLoader fileLoader = FileLoader.getInstance(currentAccount.getCurrentAccount());
                                 final TLRPC.MessageMedia media = MessageObject.getMedia(message);
                                 File file = null;
-                                if (message.qualityToSave != null) {
-                                    file = fileLoader.getPathToAttach(message.qualityToSave, null, false, true);
+                                if (preferredDocument != null) {
+                                    file = fileLoader.getPathToAttach(preferredDocument, null, false, true);
                                 } else {
                                     file = fileLoader.getPathToMessage(message.messageOwner, true);
                                     if (media instanceof TLRPC.TL_messageMediaDocument) {
@@ -5074,7 +5076,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                                 break;
                             }
                             if (!sourceFile.exists()) {
-                                sourceFile = FileLoader.getInstance(currentAccount.getCurrentAccount()).getPathToAttach(message.messageOwner, true);
+                                sourceFile = preferredDocument != null ? FileLoader.getInstance(currentAccount.getCurrentAccount()).getPathToAttach(preferredDocument, null, false, true) : FileLoader.getInstance(currentAccount.getCurrentAccount()).getPathToAttach(message.messageOwner, true);
                                 FileLog.d("saving file: correcting path from " + path + " to " + (sourceFile == null ? null : sourceFile.getAbsolutePath()));
                             }
                             if (sourceFile != null && sourceFile.exists()) {
@@ -5093,8 +5095,10 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                         for (int b = 0, N = messageObjects.size(); b < N; b++) {
                             MessageObject message = messageObjects.get(b);
                             TLRPC.Document document = message.getDocument();
-                            if (message.qualityToSave != null) {
-                                document = message.qualityToSave;
+                            VideoPlayer.Quality quality = message.hasVideoQualities(true) ? VideoPlayer.getSavedOrDefaultQuality(message.videoQualities, message) : null;
+                            TLRPC.Document preferredDocument = message.qualityToSave != null ? message.qualityToSave : quality != null ? quality.getDownloadDocument() : null;
+                            if (preferredDocument != null) {
+                                document = preferredDocument;
                             }
                             String name = FileLoader.getDocumentFileName(document);
                             File destFile = new File(dir, name);
@@ -5117,7 +5121,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                                 destFile.createNewFile();
                             }
                             String path = message.messageOwner.attachPath;
-                            if (message.qualityToSave != null) {
+                            if (preferredDocument != null) {
                                 path = null;
                             }
                             if (path != null && path.length() > 0) {
@@ -5127,8 +5131,8 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                                 }
                             }
                             File sourceFile;
-                            if (message.qualityToSave != null) {
-                                sourceFile = FileLoader.getInstance(currentAccount.getCurrentAccount()).getPathToAttach(message.qualityToSave, null, false, true);
+                            if (preferredDocument != null) {
+                                sourceFile = FileLoader.getInstance(currentAccount.getCurrentAccount()).getPathToAttach(preferredDocument, null, false, true);
                             } else {
                                 if (path == null || path.length() == 0) {
                                     path = FileLoader.getInstance(currentAccount.getCurrentAccount()).getPathToMessage(message.messageOwner).toString();
@@ -5139,6 +5143,9 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                                 waitingForFile = new CountDownLatch(1);
                                 addMessageToLoad(message);
                                 waitingForFile.await();
+                                if (preferredDocument != null) {
+                                    sourceFile = FileLoader.getInstance(currentAccount.getCurrentAccount()).getPathToAttach(preferredDocument, null, false, true);
+                                }
                             }
                             if (sourceFile.exists()) {
                                 copyFile(sourceFile, destFile, message.getMimeType());
@@ -5182,6 +5189,11 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                 TLRPC.Document document = messageObject.getDocument();
                 if (messageObject.qualityToSave != null) {
                     document = messageObject.qualityToSave;
+                } else if (messageObject.hasVideoQualities(true)) {
+                    VideoPlayer.Quality quality = VideoPlayer.getSavedOrDefaultQuality(messageObject.videoQualities, messageObject);
+                    if (quality != null) {
+                        document = quality.getDownloadDocument();
+                    }
                 }
                 if (document == null) {
                     return;
