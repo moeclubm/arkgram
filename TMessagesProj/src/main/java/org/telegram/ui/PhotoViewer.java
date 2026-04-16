@@ -170,6 +170,7 @@ import org.telegram.messenger.Emoji;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.FileStreamLoadOperation;
+import org.telegram.messenger.FlexConfig;
 import org.telegram.messenger.ImageLoader;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.ImageReceiver;
@@ -14655,7 +14656,8 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             actionBarContainer.setSubtitle(subtitle, animated);
 
             boolean isInvoice = newMessageObject.isInvoice();
-            boolean noforwards = MessagesController.getInstance(currentAccount).isPeerNoForwards(newMessageObject.getDialogId()) || (newMessageObject.messageOwner != null && newMessageObject.messageOwner.noforwards) || newMessageObject.hasRevealedExtendedMedia();
+            boolean noforwards = MessagesController.getInstance(currentAccount).isPeerNoForwards(newMessageObject.getDialogId()) || newMessageObject.messageOwner != null && newMessageObject.messageOwner.noforwards || newMessageObject.hasRevealedExtendedMedia();
+            boolean noforwardsForSave = FlexConfig.isNoForwardsBlocked(MessagesController.getInstance(currentAccount).isPeerNoForwards(newMessageObject.getDialogId()), newMessageObject.messageOwner != null && newMessageObject.messageOwner.noforwards) || newMessageObject.hasRevealedExtendedMedia();
             if (isVideo && !isLivePhoto) {
                 bottomLayout.setVisibility(View.VISIBLE);
                 bottomLayout.setTag(1);
@@ -14892,17 +14894,26 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             if (DialogObject.isEncryptedDialog(currentDialogId) && !isEmbedVideo || noforwards) {
                 setItemVisible(sendItem, false, false);
             }
-            if (isEmbedVideo || newMessageObject.messageOwner.ttl != 0 && newMessageObject.messageOwner.ttl < 60 * 60 || noforwards) {
+            if (isEmbedVideo || newMessageObject.messageOwner.ttl != 0 && newMessageObject.messageOwner.ttl < 60 * 60) {
                 allowShare = false;
                 galleryButton.setVisibility(View.GONE);
                 galleryGap.setVisibility(View.GONE);
                 menuItem.hideSubItem(gallery_menu_share);
                 setItemVisible(editItem, false, animated);
             } else {
-                allowShare = true;
-                galleryButton.setVisibility(View.VISIBLE);
-                galleryGap.setVisibility(View.VISIBLE);
-                menuItem.showSubItem(gallery_menu_share);
+                allowShare = !noforwards;
+                if (noforwardsForSave) {
+                    galleryButton.setVisibility(View.GONE);
+                    galleryGap.setVisibility(View.GONE);
+                } else {
+                    galleryButton.setVisibility(View.VISIBLE);
+                    galleryGap.setVisibility(View.VISIBLE);
+                }
+                if (allowShare) {
+                    menuItem.showSubItem(gallery_menu_share);
+                } else {
+                    menuItem.hideSubItem(gallery_menu_share);
+                }
             }
             groupedPhotosListView.fillList();
         } else if (!secureDocuments.isEmpty()) {
@@ -14974,7 +14985,8 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 title = getString(R.string.AttachPhoto);
             }
             final boolean noforwards = avatarsDialogId != 0 && MessagesController.getInstance(currentAccount).isPeerNoForwards(avatarsDialogId);
-            if (noforwards) {
+            final boolean noforwardsForSave = avatarsDialogId != 0 && FlexConfig.isNoForwardsBlocked(MessagesController.getInstance(currentAccount).isPeerNoForwards(avatarsDialogId), false);
+            if (noforwardsForSave) {
                 galleryButton.setVisibility(View.GONE);
                 galleryGap.setVisibility(View.GONE);
             } else {
@@ -14982,7 +14994,11 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 galleryGap.setVisibility(View.VISIBLE);
             }
             allowShare = !noforwards;
-            menuItem.showSubItem(gallery_menu_share);
+            if (allowShare) {
+                menuItem.showSubItem(gallery_menu_share);
+            } else {
+                menuItem.hideSubItem(gallery_menu_share);
+            }
             menuItem.checkHideMenuItem();
             groupedPhotosListView.fillList();
             editing = needCaptionLayout && (sendPhotoType == 0 || sendPhotoType == 2 || sendPhotoType == SELECT_TYPE_NO_SELECT);
@@ -15767,7 +15783,8 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 return;
             }
             MessageObject newMessageObject = imagesArr.get(currentIndex);
-            final boolean noforwards = newMessageObject != null && (MessagesController.getInstance(currentAccount).isPeerNoForwards(newMessageObject.getDialogId()) || (newMessageObject.messageOwner != null && newMessageObject.messageOwner.noforwards) || newMessageObject.hasRevealedExtendedMedia());
+            final boolean noforwards = newMessageObject != null && (MessagesController.getInstance(currentAccount).isPeerNoForwards(newMessageObject.getDialogId()) || newMessageObject.messageOwner != null && newMessageObject.messageOwner.noforwards || newMessageObject.hasRevealedExtendedMedia());
+            final boolean noforwardsForSave = newMessageObject != null && (FlexConfig.isNoForwardsBlocked(MessagesController.getInstance(currentAccount).isPeerNoForwards(newMessageObject.getDialogId()), newMessageObject.messageOwner != null && newMessageObject.messageOwner.noforwards) || newMessageObject.hasRevealedExtendedMedia());
             sameImage = init && currentMessageObject != null && currentMessageObject.getId() == newMessageObject.getId();
             if (sameImage) {
                 newMessageObject.putInDownloadsStore = currentMessageObject.putInDownloadsStore;
@@ -15805,7 +15822,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             }
             if (sharedMediaType == MediaDataController.MEDIA_FILE) {
                 if (canZoom = newMessageObject.canPreviewDocument()) {
-                    if (allowShare) {
+                    if (!noforwardsForSave) {
                         galleryButton.setVisibility(View.VISIBLE);
                         galleryGap.setVisibility(View.VISIBLE);
                     } else {

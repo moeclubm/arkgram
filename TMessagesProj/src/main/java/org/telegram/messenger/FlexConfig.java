@@ -93,6 +93,18 @@ public class FlexConfig {
     public static boolean isMainTabsHidden() {
         return prefs().getBoolean("flex_hide_main_tabs", false);
     }
+    public static boolean isNoForwardsRestrictionsDisabled() {
+        return prefs().getBoolean("flex_disable_no_forwards_restrictions", false);
+    }
+
+    public static void setNoForwardsRestrictionsDisabled(boolean value) {
+        prefs().edit().putBoolean("flex_disable_no_forwards_restrictions", value).apply();
+    }
+
+    public static boolean isNoForwardsBlocked(boolean peerRestricted, boolean messageRestricted) {
+        return !isNoForwardsRestrictionsDisabled() && (peerRestricted || messageRestricted);
+    }
+
 
     public static void setMainTabsHidden(boolean value) {
         prefs().edit().putBoolean("flex_hide_main_tabs", value).apply();

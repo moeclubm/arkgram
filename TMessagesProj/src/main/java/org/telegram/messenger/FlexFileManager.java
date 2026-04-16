@@ -43,6 +43,7 @@ public class FlexFileManager {
         global.put("download_speed_boost", FlexConfig.getDownloadSpeedBoost());
         global.put("disable_webrtc", FlexConfig.isWebRtcDisabled());
         global.put("show_dc_info", FlexConfig.isDcInfoEnabled());
+        global.put("disable_no_forwards_restrictions", FlexConfig.isNoForwardsRestrictionsDisabled());
         global.put("hide_main_tabs", FlexConfig.isMainTabsHidden());
         global.put("disable_ui_transparency", FlexConfig.isUiTransparencyDisabled());
         global.put("disable_ui_blur", FlexConfig.isUiBlurDisabled());
@@ -106,6 +107,9 @@ public class FlexFileManager {
             FlexConfig.setUiBlurDisabled(global.get("disable_ui_blur").getAsBoolean());
         }
         if (global.has("disable_markdown")) {
+        if (global.has("disable_no_forwards_restrictions")) {
+            FlexConfig.setNoForwardsRestrictionsDisabled(global.get("disable_no_forwards_restrictions").getAsBoolean());
+        }
             FlexConfig.setMarkdownDisabled(global.get("disable_markdown").getAsBoolean());
         }
         if (global.has("new_markdown_parser")) {

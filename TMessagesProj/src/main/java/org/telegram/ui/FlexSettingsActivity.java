@@ -27,6 +27,8 @@ public class FlexSettingsActivity extends UniversalFragment {
     private static final int ID_DISABLE_UI_BLUR = 9;
     private static final int ID_LLM_SETTINGS = 10;
     private static final int ID_FILE_MANAGEMENT = 11;
+    private static final int ID_DISABLE_NO_FORWARDS_RESTRICTIONS = 12;
+    private static final int ID_DEFAULT_VIDEO_QUALITY = 13;
     private static final int ID_CHAT = 100;
     private static final int ID_DATA = 101;
     private static final int ID_LANGUAGE = 102;
@@ -43,6 +45,7 @@ public class FlexSettingsActivity extends UniversalFragment {
         items.add(UItem.asButton(ID_ENHANCED_DOWNLOAD, R.drawable.msg_speed, getString(R.string.FlexEnhancedDownload), getDownloadSpeedBoostTitle()));
         items.add(UItem.asCheck(ID_DISABLE_WEBRTC, getString(R.string.FlexDisableWebrtc)).setChecked(FlexConfig.isWebRtcDisabled()));
         items.add(UItem.asCheck(ID_SHOW_DC_INFO, getString(R.string.FlexShowDcInfo)).setChecked(FlexConfig.isDcInfoEnabled()));
+        items.add(UItem.asCheck(ID_DISABLE_NO_FORWARDS_RESTRICTIONS, getString(R.string.FlexDisableNoForwardsRestrictions)).setChecked(FlexConfig.isNoForwardsRestrictionsDisabled()));
         items.add(UItem.asCheck(ID_HIDE_MAIN_TABS, getString(R.string.FlexHideMainTabs)).setChecked(FlexConfig.isMainTabsHidden()));
         items.add(UItem.asCheck(ID_DISABLE_UI_TRANSPARENCY, getString(R.string.FlexDisableUiTransparency)).setChecked(FlexConfig.isUiTransparencyDisabled()));
         items.add(UItem.asCheck(ID_DISABLE_UI_BLUR, getString(R.string.FlexDisableUiBlur)).setChecked(FlexConfig.isUiBlurDisabled()));
@@ -73,6 +76,9 @@ public class FlexSettingsActivity extends UniversalFragment {
             listView.adapter.update(true);
         } else if (item.id == ID_HIDE_MAIN_TABS) {
             FlexConfig.setMainTabsHidden(!FlexConfig.isMainTabsHidden());
+        } else if (item.id == ID_DISABLE_NO_FORWARDS_RESTRICTIONS) {
+            FlexConfig.setNoForwardsRestrictionsDisabled(!FlexConfig.isNoForwardsRestrictionsDisabled());
+            listView.adapter.update(true);
             NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.mainTabsVisibilityToggled);
             listView.adapter.update(true);
         } else if (item.id == ID_DISABLE_UI_TRANSPARENCY) {

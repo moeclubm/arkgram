@@ -10686,7 +10686,11 @@
     <string name="FlexDownloadSpeedBoostOff">Off</string>
     <string name="FlexDownloadSpeedBoostAverage">Normal Boost</string>
     <string name="FlexDownloadSpeedBoostExtreme">Extreme Boost</string>
+    <string name="FlexDefaultVideoQuality">Default Video Resolution</string>
+    <string name="FlexDefaultVideoQualityInfo">Choose the default quality tier for media that offers multiple video qualities. Per-media manual quality choices still take priority.</string>
     <string name="FlexDisableWebrtc">Disable WebRTC</string>
+    <string name="FlexDisableNoForwardsRestrictions">Remove Save/Download Restrictions</string>
+    <string name="FlexDisableNoForwardsRestrictionsInfo">When enabled, save and download actions ignore no forwards restrictions. Forwarding, sharing, screenshot protection, and other secure behavior stay unchanged.</string>
     <string name="FlexShowDcInfo">Show DC Info</string>
     <string name="FlexHideMainTabs">Hide Main Tabs</string>
     <string name="FlexHideMainTabsInfo">When enabled, the main tab entries move to the top-right menu.</string>
