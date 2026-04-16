@@ -2,8 +2,11 @@ package org.telegram.ui;
 
 import static org.telegram.messenger.LocaleController.getString;
 
+import android.text.TextUtils;
 import android.view.View;
 
+import org.telegram.messenger.FlexConfig;
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.ui.Components.UItem;
 import org.telegram.ui.Components.UniversalAdapter;
@@ -15,6 +18,7 @@ public class FlexLlmSettingsActivity extends UniversalFragment {
 
     private static final int ID_TRANSLATION = 1;
     private static final int ID_AI_SUMMARY = 2;
+    private static final int ID_PROVIDER_BASE = 100;
 
     @Override
     protected CharSequence getTitle() {
@@ -23,10 +27,15 @@ public class FlexLlmSettingsActivity extends UniversalFragment {
 
     @Override
     protected void fillItems(ArrayList<UItem> items, UniversalAdapter adapter) {
-        items.add(UItem.asHeader(getString(R.string.FlexLlmSettings)));
-        items.add(UItem.asButton(ID_TRANSLATION, R.drawable.msg_translate, getString(R.string.FlexTranslationLlmSettings)));
-        items.add(UItem.asButton(ID_AI_SUMMARY, R.drawable.outline_ai_translate2, getString(R.string.FlexAiSummarySettings)));
+        items.add(UItem.asHeader(getString(R.string.FlexLlmProviders)));
+        for (int provider = FlexConfig.LLM_PROVIDER_CUSTOM; provider <= FlexConfig.LLM_PROVIDER_SILICONFLOW; ++provider) {
+            items.add(UItem.asButton(ID_PROVIDER_BASE + provider, R.drawable.msg2_data, FlexLlmFeatureSettingsActivity.getProviderTitle(provider), getProviderValue(provider)));
+        }
         items.add(UItem.asShadow(getString(R.string.FlexLlmSettingsInfo)));
+        items.add(UItem.asHeader(getString(R.string.FlexLlmFeatures)));
+        items.add(UItem.asButton(ID_TRANSLATION, R.drawable.msg_translate, getString(R.string.FlexTranslationLlmSettings), getFeatureValue(false)));
+        items.add(UItem.asButton(ID_AI_SUMMARY, R.drawable.outline_ai_translate2, getString(R.string.FlexAiSummarySettings), getFeatureValue(true)));
+        items.add(UItem.asShadow(null));
     }
 
     @Override
@@ -35,11 +44,33 @@ public class FlexLlmSettingsActivity extends UniversalFragment {
             presentFragment(new FlexLlmFeatureSettingsActivity(false));
         } else if (item.id == ID_AI_SUMMARY) {
             presentFragment(new FlexLlmFeatureSettingsActivity(true));
+        } else if (item.id >= ID_PROVIDER_BASE) {
+            presentFragment(new FlexLlmProviderSettingsActivity(item.id - ID_PROVIDER_BASE));
         }
     }
 
     @Override
     protected boolean onLongClick(UItem item, View view, int position, float x, float y) {
         return false;
+    }
+
+    private CharSequence getProviderValue(int provider) {
+        ArrayList<String> models = FlexConfig.getProviderModelList(provider);
+        if (models.isEmpty()) {
+            return getString(R.string.FlexLlmNotSet);
+        }
+        if (models.size() == 1) {
+            return models.get(0);
+        }
+        return LocaleController.formatString(R.string.FlexLlmModelsCount, models.size());
+    }
+
+    private CharSequence getFeatureValue(boolean summary) {
+        int provider = summary ? FlexConfig.getAiSummaryLlmProvider() : FlexConfig.getTranslationLlmProvider();
+        String model = summary ? FlexConfig.getAiSummaryLlmModel() : FlexConfig.getLlmModel();
+        if (TextUtils.isEmpty(model)) {
+            return getString(R.string.FlexLlmNotSet);
+        }
+        return FlexLlmFeatureSettingsActivity.getProviderTitle(provider) + " / " + model;
     }
 }

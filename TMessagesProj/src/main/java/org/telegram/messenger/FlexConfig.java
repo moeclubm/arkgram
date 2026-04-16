@@ -5,6 +5,9 @@ import android.content.SharedPreferences;
 
 import androidx.core.graphics.ColorUtils;
 
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
+
 public class FlexConfig {
 
     public static final int BOOST_NONE = 0;
@@ -27,8 +30,6 @@ public class FlexConfig {
     public static final String DEFAULT_DEEPL_API_URL = "https://api-free.deepl.com/v2/translate";
     public static final String DEFAULT_TRANSLATION_LLM_PROMPT = "You are a professional translation engine. Translate the user's text into the requested target language. Return only the translated text. Preserve line breaks, markdown, URLs, mentions, hashtags, emoji, punctuation, and list structure. Do not add explanations.";
     public static final String DEFAULT_AI_SUMMARY_PROMPT = "You analyze group and channel discussions. Write a structured report in the requested output language based only on the provided messages and local statistics. Cover overview, main topics, hotspots, participant activity, timeline changes, decisions or action items, and unresolved questions. If the messages do not support a conclusion, state that explicitly.";
-    public static final String OPENCC_CONVERSION_AUTO = "AUTO";
-
     private static SharedPreferences prefs() {
         return MessagesController.getGlobalMainSettings();
     }
@@ -93,17 +94,6 @@ public class FlexConfig {
         prefs().edit().putBoolean("flex_disable_webrtc", value).apply();
     }
 
-    public static boolean isDcInfoEnabled() {
-        return prefs().getBoolean("flex_show_dc_info", true);
-    }
-
-    public static void setDcInfoEnabled(boolean value) {
-        prefs().edit().putBoolean("flex_show_dc_info", value).apply();
-    }
-
-    public static boolean isMainTabsHidden() {
-        return prefs().getBoolean("flex_hide_main_tabs", false);
-    }
     public static boolean isNoForwardsRestrictionsDisabled() {
         return prefs().getBoolean("flex_disable_no_forwards_restrictions", false);
     }
@@ -116,6 +106,17 @@ public class FlexConfig {
         return !isNoForwardsRestrictionsDisabled() && (peerRestricted || messageRestricted);
     }
 
+    public static boolean isDcInfoEnabled() {
+        return prefs().getBoolean("flex_show_dc_info", true);
+    }
+
+    public static void setDcInfoEnabled(boolean value) {
+        prefs().edit().putBoolean("flex_show_dc_info", value).apply();
+    }
+
+    public static boolean isMainTabsHidden() {
+        return prefs().getBoolean("flex_hide_main_tabs", false);
+    }
 
     public static void setMainTabsHidden(boolean value) {
         prefs().edit().putBoolean("flex_hide_main_tabs", value).apply();
@@ -191,14 +192,6 @@ public class FlexConfig {
         return getTranslationProvider() != TRANSLATION_PROVIDER_TELEGRAM;
     }
 
-    public static boolean isOpenCCAutoConversionEnabled() {
-        return prefs().getBoolean("flex_opencc_auto_conversion", false);
-    }
-
-    public static void setOpenCCAutoConversionEnabled(boolean value) {
-        prefs().edit().putBoolean("flex_opencc_auto_conversion", value).apply();
-    }
-
     public static String getDeepLApiUrl() {
         String value = prefs().getString("flex_translation_deepl_api_url", DEFAULT_DEEPL_API_URL);
         return value == null || value.trim().isEmpty() ? DEFAULT_DEEPL_API_URL : value.trim();
@@ -217,8 +210,200 @@ public class FlexConfig {
         prefs().edit().putString("flex_translation_deepl_api_key", value == null ? "" : value.trim()).apply();
     }
 
-    public static int getTranslationLlmProvider() {
+    private static String llmProviderKey(int provider, String suffix) {
+        return "flex_llm_provider_" + provider + "_" + suffix;
+    }
+
+    private static int getLegacyTranslationLlmProvider() {
         return prefs().getInt("flex_translation_llm_provider", LLM_PROVIDER_OPENAI);
+    }
+
+    private static int getLegacyAiSummaryLlmProvider() {
+        return prefs().getInt("flex_ai_summary_llm_provider", LLM_PROVIDER_OPENAI);
+    }
+
+    private static String getLegacyTranslationLlmApiUrl() {
+        return clean(prefs().getString("flex_translation_llm_api_url", ""));
+    }
+
+    private static String getLegacyAiSummaryLlmApiUrl() {
+        return clean(prefs().getString("flex_ai_summary_llm_api_url", ""));
+    }
+
+    private static String getLegacyTranslationLlmApiKey() {
+        return clean(prefs().getString("flex_translation_llm_api_key", ""));
+    }
+
+    private static String getLegacyAiSummaryLlmApiKey() {
+        return clean(prefs().getString("flex_ai_summary_llm_api_key", ""));
+    }
+
+    private static String getLegacyTranslationLlmModel() {
+        return clean(prefs().getString("flex_translation_llm_model", ""));
+    }
+
+    private static String getLegacyAiSummaryLlmModel() {
+        return clean(prefs().getString("flex_ai_summary_llm_model", ""));
+    }
+
+    private static ArrayList<String> splitModelList(String value) {
+        LinkedHashSet<String> models = new LinkedHashSet<>();
+        String[] parts = clean(value).replace('\r', '\n').split("[,\n]");
+        for (int i = 0; i < parts.length; ++i) {
+            String model = clean(parts[i]);
+            if (!model.isEmpty()) {
+                models.add(model);
+            }
+        }
+        return new ArrayList<>(models);
+    }
+
+    private static String joinModelList(Iterable<String> values) {
+        StringBuilder builder = new StringBuilder();
+        for (String value : values) {
+            String model = clean(value);
+            if (model.isEmpty()) {
+                continue;
+            }
+            if (builder.length() > 0) {
+                builder.append('\n');
+            }
+            builder.append(model);
+        }
+        return builder.toString();
+    }
+
+    private static String mergeModelLists(String first, String second) {
+        LinkedHashSet<String> models = new LinkedHashSet<>();
+        models.addAll(splitModelList(first));
+        models.addAll(splitModelList(second));
+        return joinModelList(models);
+    }
+
+    public static String makeLlmModelRef(int provider, String model) {
+        String value = clean(model);
+        return value.isEmpty() ? "" : provider + ":" + value;
+    }
+
+    public static int getLlmProviderFromRef(String ref) {
+        String value = clean(ref);
+        int index = value.indexOf(':');
+        if (index <= 0) {
+            return -1;
+        }
+        try {
+            return Integer.parseInt(value.substring(0, index));
+        } catch (Exception ignore) {
+            return -1;
+        }
+    }
+
+    public static String getLlmModelFromRef(String ref) {
+        String value = clean(ref);
+        int index = value.indexOf(':');
+        if (index < 0 || index >= value.length() - 1) {
+            return "";
+        }
+        return clean(value.substring(index + 1));
+    }
+
+    private static String getLegacyTranslationLlmModelRef() {
+        String model = getLegacyTranslationLlmModel();
+        return model.isEmpty() ? "" : makeLlmModelRef(getLegacyTranslationLlmProvider(), model);
+    }
+
+    private static String getLegacyAiSummaryLlmModelRef() {
+        String model = getLegacyAiSummaryLlmModel();
+        return model.isEmpty() ? "" : makeLlmModelRef(getLegacyAiSummaryLlmProvider(), model);
+    }
+
+    public static String getTranslationLlmModelRef() {
+        String value = clean(prefs().getString("flex_translation_llm_model_ref", ""));
+        return value.isEmpty() ? getLegacyTranslationLlmModelRef() : value;
+    }
+
+    public static void setTranslationLlmModelRef(String value) {
+        prefs().edit().putString("flex_translation_llm_model_ref", clean(value)).apply();
+    }
+
+    public static String getAiSummaryLlmModelRef() {
+        String value = clean(prefs().getString("flex_ai_summary_llm_model_ref", ""));
+        return value.isEmpty() ? getLegacyAiSummaryLlmModelRef() : value;
+    }
+
+    public static void setAiSummaryLlmModelRef(String value) {
+        prefs().edit().putString("flex_ai_summary_llm_model_ref", clean(value)).apply();
+    }
+
+    public static String getStoredProviderApiUrl(int provider) {
+        return clean(prefs().getString(llmProviderKey(provider, "api_url"), ""));
+    }
+
+    public static String getProviderApiUrl(int provider) {
+        String value = getStoredProviderApiUrl(provider);
+        if (!value.isEmpty()) {
+            return resolveLlmApiUrl(provider, value);
+        }
+        if (provider == getLegacyTranslationLlmProvider()) {
+            value = getLegacyTranslationLlmApiUrl();
+        }
+        if (value.isEmpty() && provider == getLegacyAiSummaryLlmProvider()) {
+            value = getLegacyAiSummaryLlmApiUrl();
+        }
+        return resolveLlmApiUrl(provider, value);
+    }
+
+    public static void setProviderApiUrl(int provider, String value) {
+        prefs().edit().putString(llmProviderKey(provider, "api_url"), clean(value)).apply();
+    }
+
+    public static String getStoredProviderApiKey(int provider) {
+        return clean(prefs().getString(llmProviderKey(provider, "api_key"), ""));
+    }
+
+    public static String getProviderApiKey(int provider) {
+        String value = getStoredProviderApiKey(provider);
+        if (!value.isEmpty()) {
+            return value;
+        }
+        if (provider == getLegacyTranslationLlmProvider()) {
+            value = getLegacyTranslationLlmApiKey();
+        }
+        if (value.isEmpty() && provider == getLegacyAiSummaryLlmProvider()) {
+            value = getLegacyAiSummaryLlmApiKey();
+        }
+        return value;
+    }
+
+    public static void setProviderApiKey(int provider, String value) {
+        prefs().edit().putString(llmProviderKey(provider, "api_key"), clean(value)).apply();
+    }
+
+    public static String getStoredProviderModelsText(int provider) {
+        return clean(prefs().getString(llmProviderKey(provider, "models"), ""));
+    }
+
+    public static String getProviderModelsText(int provider) {
+        String value = getStoredProviderModelsText(provider);
+        if (!value.isEmpty()) {
+            return joinModelList(splitModelList(value));
+        }
+        String translationModels = provider == getLegacyTranslationLlmProvider() ? getLegacyTranslationLlmModel() : "";
+        String summaryModels = provider == getLegacyAiSummaryLlmProvider() ? getLegacyAiSummaryLlmModel() : "";
+        return mergeModelLists(translationModels, summaryModels);
+    }
+
+    public static ArrayList<String> getProviderModelList(int provider) {
+        return splitModelList(getProviderModelsText(provider));
+    }
+
+    public static void setProviderModelsText(int provider, String value) {
+        prefs().edit().putString(llmProviderKey(provider, "models"), joinModelList(splitModelList(value))).apply();
+    }
+
+    public static int getTranslationLlmProvider() {
+        int provider = getLlmProviderFromRef(getTranslationLlmModelRef());
+        return provider >= 0 ? provider : getLegacyTranslationLlmProvider();
     }
 
     public static void setTranslationLlmProvider(int value) {
@@ -226,31 +411,42 @@ public class FlexConfig {
     }
 
     public static String getLlmApiUrl() {
-        return resolveLlmApiUrl(getTranslationLlmProvider(), prefs().getString("flex_translation_llm_api_url", ""));
+        return getProviderApiUrl(getTranslationLlmProvider());
     }
 
     public static String getStoredLlmApiUrl() {
-        return clean(prefs().getString("flex_translation_llm_api_url", ""));
+        String value = getStoredProviderApiUrl(getTranslationLlmProvider());
+        return value.isEmpty() ? getLegacyTranslationLlmApiUrl() : value;
     }
 
     public static void setLlmApiUrl(String value) {
-        prefs().edit().putString("flex_translation_llm_api_url", clean(value)).apply();
+        setProviderApiUrl(getTranslationLlmProvider(), value);
     }
 
     public static String getLlmApiKey() {
-        return clean(prefs().getString("flex_translation_llm_api_key", ""));
+        return getProviderApiKey(getTranslationLlmProvider());
     }
 
     public static void setLlmApiKey(String value) {
-        prefs().edit().putString("flex_translation_llm_api_key", clean(value)).apply();
+        setProviderApiKey(getTranslationLlmProvider(), value);
     }
 
     public static String getLlmModel() {
-        return clean(prefs().getString("flex_translation_llm_model", ""));
+        String value = getLlmModelFromRef(getTranslationLlmModelRef());
+        return value.isEmpty() ? getLegacyTranslationLlmModel() : value;
     }
 
     public static void setLlmModel(String value) {
-        prefs().edit().putString("flex_translation_llm_model", clean(value)).apply();
+        String model = clean(value);
+        int provider = getTranslationLlmProvider();
+        setTranslationLlmModelRef(makeLlmModelRef(provider, model));
+        if (!model.isEmpty()) {
+            ArrayList<String> models = getProviderModelList(provider);
+            if (!models.contains(model)) {
+                models.add(model);
+                setProviderModelsText(provider, joinModelList(models));
+            }
+        }
     }
 
     public static String getLlmPrompt() {
@@ -262,17 +458,9 @@ public class FlexConfig {
         prefs().edit().putString("flex_translation_llm_prompt", clean(value)).apply();
     }
 
-    public static String getOpenCCConversion() {
-        String value = clean(prefs().getString("flex_opencc_conversion", OPENCC_CONVERSION_AUTO));
-        return value.isEmpty() ? OPENCC_CONVERSION_AUTO : value;
-    }
-
-    public static void setOpenCCConversion(String value) {
-        prefs().edit().putString("flex_opencc_conversion", clean(value).isEmpty() ? OPENCC_CONVERSION_AUTO : clean(value)).apply();
-    }
-
     public static int getAiSummaryLlmProvider() {
-        return prefs().getInt("flex_ai_summary_llm_provider", LLM_PROVIDER_OPENAI);
+        int provider = getLlmProviderFromRef(getAiSummaryLlmModelRef());
+        return provider >= 0 ? provider : getLegacyAiSummaryLlmProvider();
     }
 
     public static void setAiSummaryLlmProvider(int value) {
@@ -280,31 +468,42 @@ public class FlexConfig {
     }
 
     public static String getAiSummaryLlmApiUrl() {
-        return resolveLlmApiUrl(getAiSummaryLlmProvider(), prefs().getString("flex_ai_summary_llm_api_url", ""));
+        return getProviderApiUrl(getAiSummaryLlmProvider());
     }
 
     public static String getStoredAiSummaryLlmApiUrl() {
-        return clean(prefs().getString("flex_ai_summary_llm_api_url", ""));
+        String value = getStoredProviderApiUrl(getAiSummaryLlmProvider());
+        return value.isEmpty() ? getLegacyAiSummaryLlmApiUrl() : value;
     }
 
     public static void setAiSummaryLlmApiUrl(String value) {
-        prefs().edit().putString("flex_ai_summary_llm_api_url", clean(value)).apply();
+        setProviderApiUrl(getAiSummaryLlmProvider(), value);
     }
 
     public static String getAiSummaryLlmApiKey() {
-        return clean(prefs().getString("flex_ai_summary_llm_api_key", ""));
+        return getProviderApiKey(getAiSummaryLlmProvider());
     }
 
     public static void setAiSummaryLlmApiKey(String value) {
-        prefs().edit().putString("flex_ai_summary_llm_api_key", clean(value)).apply();
+        setProviderApiKey(getAiSummaryLlmProvider(), value);
     }
 
     public static String getAiSummaryLlmModel() {
-        return clean(prefs().getString("flex_ai_summary_llm_model", ""));
+        String value = getLlmModelFromRef(getAiSummaryLlmModelRef());
+        return value.isEmpty() ? getLegacyAiSummaryLlmModel() : value;
     }
 
     public static void setAiSummaryLlmModel(String value) {
-        prefs().edit().putString("flex_ai_summary_llm_model", clean(value)).apply();
+        String model = clean(value);
+        int provider = getAiSummaryLlmProvider();
+        setAiSummaryLlmModelRef(makeLlmModelRef(provider, model));
+        if (!model.isEmpty()) {
+            ArrayList<String> models = getProviderModelList(provider);
+            if (!models.contains(model)) {
+                models.add(model);
+                setProviderModelsText(provider, joinModelList(models));
+            }
+        }
     }
 
     public static String getAiSummaryLlmPrompt() {

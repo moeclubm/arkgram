@@ -17,6 +17,7 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.EditTextBoldCursor;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.UItem;
@@ -27,11 +28,8 @@ import java.util.ArrayList;
 
 public class FlexLlmFeatureSettingsActivity extends UniversalFragment {
 
-    private static final int ID_PROVIDER = 1;
-    private static final int ID_API_URL = 2;
-    private static final int ID_API_KEY = 3;
-    private static final int ID_MODEL = 4;
-    private static final int ID_PROMPT = 5;
+    private static final int ID_MODEL = 1;
+    private static final int ID_PROMPT = 2;
 
     private final boolean summary;
 
@@ -46,10 +44,7 @@ public class FlexLlmFeatureSettingsActivity extends UniversalFragment {
 
     @Override
     protected void fillItems(ArrayList<UItem> items, UniversalAdapter adapter) {
-        items.add(UItem.asHeader(getString(R.string.FlexLlmProviderConfig)));
-        items.add(UItem.asButton(ID_PROVIDER, R.drawable.msg_translate, getString(R.string.FlexLlmProvider), getProviderTitle(getProvider())));
-        items.add(UItem.asButton(ID_API_URL, R.drawable.msg2_data, getString(R.string.FlexLlmApiUrl), formatPlainValue(getApiUrl())));
-        items.add(UItem.asButton(ID_API_KEY, R.drawable.msg_translate, getString(R.string.FlexLlmApiKey), formatSecretValue(getApiKey())));
+        items.add(UItem.asHeader(getTitle()));
         items.add(UItem.asButton(ID_MODEL, R.drawable.msg2_data, getString(R.string.FlexLlmModel), formatPlainValue(getModel())));
         items.add(UItem.asButton(ID_PROMPT, R.drawable.menu_feature_code, getString(R.string.FlexLlmPrompt), formatPromptValue(getPrompt())));
         items.add(UItem.asShadow(getInfoText()));
@@ -57,18 +52,11 @@ public class FlexLlmFeatureSettingsActivity extends UniversalFragment {
 
     @Override
     protected void onClick(UItem item, View view, int position, float x, float y) {
-        if (item.id == ID_PROVIDER) {
-            showProviderDialog();
-        } else if (item.id == ID_API_URL) {
-            showTextValueDialog(getString(R.string.FlexLlmApiUrl), getString(R.string.FlexLlmApiUrlHint), getApiUrl(), InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_URI | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS, false, this::setApiUrl);
-        } else if (item.id == ID_API_KEY) {
-            showTextValueDialog(getString(R.string.FlexLlmApiKey), null, getApiKey(), InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS, false, this::setApiKey);
-        } else if (item.id == ID_MODEL) {
-            showTextValueDialog(getString(R.string.FlexLlmModel), getString(R.string.FlexLlmModelHint), getModel(), InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS, false, this::setModel);
+        if (item.id == ID_MODEL) {
+            showModelDialog();
         } else if (item.id == ID_PROMPT) {
             showTextValueDialog(getString(R.string.FlexLlmPrompt), getString(R.string.FlexLlmPromptHint), getPrompt(), InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_MULTI_LINE | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES, true, this::setPrompt);
         }
-        listView.adapter.update(true);
     }
 
     @Override
@@ -95,39 +83,15 @@ public class FlexLlmFeatureSettingsActivity extends UniversalFragment {
         return getString(R.string.FlexLlmProviderCustom);
     }
 
-    private int getProvider() {
-        return summary ? FlexConfig.getAiSummaryLlmProvider() : FlexConfig.getTranslationLlmProvider();
+    private String getModelRef() {
+        return summary ? FlexConfig.getAiSummaryLlmModelRef() : FlexConfig.getTranslationLlmModelRef();
     }
 
-    private void setProvider(int provider) {
+    private void setModelRef(String value) {
         if (summary) {
-            FlexConfig.setAiSummaryLlmProvider(provider);
+            FlexConfig.setAiSummaryLlmModelRef(value);
         } else {
-            FlexConfig.setTranslationLlmProvider(provider);
-        }
-    }
-
-    private String getApiUrl() {
-        return summary ? FlexConfig.getAiSummaryLlmApiUrl() : FlexConfig.getLlmApiUrl();
-    }
-
-    private void setApiUrl(String value) {
-        if (summary) {
-            FlexConfig.setAiSummaryLlmApiUrl(value);
-        } else {
-            FlexConfig.setLlmApiUrl(value);
-        }
-    }
-
-    private String getApiKey() {
-        return summary ? FlexConfig.getAiSummaryLlmApiKey() : FlexConfig.getLlmApiKey();
-    }
-
-    private void setApiKey(String value) {
-        if (summary) {
-            FlexConfig.setAiSummaryLlmApiKey(value);
-        } else {
-            FlexConfig.setLlmApiKey(value);
+            FlexConfig.setTranslationLlmModelRef(value);
         }
     }
 
@@ -156,25 +120,15 @@ public class FlexLlmFeatureSettingsActivity extends UniversalFragment {
     }
 
     private String getInfoText() {
-        StringBuilder builder = new StringBuilder();
-        builder.append(getString(R.string.FlexLlmApiUrlHint)).append('\n');
-        builder.append(getString(R.string.FlexLlmPromptHint)).append('\n').append('\n');
-        builder.append(summary ? getString(R.string.FlexAiSummarySettingsInfo) : getString(R.string.FlexTranslationLlmSettingsInfo));
-        return builder.toString();
+        return summary ? getString(R.string.FlexAiSummarySettingsInfo) : getString(R.string.FlexTranslationLlmSettingsInfo);
     }
 
     private CharSequence formatPlainValue(String value) {
-        return TextUtils.isEmpty(value) ? getString(R.string.FlexLlmNotSet) : value;
-    }
-
-    private CharSequence formatSecretValue(String value) {
         if (TextUtils.isEmpty(value)) {
             return getString(R.string.FlexLlmNotSet);
         }
-        if (value.length() <= 4) {
-            return "****";
-        }
-        return "****" + value.substring(value.length() - 4);
+        int provider = summary ? FlexConfig.getAiSummaryLlmProvider() : FlexConfig.getTranslationLlmProvider();
+        return getProviderTitle(provider) + " / " + value;
     }
 
     private CharSequence formatPromptValue(String value) {
@@ -188,19 +142,25 @@ public class FlexLlmFeatureSettingsActivity extends UniversalFragment {
         return singleLine.substring(0, 36) + "...";
     }
 
-    private void showProviderDialog() {
-        CharSequence[] items = new CharSequence[] {
-            getString(R.string.FlexLlmProviderCustom),
-            getString(R.string.FlexLlmProviderOpenAi),
-            getString(R.string.FlexLlmProviderOpenRouter),
-            getString(R.string.FlexLlmProviderDeepSeek),
-            getString(R.string.FlexLlmProviderGroq),
-            getString(R.string.FlexLlmProviderSiliconFlow)
-        };
+    private void showModelDialog() {
+        ArrayList<String> refs = new ArrayList<>();
+        ArrayList<CharSequence> items = new ArrayList<>();
+        for (int provider = FlexConfig.LLM_PROVIDER_CUSTOM; provider <= FlexConfig.LLM_PROVIDER_SILICONFLOW; ++provider) {
+            ArrayList<String> models = FlexConfig.getProviderModelList(provider);
+            for (int i = 0; i < models.size(); ++i) {
+                String model = models.get(i);
+                refs.add(FlexConfig.makeLlmModelRef(provider, model));
+                items.add(getProviderTitle(provider) + " / " + model);
+            }
+        }
+        if (items.isEmpty()) {
+            BulletinFactory.of(this).createErrorBulletin(getString(R.string.FlexLlmNoModelsConfigured)).show();
+            return;
+        }
         AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
-        builder.setTitle(getString(R.string.FlexLlmProvider));
-        builder.setItems(items, (dialog, which) -> {
-            setProvider(which);
+        builder.setTitle(getString(R.string.FlexLlmModel));
+        builder.setItems(items.toArray(new CharSequence[0]), (dialog, which) -> {
+            setModelRef(refs.get(which));
             listView.adapter.update(true);
         });
         showDialog(builder.create());

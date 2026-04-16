@@ -34,7 +34,7 @@ public class FlexFileManager {
         LinkedHashMap<String, Object> global = new LinkedHashMap<>();
         LinkedHashMap<String, Object> account = new LinkedHashMap<>();
 
-        root.put("version", 2);
+        root.put("version", 3);
         root.put("exported_at", System.currentTimeMillis());
         root.put("current_account", currentAccount);
         root.put("global", global);
@@ -43,8 +43,8 @@ public class FlexFileManager {
         global.put("download_speed_boost", FlexConfig.getDownloadSpeedBoost());
         global.put("default_video_quality", FlexConfig.getDefaultVideoQuality());
         global.put("disable_webrtc", FlexConfig.isWebRtcDisabled());
-        global.put("show_dc_info", FlexConfig.isDcInfoEnabled());
         global.put("disable_no_forwards_restrictions", FlexConfig.isNoForwardsRestrictionsDisabled());
+        global.put("show_dc_info", FlexConfig.isDcInfoEnabled());
         global.put("hide_main_tabs", FlexConfig.isMainTabsHidden());
         global.put("disable_ui_transparency", FlexConfig.isUiTransparencyDisabled());
         global.put("disable_ui_blur", FlexConfig.isUiBlurDisabled());
@@ -59,14 +59,23 @@ public class FlexFileManager {
         global.put("translation_llm_api_url", FlexConfig.getStoredLlmApiUrl());
         global.put("translation_llm_api_key", FlexConfig.getLlmApiKey());
         global.put("translation_llm_model", FlexConfig.getLlmModel());
+        global.put("translation_llm_model_ref", FlexConfig.getTranslationLlmModelRef());
         global.put("translation_llm_prompt", FlexConfig.getLlmPrompt());
-        global.put("opencc_auto_conversion", FlexConfig.isOpenCCAutoConversionEnabled());
-        global.put("opencc_conversion", FlexConfig.getOpenCCConversion());
         global.put("ai_summary_llm_provider", FlexConfig.getAiSummaryLlmProvider());
         global.put("ai_summary_llm_api_url", FlexConfig.getStoredAiSummaryLlmApiUrl());
         global.put("ai_summary_llm_api_key", FlexConfig.getAiSummaryLlmApiKey());
         global.put("ai_summary_llm_model", FlexConfig.getAiSummaryLlmModel());
+        global.put("ai_summary_llm_model_ref", FlexConfig.getAiSummaryLlmModelRef());
         global.put("ai_summary_llm_prompt", FlexConfig.getAiSummaryLlmPrompt());
+        LinkedHashMap<String, Object> llmProviders = new LinkedHashMap<>();
+        for (int provider = FlexConfig.LLM_PROVIDER_CUSTOM; provider <= FlexConfig.LLM_PROVIDER_SILICONFLOW; ++provider) {
+            LinkedHashMap<String, Object> config = new LinkedHashMap<>();
+            config.put("api_url", FlexConfig.getStoredProviderApiUrl(provider));
+            config.put("api_key", FlexConfig.getProviderApiKey(provider));
+            config.put("models", FlexConfig.getProviderModelsText(provider));
+            llmProviders.put(String.valueOf(provider), config);
+        }
+        global.put("llm_provider_configs", llmProviders);
 
         account.put("translate_button", translateController.isContextTranslateEnabled());
         account.put("translate_chat_button", translateController.isChatTranslateEnabled());
@@ -92,8 +101,14 @@ public class FlexFileManager {
         if (global.has("download_speed_boost")) {
             FlexConfig.setDownloadSpeedBoost(global.get("download_speed_boost").getAsInt());
         }
+        if (global.has("default_video_quality")) {
+            FlexConfig.setDefaultVideoQuality(global.get("default_video_quality").getAsInt());
+        }
         if (global.has("disable_webrtc")) {
             FlexConfig.setWebRtcDisabled(global.get("disable_webrtc").getAsBoolean());
+        }
+        if (global.has("disable_no_forwards_restrictions")) {
+            FlexConfig.setNoForwardsRestrictionsDisabled(global.get("disable_no_forwards_restrictions").getAsBoolean());
         }
         if (global.has("show_dc_info")) {
             FlexConfig.setDcInfoEnabled(global.get("show_dc_info").getAsBoolean());
@@ -101,14 +116,8 @@ public class FlexFileManager {
         if (global.has("hide_main_tabs")) {
             FlexConfig.setMainTabsHidden(global.get("hide_main_tabs").getAsBoolean());
         }
-        if (global.has("default_video_quality")) {
-            FlexConfig.setDefaultVideoQuality(global.get("default_video_quality").getAsInt());
-        }
         if (global.has("disable_ui_transparency")) {
             FlexConfig.setUiTransparencyDisabled(global.get("disable_ui_transparency").getAsBoolean());
-        }
-        if (global.has("disable_no_forwards_restrictions")) {
-            FlexConfig.setNoForwardsRestrictionsDisabled(global.get("disable_no_forwards_restrictions").getAsBoolean());
         }
         if (global.has("disable_ui_blur")) {
             FlexConfig.setUiBlurDisabled(global.get("disable_ui_blur").getAsBoolean());
@@ -149,12 +158,6 @@ public class FlexFileManager {
         if (global.has("translation_llm_prompt")) {
             FlexConfig.setLlmPrompt(global.get("translation_llm_prompt").getAsString());
         }
-        if (global.has("opencc_auto_conversion")) {
-            FlexConfig.setOpenCCAutoConversionEnabled(global.get("opencc_auto_conversion").getAsBoolean());
-        }
-        if (global.has("opencc_conversion")) {
-            FlexConfig.setOpenCCConversion(global.get("opencc_conversion").getAsString());
-        }
         if (global.has("ai_summary_llm_provider")) {
             FlexConfig.setAiSummaryLlmProvider(global.get("ai_summary_llm_provider").getAsInt());
         }
@@ -169,6 +172,31 @@ public class FlexFileManager {
         }
         if (global.has("ai_summary_llm_prompt")) {
             FlexConfig.setAiSummaryLlmPrompt(global.get("ai_summary_llm_prompt").getAsString());
+        }
+        if (global.has("llm_provider_configs") && global.get("llm_provider_configs").isJsonObject()) {
+            JsonObject llmProviders = global.getAsJsonObject("llm_provider_configs");
+            for (int provider = FlexConfig.LLM_PROVIDER_CUSTOM; provider <= FlexConfig.LLM_PROVIDER_SILICONFLOW; ++provider) {
+                String key = String.valueOf(provider);
+                if (!llmProviders.has(key) || !llmProviders.get(key).isJsonObject()) {
+                    continue;
+                }
+                JsonObject config = llmProviders.getAsJsonObject(key);
+                if (config.has("api_url")) {
+                    FlexConfig.setProviderApiUrl(provider, config.get("api_url").getAsString());
+                }
+                if (config.has("api_key")) {
+                    FlexConfig.setProviderApiKey(provider, config.get("api_key").getAsString());
+                }
+                if (config.has("models")) {
+                    FlexConfig.setProviderModelsText(provider, config.get("models").getAsString());
+                }
+            }
+        }
+        if (global.has("translation_llm_model_ref")) {
+            FlexConfig.setTranslationLlmModelRef(global.get("translation_llm_model_ref").getAsString());
+        }
+        if (global.has("ai_summary_llm_model_ref")) {
+            FlexConfig.setAiSummaryLlmModelRef(global.get("ai_summary_llm_model_ref").getAsString());
         }
 
         JsonObject account = root.has("account") && root.get("account").isJsonObject() ? root.getAsJsonObject("account") : root;
