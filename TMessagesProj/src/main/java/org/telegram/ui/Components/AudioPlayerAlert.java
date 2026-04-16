@@ -79,6 +79,7 @@ import org.telegram.messenger.DownloadController;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.FileRefController;
+import org.telegram.messenger.FlexConfig;
 import org.telegram.messenger.ImageLoader;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.ImageReceiver;
@@ -2274,11 +2275,9 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
             }
             final long dialogId = messageObject.getDialogId();
             final long docId = messageObject.getDocument() != null ? messageObject.getDocument().id : 0L;
-            final boolean noforwards = (
-                dialogId < 0 && MessagesController.getInstance(currentAccount).isPeerNoForwards(dialogId) ||
-                MessagesController.getInstance(currentAccount).isPeerNoForwards(messageObject.getDialogId()) ||
-                messageObject.messageOwner.noforwards
-            );
+            final boolean peerNoforwards = MessagesController.getInstance(currentAccount).isPeerNoForwards(messageObject.getDialogId());
+            final boolean forwardNoforwards = peerNoforwards || messageObject.messageOwner.noforwards;
+            final boolean noforwards = FlexConfig.isNoForwardsBlocked(peerNoforwards, messageObject.messageOwner.noforwards);
             if (noforwards != this.noforwards) {
                 this.noforwards = noforwards;
 
@@ -2290,18 +2289,26 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
                 layoutParams.bottomMargin = dp(179 + (!isMyList() && !noforwards ? 52 : 0));
                 playerShadow.setLayoutParams(layoutParams);
             }
-            if (noforwards) {
+            if (forwardNoforwards) {
                 optionsButton.hideSubItem(1);
                 optionsButton.hideSubItem(2);
-                optionsButton.hideSubItem(5);
-                optionsButton.hideSubItem(6);
-                optionsButton.setAdditionalYOffset(-dp(16));
             } else {
                 optionsButton.showSubItem(1);
                 optionsButton.showSubItem(2);
-                optionsButton.showSubItem(5);
-                optionsButton.setAdditionalYOffset(-dp(157 + 40));
             }
+            if (noforwards) {
+                optionsButton.hideSubItem(5);
+            } else {
+                optionsButton.showSubItem(5);
+            }
+            if (castItem != null) {
+                if (forwardNoforwards) {
+                    optionsButton.hideSubItem(6);
+                } else {
+                    optionsButton.showSubItem(6);
+                }
+            }
+            optionsButton.setAdditionalYOffset(-dp(!forwardNoforwards || !noforwards ? 157 + 40 : 16));
             optionsButton.setSubItemShown(4, messageObject.getId() > 0);
             optionsButton.setSubItemShown(7, isMyList());
 
@@ -2892,13 +2899,16 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
 
     private void showOptions(AudioPlayerCell cell, MessageObject messageObject) {
         final ItemOptions o = ItemOptions.makeOptions(container, resourcesProvider, cell, true);
+        final boolean peerNoforwards = MessagesController.getInstance(currentAccount).isPeerNoForwards(messageObject.getDialogId());
+        final boolean forwardNoforwards = peerNoforwards || messageObject.messageOwner.noforwards;
+        final boolean saveNoforwards = FlexConfig.isNoForwardsBlocked(peerNoforwards, messageObject.messageOwner.noforwards);
 
         if (isMyList()) {
-            o.addIf(!noforwards, R.drawable.msg_forward, getString(R.string.Forward), () -> {
+            o.addIf(!forwardNoforwards, R.drawable.msg_forward, getString(R.string.Forward), () -> {
                 o.dismiss();
                 forward(messageObject);
             });
-            o.addIf(!noforwards, R.drawable.msg_shareout, getString(R.string.ShareFile), () -> {
+            o.addIf(!forwardNoforwards, R.drawable.msg_shareout, getString(R.string.ShareFile), () -> {
                 o.dismiss();
                 share(messageObject);
             });
@@ -2947,16 +2957,16 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
             o2.addGap();
             o2.addText(getString(R.string.AudioSaveToInfo), 12, dp(200));
 
-            o.addIf(!noforwards, R.drawable.msg_stories_save, getString(R.string.AudioSaveTo), () -> o.openSwipeback(o2));
-            if (!noforwards && o.getLast() != null)
+            o.addIf(!saveNoforwards, R.drawable.msg_stories_save, getString(R.string.AudioSaveTo), () -> o.openSwipeback(o2));
+            if (!saveNoforwards && o.getLast() != null)
                 o.getLast().setRightIcon(R.drawable.msg_arrowright);
 
             o.addGap();
-            o.addIf(!noforwards, R.drawable.msg_forward, getString(R.string.Forward), () -> {
+            o.addIf(!forwardNoforwards, R.drawable.msg_forward, getString(R.string.Forward), () -> {
                 o.dismiss();
                 forward(messageObject);
             });
-            o.addIf(!noforwards, R.drawable.msg_share, getString(R.string.ShareFile), () -> {
+            o.addIf(!forwardNoforwards, R.drawable.msg_share, getString(R.string.ShareFile), () -> {
                 o.dismiss();
                 share(messageObject);
             });
