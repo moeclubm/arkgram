@@ -483,7 +483,7 @@ public class ContactsController extends BaseController {
                 if (BuildVars.LOGS_ENABLED) {
                     FileLog.d("detected contacts change");
                 }
-                performSyncPhoneBook(getContactsCopy(contactsBook), true, false, true, false, true, false);
+                performSyncPhoneBook(getContactsCopy(contactsBook), true, false, true, false, true);
             }
         });
     }
@@ -501,16 +501,7 @@ public class ContactsController extends BaseController {
             if (BuildVars.LOGS_ENABLED) {
                 FileLog.d("force import contacts");
             }
-            performSyncPhoneBook(new HashMap<>(), true, true, true, true, false, false, allowManualImport);
-        });
-    }
-
-    public void syncPhoneBookByAlert(final HashMap<String, Contact> contacts, final boolean first, final boolean schedule, final boolean cancel) {
-        Utilities.globalQueue.postRunnable(() -> {
-            if (BuildVars.LOGS_ENABLED) {
-                FileLog.d("sync contacts by alert");
-            }
-            performSyncPhoneBook(contacts, true, first, schedule, false, false, cancel, false);
+            performSyncPhoneBook(new HashMap<>(), true, true, true, true, false, allowManualImport);
         });
     }
 
@@ -1025,11 +1016,11 @@ public class ContactsController extends BaseController {
         });
     }
 
-    protected void performSyncPhoneBook(final HashMap<String, Contact> contactHashMap, final boolean request, final boolean first, final boolean schedule, final boolean force, final boolean checkCount, final boolean canceled) {
-        performSyncPhoneBook(contactHashMap, request, first, schedule, force, checkCount, canceled, false);
+    protected void performSyncPhoneBook(final HashMap<String, Contact> contactHashMap, final boolean request, final boolean first, final boolean schedule, final boolean force, final boolean checkCount) {
+        performSyncPhoneBook(contactHashMap, request, first, schedule, force, checkCount, false);
     }
 
-    protected void performSyncPhoneBook(final HashMap<String, Contact> contactHashMap, final boolean request, final boolean first, final boolean schedule, final boolean force, final boolean checkCount, final boolean canceled, final boolean allowManualImport) {
+    protected void performSyncPhoneBook(final HashMap<String, Contact> contactHashMap, final boolean request, final boolean first, final boolean schedule, final boolean force, final boolean checkCount, final boolean allowManualImport) {
         if (!first && !contactsBookLoaded) {
             return;
         }
@@ -1337,30 +1328,6 @@ public class ContactsController extends BaseController {
                     if (BuildVars.LOGS_ENABLED) {
                         FileLog.d("new phone book contacts " + newPhonebookContacts + " serverContactsInPhonebook " + serverContactsInPhonebook + " totalContacts " + contactsByPhone.size());
                     }
-                    if (canceled) {
-                        Utilities.stageQueue.postRunnable(() -> {
-                            contactsBookSPhones = contactsBookShort;
-                            contactsBook = contactsMap;
-                            contactsSyncInProgress = false;
-                            contactsBookLoaded = true;
-                            if (first) {
-                                contactsLoaded = true;
-                            }
-                            if (!delayedContactsUpdate.isEmpty() && contactsLoaded) {
-                                applyContactsUpdates(delayedContactsUpdate, null, null, null);
-                                delayedContactsUpdate.clear();
-                            }
-                            getMessagesStorage().putCachedPhoneBook(contactsMap, false, false);
-                            AndroidUtilities.runOnUIThread(() -> {
-                                mergePhonebookAndTelegramContacts(phoneBookSectionsDictFinal, phoneBookSectionsArrayFinal, phoneBookByShortPhonesFinal);
-                                updateUnregisteredContacts();
-                                getNotificationCenter().postNotificationName(NotificationCenter.contactsDidLoad);
-                                getNotificationCenter().postNotificationName(NotificationCenter.contactsImported);
-                            });
-                        });
-                        return;
-                    }
-
                     final boolean[] hasErrors = new boolean[]{false};
                     final HashMap<String, Contact> contactsMapToSave = new HashMap<>(contactsMap);
                     final SparseArray<String> contactIdToKey = new SparseArray<>();
@@ -2237,7 +2204,7 @@ public class ContactsController extends BaseController {
                     updateUnregisteredContacts();
                     performWriteContactsToPhoneBook();
                 }
-                performSyncPhoneBook(getContactsCopy(contactsBook), false, false, false, false, true, false);
+                performSyncPhoneBook(getContactsCopy(contactsBook), false, false, false, false, true);
                 buildContactsSectionsArrays(!newContacts.isEmpty());
                 getNotificationCenter().postNotificationName(NotificationCenter.contactsDidLoad);
             });
