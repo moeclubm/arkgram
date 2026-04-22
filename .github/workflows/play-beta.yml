@@ -1,6 +1,6 @@
-name: Beta APK
+name: Play Beta AAB
 
-run-name: Beta APK · ${{ github.ref_name }} · @${{ github.actor }} · #${{ github.run_number }}
+run-name: Play Beta AAB · ${{ github.ref_name }} · @${{ github.actor }} · #${{ github.run_number }}
 
 on:
   push:
@@ -12,11 +12,11 @@ permissions:
   contents: read
 
 concurrency:
-  group: beta-${{ github.ref }}
+  group: play-beta-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  build-beta:
+  build-play-beta:
     runs-on: ubuntu-latest
     env:
       ORG_GRADLE_PROJECT_CI_ABI_FILTERS: arm64-v8a
@@ -55,7 +55,7 @@ jobs:
         shell: bash
         run: |
           echo "ORG_GRADLE_PROJECT_APP_VERSION_CODE=$((6666 + GITHUB_RUN_NUMBER))" >> "$GITHUB_ENV"
-          echo "ORG_GRADLE_PROJECT_APP_VERSION_NAME=12.6.4-beta.${GITHUB_RUN_NUMBER}" >> "$GITHUB_ENV"
+          echo "ORG_GRADLE_PROJECT_APP_VERSION_NAME=12.6.4-play-beta.${GITHUB_RUN_NUMBER}" >> "$GITHUB_ENV"
 
       - name: Validate signing inputs
         shell: bash
@@ -65,15 +65,15 @@ jobs:
           test -n "${ORG_GRADLE_PROJECT_APP_VERSION_CODE}"
           test -f TMessagesProj/config/release.keystore
 
-      - name: Build beta APK
+      - name: Build Play beta AAB
         shell: bash
         run: |
           chmod +x gradlew
-          ./gradlew :TMessagesProj_App:assembleAfatBeta --build-cache --configuration-cache --stacktrace
+          ./gradlew :TMessagesProj_App:bundleBundleAfatBeta --build-cache --configuration-cache --stacktrace
 
-      - name: Upload beta APK
+      - name: Upload Play beta AAB
         uses: actions/upload-artifact@v6
         with:
-          name: flexgram-beta-apk-${{ github.sha }}
-          path: TMessagesProj_App/build/outputs/apk/afat/beta/*.apk
+          name: flexgram-play-beta-aab-${{ github.sha }}
+          path: TMessagesProj_App/build/outputs/bundle/bundleAfatBeta/*.aab
           if-no-files-found: error

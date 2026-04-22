@@ -1,25 +1,24 @@
-name: Beta APK
+name: Play Release AAB
 
-run-name: Beta APK · ${{ github.ref_name }} · @${{ github.actor }} · #${{ github.run_number }}
+run-name: Play Release AAB · ${{ github.ref_name }} · @${{ github.actor }} · #${{ github.run_number }}
 
 on:
   push:
-    branches:
-      - master
+    tags:
+      - '*'
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: beta-${{ github.ref }}
-  cancel-in-progress: true
+  group: play-release-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
-  build-beta:
+  build-play-release:
     runs-on: ubuntu-latest
     env:
-      ORG_GRADLE_PROJECT_CI_ABI_FILTERS: arm64-v8a
       ORG_GRADLE_PROJECT_RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
       ORG_GRADLE_PROJECT_RELEASE_STORE_PASSWORD: ${{ secrets.RELEASE_STORE_PASSWORD }}
 
@@ -54,8 +53,9 @@ jobs:
       - name: Compute CI version
         shell: bash
         run: |
+          tag_name="${GITHUB_REF_NAME#v}"
           echo "ORG_GRADLE_PROJECT_APP_VERSION_CODE=$((6666 + GITHUB_RUN_NUMBER))" >> "$GITHUB_ENV"
-          echo "ORG_GRADLE_PROJECT_APP_VERSION_NAME=12.6.4-beta.${GITHUB_RUN_NUMBER}" >> "$GITHUB_ENV"
+          echo "ORG_GRADLE_PROJECT_APP_VERSION_NAME=${tag_name}" >> "$GITHUB_ENV"
 
       - name: Validate signing inputs
         shell: bash
@@ -65,15 +65,15 @@ jobs:
           test -n "${ORG_GRADLE_PROJECT_APP_VERSION_CODE}"
           test -f TMessagesProj/config/release.keystore
 
-      - name: Build beta APK
+      - name: Build Play release AAB
         shell: bash
         run: |
           chmod +x gradlew
-          ./gradlew :TMessagesProj_App:assembleAfatBeta --build-cache --configuration-cache --stacktrace
+          ./gradlew :TMessagesProj_App:bundleBundleAfatRelease --build-cache --configuration-cache --stacktrace
 
-      - name: Upload beta APK
+      - name: Upload Play release AAB
         uses: actions/upload-artifact@v6
         with:
-          name: flexgram-beta-apk-${{ github.sha }}
-          path: TMessagesProj_App/build/outputs/apk/afat/beta/*.apk
+          name: flexgram-play-release-aab-${{ github.ref_name }}
+          path: TMessagesProj_App/build/outputs/bundle/bundleAfatRelease/*.aab
           if-no-files-found: error

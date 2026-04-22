@@ -240,7 +240,9 @@ public class VoIPPreNotificationService { // } extends Service implements AudioM
             builder.setColor(0xff2ca5e0);
             builder.setVibrate(new long[0]);
             builder.setCategory(Notification.CATEGORY_CALL);
-            builder.setFullScreenIntent(PendingIntent.getActivity(context, 0, intent, PendingIntent.FLAG_MUTABLE), true);
+            if (!ApplicationLoader.isPlayStoreBuild()) {
+                builder.setFullScreenIntent(PendingIntent.getActivity(context, 0, intent, PendingIntent.FLAG_MUTABLE), true);
+            }
             if (user != null && !TextUtils.isEmpty(user.phone)) {
                 builder.addPerson("tel:" + user.phone);
             }

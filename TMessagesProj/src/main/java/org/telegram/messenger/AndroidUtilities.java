@@ -4279,8 +4279,10 @@ public class AndroidUtilities {
             }
             if (realMimeType != null && realMimeType.equals("application/vnd.android.package-archive")) {
                 if (restrict) return true;
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && !ApplicationLoader.applicationContext.getPackageManager().canRequestPackageInstalls()) {
-                    AlertsCreator.createApkRestrictedDialog(activity, resourcesProvider).show();
+                if (!ApplicationLoader.applicationLoaderInstance.checkApkInstallPermissions(activity)) {
+                    if (!ApplicationLoader.isStandaloneBuild()) {
+                        android.widget.Toast.makeText(activity, LocaleController.getString(R.string.FlexFileUnavailable), android.widget.Toast.LENGTH_SHORT).show();
+                    }
                     return true;
                 }
             }

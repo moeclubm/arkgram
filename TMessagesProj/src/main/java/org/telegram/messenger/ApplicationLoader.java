@@ -132,6 +132,10 @@ public class ApplicationLoader extends Application {
         return applicationLoaderInstance.isBeta();
     }
 
+    public static boolean isPlayStoreBuild() {
+        return applicationLoaderInstance.isPlayStore();
+    }
+
     public static boolean isAndroidTestEnvironment() {
         return applicationLoaderInstance.isAndroidTestEnv();
     }
@@ -141,6 +145,10 @@ public class ApplicationLoader extends Application {
     }
 
     protected boolean isBeta() {
+        return false;
+    }
+
+    protected boolean isPlayStore() {
         return false;
     }
 

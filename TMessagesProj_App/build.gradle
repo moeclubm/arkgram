@@ -229,7 +229,8 @@ android {
 androidComponents {
     beforeVariants(selector().all()) { variantBuilder ->
         def flavorNames = variantBuilder.productFlavors.collect { it.second }
-        if (variantBuilder.buildType != "release" && !flavorNames.contains("afat")) {
+        def allowNonRelease = flavorNames.contains("afat") || (variantBuilder.buildType == "beta" && flavorNames.contains("bundleAfat"))
+        if (variantBuilder.buildType != "release" && !allowNonRelease) {
             variantBuilder.enable = false
         }
     }
