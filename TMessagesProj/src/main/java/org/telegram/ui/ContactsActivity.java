@@ -1294,7 +1294,7 @@ public class ContactsActivity extends BaseFragment implements FactorAnimator.Tar
     @TargetApi(Build.VERSION_CODES.M)
     private void askForPermissons(boolean alert) {
         Activity activity = getParentActivity();
-        if (activity == null || !UserConfig.getInstance(currentAccount).syncContacts || activity.checkSelfPermission(Manifest.permission.READ_CONTACTS) == PackageManager.PERMISSION_GRANTED/* && activity.checkSelfPermission(Manifest.permission.WRITE_CONTACTS) == PackageManager.PERMISSION_GRANTED*/) {
+        if (activity == null || activity.checkSelfPermission(Manifest.permission.READ_CONTACTS) == PackageManager.PERMISSION_GRANTED) {
             return;
         }
         if (alert && askAboutContacts) {
@@ -1311,13 +1311,8 @@ public class ContactsActivity extends BaseFragment implements FactorAnimator.Tar
             return;
         }
         permissionRequestTime = SystemClock.elapsedRealtime();
-        ArrayList<String> permissons = new ArrayList<>();
-        permissons.add(Manifest.permission.READ_CONTACTS);
-        permissons.add(Manifest.permission.WRITE_CONTACTS);
-        permissons.add(Manifest.permission.GET_ACCOUNTS);
-        String[] items = permissons.toArray(new String[0]);
         try {
-            activity.requestPermissions(items, 1);
+            activity.requestPermissions(new String[] { Manifest.permission.READ_CONTACTS }, 1);
         } catch (Exception e) {
             FileLog.e(e);
         }
@@ -1332,7 +1327,7 @@ public class ContactsActivity extends BaseFragment implements FactorAnimator.Tar
                 }
                 if (Manifest.permission.READ_CONTACTS.equals(permissions[a])) {
                     if (grantResults[a] == PackageManager.PERMISSION_GRANTED) {
-                        ContactsController.getInstance(currentAccount).forceImportContacts();
+                        ContactsController.getInstance(currentAccount).forceImportContactsByUser();
                     } else {
                         MessagesController.getGlobalNotificationsSettings().edit()
                             .putBoolean("askAboutContacts", askAboutContacts = false)

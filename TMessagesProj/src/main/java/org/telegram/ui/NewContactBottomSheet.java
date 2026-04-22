@@ -16,6 +16,7 @@ import static org.telegram.messenger.LocaleController.getString;
 import android.Manifest;
 import android.accounts.Account;
 import android.accounts.AccountManager;
+import android.content.ContentValues;
 import android.content.ContentProviderOperation;
 import android.content.ContentResolver;
 import android.content.Context;
@@ -82,6 +83,7 @@ import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Cells.CheckBoxCell;
 import org.telegram.ui.Components.AlertsCreator;
 import org.telegram.ui.Components.AnimatedPhoneNumberEditText;
+import org.telegram.ui.Components.Bulletin;
 import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.CheckBox2;
 import org.telegram.ui.Components.CircularProgressDrawable;
@@ -1027,15 +1029,7 @@ public class NewContactBottomSheet extends BottomSheet implements AdapterView.On
             return;
         }
 
-        if (checkBox.isChecked()) {
-            PermissionRequest.ensurePermission(R.raw.permission_request_contacts, R.string.PermissionNoContactsSaving, Manifest.permission.WRITE_CONTACTS, granted -> {
-                if (granted) {
-                    done();
-                }
-            });
-        } else {
-            done();
-        }
+        done();
     }
 
     private void done() {
@@ -1047,6 +1041,7 @@ public class NewContactBottomSheet extends BottomSheet implements AdapterView.On
         final String firstName = firstNameField.getEditText().getText().toString();
         final String lastName = lastNameField.getEditText().getText().toString();
         final String notes = notesField.getVisibility() == View.VISIBLE ? notesField.getEditText().getText().toString() : "";
+        final boolean saveToPhone = checkBox.isChecked();
 
         final TLRPC.TL_contacts_importContacts req = new TLRPC.TL_contacts_importContacts();
         final TLRPC.TL_inputPhoneContact inputPhoneContact = new TLRPC.TL_inputPhoneContact();
@@ -1064,6 +1059,9 @@ public class NewContactBottomSheet extends BottomSheet implements AdapterView.On
             AndroidUtilities.runOnUIThread(() -> {
                 donePressed = false;
                 if (res != null) {
+                    if (saveToPhone) {
+                        AndroidUtilities.runOnUIThread(() -> showSaveContactBulletin(phone, firstName, lastName, notes), 180);
+                    }
                     if (!res.users.isEmpty()) {
                         MessagesController.getInstance(currentAccount).putUsers(res.users, false);
                         MessagesController.getInstance(currentAccount).openChatOrProfileWith(res.users.get(0), null, parentFragment, 1, false);
@@ -1082,10 +1080,6 @@ public class NewContactBottomSheet extends BottomSheet implements AdapterView.On
             });
         }, ConnectionsManager.RequestFlagFailOnServerErrors);
         ConnectionsManager.getInstance(currentAccount).bindRequestToGuid(reqId, classGuid);
-
-        if (checkBox.isChecked()) {
-            saveContact(getContext(), phone, firstName, lastName, null, account);
-        }
     }
 
     @Override
@@ -1101,6 +1095,31 @@ public class NewContactBottomSheet extends BottomSheet implements AdapterView.On
     private void showEditDoneProgress(boolean show, boolean animated) {
         AndroidUtilities.updateViewVisibilityAnimated(doneButton, !show, 0.5f, animated);
         AndroidUtilities.updateViewVisibilityAnimated(progressView, show, 0.5f, animated);
+    }
+
+    private void showSaveContactBulletin(String phone, String firstName, String lastName, String notes) {
+        BaseFragment fragment = LaunchActivity.getSafeLastFragment();
+        if (fragment == null) {
+            fragment = parentFragment;
+        }
+
+        if (fragment == null) {
+            saveContact(getContext(), phone, firstName, lastName, notes, account);
+            return;
+        }
+
+        BaseFragment finalFragment = fragment;
+        BulletinFactory.of(fragment)
+            .createSimpleBulletin(
+                R.raw.contact_check,
+                LocaleController.getString(R.string.AddContactSync),
+                LocaleController.getString(R.string.AddToContacts),
+                Bulletin.DURATION_PROLONG,
+                true,
+                () -> saveContact(finalFragment.getParentActivity() != null ? finalFragment.getParentActivity() : getContext(), phone, firstName, lastName, notes, account)
+            )
+            .setDuration(Bulletin.DURATION_PROLONG)
+            .show();
     }
 
     public static String getPhoneNumber(Context context, TLRPC.User user, String number, boolean withCoutryCode) {
@@ -1329,60 +1348,40 @@ public class NewContactBottomSheet extends BottomSheet implements AdapterView.On
         String notes,
         AccountInfo into
     ) {
-        final ArrayList<ContentProviderOperation> ops = new ArrayList<>();
-        int rawContactIndex = 0;
-
-        final ContentProviderOperation.Builder builder =
-            ContentProviderOperation.newInsert(ContactsContract.RawContacts.CONTENT_URI);
-
-        if (into != null) {
-            builder.withValue(ContactsContract.RawContacts.ACCOUNT_TYPE, into.type);
-            builder.withValue(ContactsContract.RawContacts.ACCOUNT_NAME, into.name);
-        } else {
-            builder.withValue(ContactsContract.RawContacts.ACCOUNT_TYPE, (String) null);
-            builder.withValue(ContactsContract.RawContacts.ACCOUNT_NAME, (String) null);
-        }
-
-        ops.add(builder.build());
-
-        ContentProviderOperation.Builder op =
-            ContentProviderOperation.newInsert(ContactsContract.Data.CONTENT_URI)
-                .withValueBackReference(ContactsContract.Data.RAW_CONTACT_ID, rawContactIndex)
-                .withValue(ContactsContract.Data.MIMETYPE, ContactsContract.CommonDataKinds.StructuredName.CONTENT_ITEM_TYPE);
-        if (!TextUtils.isEmpty(firstName)) {
-            op = op.withValue(ContactsContract.CommonDataKinds.StructuredName.GIVEN_NAME, firstName);
-        }
-        if (!TextUtils.isEmpty(lastName)) {
-            op = op.withValue(ContactsContract.CommonDataKinds.StructuredName.GIVEN_NAME, lastName);
-        }
-        ops.add(op.build());
-
-        if (phone != null && !phone.isEmpty()) {
-            ops.add(ContentProviderOperation.newInsert(ContactsContract.Data.CONTENT_URI)
-                .withValueBackReference(ContactsContract.Data.RAW_CONTACT_ID, rawContactIndex)
-                .withValue(ContactsContract.Data.MIMETYPE,
-                        ContactsContract.CommonDataKinds.Phone.CONTENT_ITEM_TYPE)
-                .withValue(ContactsContract.CommonDataKinds.Phone.NUMBER, phone)
-                .withValue(ContactsContract.CommonDataKinds.Phone.TYPE,
-                        ContactsContract.CommonDataKinds.Phone.TYPE_MOBILE)
-                .build());
-        }
-
-        if (notes != null && !notes.isEmpty()) {
-            ops.add(ContentProviderOperation.newInsert(ContactsContract.Data.CONTENT_URI)
-                .withValueBackReference(ContactsContract.Data.RAW_CONTACT_ID, rawContactIndex)
-                .withValue(ContactsContract.Data.MIMETYPE,
-                        ContactsContract.CommonDataKinds.Note.CONTENT_ITEM_TYPE)
-                .withValue(ContactsContract.CommonDataKinds.Note.NOTE, notes)
-                .build());
-        }
-
         try {
-            final ContentResolver resolver = context.getContentResolver();
-            resolver.applyBatch(ContactsContract.AUTHORITY, ops);
+            Intent intent = new Intent(ContactsContract.Intents.Insert.ACTION);
+            intent.setType(ContactsContract.RawContacts.CONTENT_TYPE);
+
+            String displayName = ContactsController.formatName(firstName, lastName).trim();
+            if (!TextUtils.isEmpty(displayName)) {
+                intent.putExtra(ContactsContract.Intents.Insert.NAME, displayName);
+            }
+
+            ArrayList<ContentValues> data = new ArrayList<>();
+            if (!TextUtils.isEmpty(phone)) {
+                ContentValues phoneData = new ContentValues();
+                phoneData.put(ContactsContract.Data.MIMETYPE, ContactsContract.CommonDataKinds.Phone.CONTENT_ITEM_TYPE);
+                phoneData.put(ContactsContract.CommonDataKinds.Phone.NUMBER, phone);
+                phoneData.put(ContactsContract.CommonDataKinds.Phone.TYPE, ContactsContract.CommonDataKinds.Phone.TYPE_MOBILE);
+                data.add(phoneData);
+            }
+            if (!TextUtils.isEmpty(notes)) {
+                ContentValues noteData = new ContentValues();
+                noteData.put(ContactsContract.Data.MIMETYPE, ContactsContract.CommonDataKinds.Note.CONTENT_ITEM_TYPE);
+                noteData.put(ContactsContract.CommonDataKinds.Note.NOTE, notes);
+                data.add(noteData);
+            }
+            if (!data.isEmpty()) {
+                intent.putParcelableArrayListExtra(ContactsContract.Intents.Insert.DATA, data);
+            }
+            intent.putExtra("finishActivityOnSaveCompleted", true);
+            if (!(context instanceof android.app.Activity)) {
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            }
+            context.startActivity(intent);
             return true;
-        } catch (RemoteException | OperationApplicationException e) {
-            e.printStackTrace();
+        } catch (Exception e) {
+            FileLog.e(e);
             return false;
         }
     }

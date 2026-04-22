@@ -67,7 +67,7 @@ public class BasePermissionsActivity extends FragmentActivity {
                 showPermissionErrorAlert(R.raw.permission_request_contacts, LocaleController.getString(R.string.PermissionNoContactsSharing));
                 return false;
             } else {
-                ContactsController.getInstance(currentAccount).forceImportContacts();
+                ContactsController.getInstance(currentAccount).forceImportContactsByUser();
             }
         } else if (requestCode == 3 || requestCode == REQUEST_CODE_VIDEO_MESSAGE) {
             boolean audioGranted = true;

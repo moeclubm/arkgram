@@ -123,14 +123,14 @@ public class ApplicationLoaderImpl extends ApplicationLoader {
 
     @Override
     public void processUpdate(int currentAccount, TLRPC.Update update) {
-        if (update instanceof TL_smsjobs.TL_updateSmsJob) {
+        if (SMSJobController.isFeatureEnabled() && update instanceof TL_smsjobs.TL_updateSmsJob) {
             SMSJobController.getInstance(currentAccount).processJobUpdate(((TL_smsjobs.TL_updateSmsJob) update).job_id);
         }
     }
 
     @Override
     public void addItemOptions(ItemOptions itemOptions) {
-        if (SMSJobController.getInstance(UserConfig.selectedAccount).isAvailable()) {
+        if (SMSJobController.isFeatureEnabled() && SMSJobController.getInstance(UserConfig.selectedAccount).isAvailable()) {
             CharSequence text = LocaleController.getString(R.string.SmsJobsMenu);
             if (MessagesController.getGlobalMainSettings().getBoolean("newppsms", true)) {
                 text = applyNewSpan(text.toString());
@@ -193,7 +193,7 @@ public class ApplicationLoaderImpl extends ApplicationLoader {
 
     @Override
     public boolean checkRequestPermissionResult(int requestCode, String[] permissions, int[] grantResults) {
-        if (SMSSubscribeSheet.checkSMSPermissions(requestCode, permissions, grantResults)) {
+        if (SMSJobController.isFeatureEnabled() && SMSSubscribeSheet.checkSMSPermissions(requestCode, permissions, grantResults)) {
             return true;
         }
         return super.checkRequestPermissionResult(requestCode, permissions, grantResults);
@@ -201,6 +201,9 @@ public class ApplicationLoaderImpl extends ApplicationLoader {
 
     @Override
     public boolean onSuggestionFill(String suggestion, CharSequence[] output, boolean[] closeable) {
+        if (!SMSJobController.isFeatureEnabled()) {
+            return super.onSuggestionFill(suggestion, output, closeable);
+        }
         if (suggestion == null && SMSJobController.getInstance(UserConfig.selectedAccount).hasError()) {
             output[0] = new SpannableStringBuilder().append(SMSStatsActivity.error(17)).append("  ").append(LocaleController.getString(R.string.SmsJobsErrorHintTitle));
             output[1] = LocaleController.getString(R.string.SmsJobsErrorHintMessage);
@@ -218,6 +221,9 @@ public class ApplicationLoaderImpl extends ApplicationLoader {
 
     @Override
     public boolean onSuggestionClick(String suggestion) {
+        if (!SMSJobController.isFeatureEnabled()) {
+            return false;
+        }
         if (suggestion == null) {
             BaseFragment lastFragment = LaunchActivity.getLastFragment();
             if (lastFragment != null) {
@@ -249,6 +255,9 @@ public class ApplicationLoaderImpl extends ApplicationLoader {
 
     @Override
     public boolean consumePush(int account, JSONObject json) {
+        if (!SMSJobController.isFeatureEnabled()) {
+            return false;
+        }
         try {
             if (json != null && "SMSJOB".equals(json.getString("loc_key"))) {
                 JSONObject custom = json.getJSONObject("custom");
@@ -276,6 +285,9 @@ public class ApplicationLoaderImpl extends ApplicationLoader {
 
     @Override
     public BaseFragment openSettings(int n) {
+        if (!SMSJobController.isFeatureEnabled()) {
+            return null;
+        }
         if (n == 13) {
             if (SMSJobController.getInstance(UserConfig.selectedAccount).getState() == SMSJobController.STATE_JOINED) {
                 return new SMSStatsActivity();

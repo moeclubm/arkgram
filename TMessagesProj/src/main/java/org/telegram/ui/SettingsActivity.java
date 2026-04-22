@@ -1508,9 +1508,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
 
         builder.setItems(items, (dialog, which) -> {
             if (which == 0) { // Import Contacts
-                getUserConfig().syncContacts = true;
-                getUserConfig().saveConfig(false);
-                getContactsController().forceImportContacts();
+                getContactsController().forceImportContactsByUser();
             } else if (which == 1) { // Reload Contacts
                 getContactsController().loadContacts(false, 0);
             } else if (which == 2) { // Reset Imported Contacts

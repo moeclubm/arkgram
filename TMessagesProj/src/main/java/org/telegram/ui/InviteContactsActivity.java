@@ -305,7 +305,7 @@ public class InviteContactsActivity extends BaseFragment implements Notification
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.contactsDidLoad);
         fetchContacts();
         if (!UserConfig.getInstance(currentAccount).contactsReimported) {
-            ContactsController.getInstance(currentAccount).forceImportContacts();
+            ContactsController.getInstance(currentAccount).forceImportContactsByUser();
             UserConfig.getInstance(currentAccount).contactsReimported = true;
             UserConfig.getInstance(currentAccount).saveConfig(false);
         }

@@ -233,16 +233,6 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
         getNotificationCenter().removeObserver(this, NotificationCenter.didSetOrRemoveTwoStepPassword);
         getNotificationCenter().removeObserver(this, NotificationCenter.didUpdateGlobalAutoDeleteTimer);
         boolean save = false;
-        if (currentSync != newSync) {
-            getUserConfig().syncContacts = newSync;
-            save = true;
-            if (newSync && ContactsController.hasContactsPermission()) {
-                getContactsController().forceImportContacts();
-                if (getParentActivity() != null) {
-                    Toast.makeText(getParentActivity(), getString("SyncContactsAdded", R.string.SyncContactsAdded), Toast.LENGTH_SHORT).show();
-                }
-            }
-        }
         if (newSuggest != currentSuggest) {
             if (!newSuggest) {
                 getMediaDataController().clearTopPeers();
@@ -515,10 +505,6 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
                     progressDialog = builder12.show();
                     progressDialog.setCanCancel(false);
 
-                    if (currentSync != newSync) {
-                        currentSync = getUserConfig().syncContacts = newSync;
-                        getUserConfig().saveConfig(false);
-                    }
                     getContactsController().deleteAllContacts(() -> progressDialog.dismiss());
                 });
                 AlertDialog alertDialog = builder.create();
@@ -558,11 +544,6 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
                 final TextCheckCell cell = (TextCheckCell) view;
                 archiveChats = !archiveChats;
                 cell.setChecked(archiveChats);
-            } else if (position == contactsSyncRow) {
-                newSync = !newSync;
-                if (view instanceof TextCheckCell) {
-                    ((TextCheckCell) view).setChecked(newSync);
-                }
             } else if (position == secretMapRow) {
                 AlertsCreator.showSecretLocationAlert(getParentActivity(), currentAccount, () -> {
                     listAdapter.notifyDataSetChanged();
@@ -784,7 +765,7 @@ public class PrivacySettingsActivity extends BaseFragment implements Notificatio
         }
         contactsSectionRow = rowCount++;
         contactsDeleteRow = rowCount++;
-        contactsSyncRow = rowCount++;
+        contactsSyncRow = -1;
         contactsSuggestRow = rowCount++;
         contactsDetailRow = rowCount++;
         secretSectionRow = rowCount++;

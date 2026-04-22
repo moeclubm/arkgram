@@ -52,7 +52,6 @@ public class NotificationCenter {
     public static final int forceImportContactsStart = totalEvents++;
     public static final int contactsDidLoad = totalEvents++;
     public static final int contactsImported = totalEvents++;
-    public static final int hasNewContactsToImport = totalEvents++;
     public static final int chatDidCreated = totalEvents++;
     public static final int chatDidFailCreate = totalEvents++;
     public static final int chatInfoDidLoad = totalEvents++;

@@ -96,6 +96,24 @@ public class SMSJobController implements NotificationCenter.NotificationCenterDe
         return isEligible != null || loadingIsEligible;
     }
 
+    public static boolean isFeatureEnabled() {
+        return false;
+    }
+
+    private void disableFeature() {
+        loadingStatus = false;
+        loadedStatus = true;
+        loadingIsEligible = false;
+        loadedIsEligible = true;
+        currentStatus = null;
+        isEligible = null;
+        selectedSimCard = null;
+        saveCacheStatus();
+        if (currentState != STATE_NONE) {
+            setState(STATE_NONE);
+        }
+    }
+
     private SharedPreferences journalPrefs;
 
     private SMSJobController(int account) {
@@ -119,6 +137,10 @@ public class SMSJobController implements NotificationCenter.NotificationCenterDe
     }
 
     public boolean isAvailable() {
+        if (!isFeatureEnabled()) {
+            disableFeature();
+            return false;
+        }
         if (currentState != STATE_NONE && currentState != STATE_JOINED) {
             checkIsEligible(false, null);
             loadStatus(false);
@@ -127,6 +149,13 @@ public class SMSJobController implements NotificationCenter.NotificationCenterDe
     }
 
     public void checkIsEligible(boolean force, Utilities.Callback<TL_smsjobs.TL_smsjobs_eligibleToJoin> whenDone) {
+        if (!isFeatureEnabled()) {
+            disableFeature();
+            if (whenDone != null) {
+                whenDone.run(null);
+            }
+            return;
+        }
         if (loadedIsEligible && !force || loadingIsEligible && whenDone == null) return;
         loadingIsEligible = true;
         ConnectionsManager.getInstance(currentAccount).sendRequest(new TL_smsjobs.TL_smsjobs_isEligibleToJoin(), (res, err) -> AndroidUtilities.runOnUIThread(() -> {
@@ -150,6 +179,10 @@ public class SMSJobController implements NotificationCenter.NotificationCenterDe
     }
 
     public void loadStatus(boolean force) {
+        if (!isFeatureEnabled()) {
+            disableFeature();
+            return;
+        }
         if (loadingStatus || loadedStatus && !force)
             return;
         loadingStatus = true;
@@ -197,6 +230,10 @@ public class SMSJobController implements NotificationCenter.NotificationCenterDe
     }
 
     public void init() {
+        if (!isFeatureEnabled()) {
+            disableFeature();
+            return;
+        }
         loadStatus(false);
         checkSelectedSIMCard();
     }
@@ -313,6 +350,10 @@ public class SMSJobController implements NotificationCenter.NotificationCenterDe
     private HashSet<String> loadingJobs = new HashSet<>();
 
     public void processJobUpdate(String job_id) {
+        if (!isFeatureEnabled()) {
+            disableFeature();
+            return;
+        }
         if (currentState != STATE_JOINED) {
             FileLog.d("[smsjob] received update on sms job " + job_id + ", but we did not join!!! currentState=" + currentState);
             return;
