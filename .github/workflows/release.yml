@@ -1,6 +1,6 @@
-name: Release APK
+name: Release Builds
 
-run-name: Release APK · ${{ github.ref_name }} · @${{ github.actor }} · #${{ github.run_number }}
+run-name: Release Builds · ${{ github.ref_name }} · @${{ github.actor }} · #${{ github.run_number }}
 
 on:
   push:
@@ -65,17 +65,24 @@ jobs:
           test -n "${ORG_GRADLE_PROJECT_APP_VERSION_CODE}"
           test -f TMessagesProj/config/release.keystore
 
-      - name: Build release APK
+      - name: Build release APK and Play release AAB
         shell: bash
         run: |
           chmod +x gradlew
-          ./gradlew :TMessagesProj_App:assembleAfatRelease --build-cache --configuration-cache --stacktrace
+          ./gradlew :TMessagesProj_App:assembleAfatRelease :TMessagesProj_App:bundleBundleAfatRelease --build-cache --configuration-cache --stacktrace
 
       - name: Upload release artifacts
         uses: actions/upload-artifact@v6
         with:
           name: flexgram-release-${{ github.ref_name }}
           path: TMessagesProj_App/build/outputs/apk/afat/release/*.apk
+          if-no-files-found: error
+
+      - name: Upload Play release AAB
+        uses: actions/upload-artifact@v6
+        with:
+          name: flexgram-play-release-aab-${{ github.ref_name }}
+          path: TMessagesProj_App/build/outputs/bundle/bundleAfatRelease/*.aab
           if-no-files-found: error
 
       - name: Publish GitHub release
