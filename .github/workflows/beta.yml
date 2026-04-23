@@ -1,6 +1,6 @@
-name: Beta APK
+name: Beta Builds
 
-run-name: Beta APK · ${{ github.ref_name }} · @${{ github.actor }} · #${{ github.run_number }}
+run-name: Beta Builds · ${{ github.ref_name }} · @${{ github.actor }} · #${{ github.run_number }}
 
 on:
   push:
@@ -65,15 +65,22 @@ jobs:
           test -n "${ORG_GRADLE_PROJECT_APP_VERSION_CODE}"
           test -f TMessagesProj/config/release.keystore
 
-      - name: Build beta APK
+      - name: Build beta APK and Play beta AAB
         shell: bash
         run: |
           chmod +x gradlew
-          ./gradlew :TMessagesProj_App:assembleAfatBeta --build-cache --configuration-cache --stacktrace
+          ./gradlew :TMessagesProj_App:assembleAfatBeta :TMessagesProj_App:bundleBundleAfatBeta --build-cache --configuration-cache --stacktrace
 
       - name: Upload beta APK
         uses: actions/upload-artifact@v6
         with:
           name: flexgram-beta-apk-${{ github.sha }}
           path: TMessagesProj_App/build/outputs/apk/afat/beta/*.apk
+          if-no-files-found: error
+
+      - name: Upload Play beta AAB
+        uses: actions/upload-artifact@v6
+        with:
+          name: flexgram-play-beta-aab-${{ github.sha }}
+          path: TMessagesProj_App/build/outputs/bundle/bundleAfatBeta/*.aab
           if-no-files-found: error
