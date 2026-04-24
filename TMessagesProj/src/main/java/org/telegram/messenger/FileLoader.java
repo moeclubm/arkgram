@@ -216,6 +216,7 @@ public class FileLoader extends BaseController {
 
     private final ConcurrentHashMap<String, FileLoadOperation> loadOperationPaths = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, LoadOperationUIObject> loadOperationPathsUI = new ConcurrentHashMap<>(10, 1, 2);
+    private final ConcurrentHashMap<String, Integer> failedLoadRetryCounts = new ConcurrentHashMap<>();
     private final HashMap<String, Long> uploadSizes = new HashMap<>();
 
     private final HashMap<String, Boolean> loadingVideos = new HashMap<>();
@@ -988,6 +989,7 @@ public class FileLoader extends BaseController {
         }
 
         final int finalType = type;
+        final int finalPriority = priority;
 
         FileLoadOperation.FileLoadOperationDelegate fileLoadOperationDelegate = new FileLoadOperation.FileLoadOperationDelegate() {
 
@@ -1002,6 +1004,7 @@ public class FileLoader extends BaseController {
 
             @Override
             public void didFinishLoadingFile(FileLoadOperation operation, File finalFile) {
+                failedLoadRetryCounts.remove(fileName);
                 if (!operation.isPreloadVideoOperation() && operation.isPreloadFinished()) {
                     checkDownloadQueue(operation, operation.getQueue(), 0);
                     return;
@@ -1029,6 +1032,11 @@ public class FileLoader extends BaseController {
 
             @Override
             public void didFailedLoadingFile(FileLoadOperation operation, int reason) {
+                if (shouldRetryFailedLoad(operation, fileName, reason, cacheType)) {
+                    retryFailedLoad(operation, fileName, document, secureDocument, webDocument, location, imageLocation, parentObject, locationExt, locationSize, finalPriority, cacheType);
+                    return;
+                }
+                failedLoadRetryCounts.remove(fileName);
                 loadOperationPathsUI.remove(fileName);
                 checkDownloadQueue(operation, operation.getQueue());
                 if (delegate != null) {
@@ -1212,6 +1220,24 @@ public class FileLoader extends BaseController {
                 queue.checkLoadingOperations(operation.isStory);
             }
         }, delay);
+    }
+
+    private boolean shouldRetryFailedLoad(FileLoadOperation operation, String fileName, int reason, int cacheType) {
+        return SharedConfig.autoRetryFailedMediaDownloads
+                && cacheType != 10
+                && reason == 0
+                && operation != null
+                && !operation.isPreloadVideoOperation()
+                && failedLoadRetryCounts.getOrDefault(fileName, 0) < 1;
+    }
+
+    private void retryFailedLoad(FileLoadOperation operation, String fileName, TLRPC.Document document, SecureDocument secureDocument, WebFile webDocument, TLRPC.TL_fileLocationToBeDeprecated location, ImageLocation imageLocation, Object parentObject, String locationExt, long locationSize, int priority, int cacheType) {
+        failedLoadRetryCounts.put(fileName, failedLoadRetryCounts.getOrDefault(fileName, 0) + 1);
+        checkDownloadQueue(operation, operation.getQueue());
+        LoadOperationUIObject uiObject = loadOperationPathsUI.computeIfAbsent(fileName, key -> new LoadOperationUIObject());
+        Runnable retryRunnable = () -> loadFileInternal(document, secureDocument, webDocument, location, imageLocation, parentObject, locationExt, locationSize, priority, null, 0, false, cacheType);
+        uiObject.loadInternalRunnable = retryRunnable;
+        fileLoaderQueue.postRunnable(retryRunnable, 500);
     }
 
     public void setDelegate(FileLoaderDelegate fileLoaderDelegate) {

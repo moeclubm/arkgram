@@ -10679,7 +10679,7 @@
     <string name="TranslateCopy">Copy Translation</string>
     <string name="TranslateEntireChat">Translate Entire Chat</string>
     <string name="FlexSettings">Flexgram</string>
-    <string name="FlexSettingsInfo">Custom features, file management, translation, LLM, and quick access</string>
+    <string name="FlexSettingsInfo">Custom features and quick access</string>
     <string name="FlexFeatures">Features</string>
     <string name="FlexQuickAccess">Quick Access</string>
     <string name="FlexFeaturesInfo">Call changes apply to new calls.</string>
@@ -10689,6 +10689,10 @@
     <string name="FlexDownloadSpeedBoostExtreme">Extreme Boost</string>
     <string name="FlexDefaultVideoQuality">Default Video Resolution</string>
     <string name="FlexDefaultVideoQualityInfo">Choose the default quality tier for media that offers multiple video qualities. Per-media manual quality choices still take priority.</string>
+    <string name="FlexDefaultPhotoQuality">Send Photos in High Quality by Default</string>
+    <string name="FlexAutoRetryFailedMedia">Automatically Retry Failed Media Downloads</string>
+    <string name="FlexDisableChannelSwipeNext">Disable Channel Swipe-To-Next</string>
+    <string name="FlexLazyAttachCamera">Open Attach Camera Only After Tap</string>
     <string name="FlexDisableWebrtc">Disable WebRTC</string>
     <string name="FlexDisableNoForwardsRestrictions">Remove Save/Download Restrictions</string>
     <string name="FlexDisableNoForwardsRestrictionsInfo">When enabled, save and download actions ignore no forwards restrictions. Forwarding, sharing, screenshot protection, and other secure behavior stay unchanged.</string>

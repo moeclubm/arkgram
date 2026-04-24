@@ -326,6 +326,9 @@ public class SharedConfig {
     public static boolean shadowsInSections;
     public static boolean debugViewMetrics;
     public static boolean photoHighQualityDefault;
+    public static boolean autoRetryFailedMediaDownloads;
+    public static boolean disableChannelSwipeNext;
+    public static boolean lazyAttachCamera;
 
     public static TLRPC.TL_help_appUpdate pendingAppUpdate;
     public static int pendingAppUpdateBuildVersion;
@@ -488,6 +491,10 @@ public class SharedConfig {
                 editor.putBoolean("hasEmailLogin", hasEmailLogin);
                 editor.putBoolean("floatingDebugActive", isFloatingDebugActive);
                 editor.putBoolean("record_via_sco", recordViaSco);
+                editor.putBoolean("photoHighQualityDefault", photoHighQualityDefault);
+                editor.putBoolean("autoRetryFailedMediaDownloads", autoRetryFailedMediaDownloads);
+                editor.putBoolean("disableChannelSwipeNext", disableChannelSwipeNext);
+                editor.putBoolean("lazyAttachCamera", lazyAttachCamera);
                 editor.apply();
             } catch (Exception e) {
                 FileLog.e(e);
@@ -681,6 +688,9 @@ public class SharedConfig {
             shadowsInSections = preferences.getBoolean("shadowsInSections", false);
             debugViewMetrics = preferences.getBoolean("debugViewMetrics", false);
             photoHighQualityDefault = preferences.getBoolean("photoHighQualityDefault", false);
+            autoRetryFailedMediaDownloads = preferences.getBoolean("autoRetryFailedMediaDownloads", false);
+            disableChannelSwipeNext = preferences.getBoolean("disableChannelSwipeNext", false);
+            lazyAttachCamera = preferences.getBoolean("lazyAttachCamera", false);
 
             loadDebugConfig(preferences);
 
@@ -1408,6 +1418,30 @@ public class SharedConfig {
         SharedPreferences preferences = MessagesController.getGlobalMainSettings();
         SharedPreferences.Editor editor = preferences.edit();
         editor.putBoolean("inappCamera", inappCamera);
+        editor.apply();
+    }
+
+    public static void toggleAutoRetryFailedMediaDownloads() {
+        autoRetryFailedMediaDownloads = !autoRetryFailedMediaDownloads;
+        SharedPreferences preferences = MessagesController.getGlobalMainSettings();
+        SharedPreferences.Editor editor = preferences.edit();
+        editor.putBoolean("autoRetryFailedMediaDownloads", autoRetryFailedMediaDownloads);
+        editor.apply();
+    }
+
+    public static void toggleDisableChannelSwipeNext() {
+        disableChannelSwipeNext = !disableChannelSwipeNext;
+        SharedPreferences preferences = MessagesController.getGlobalMainSettings();
+        SharedPreferences.Editor editor = preferences.edit();
+        editor.putBoolean("disableChannelSwipeNext", disableChannelSwipeNext);
+        editor.apply();
+    }
+
+    public static void toggleLazyAttachCamera() {
+        lazyAttachCamera = !lazyAttachCamera;
+        SharedPreferences preferences = MessagesController.getGlobalMainSettings();
+        SharedPreferences.Editor editor = preferences.edit();
+        editor.putBoolean("lazyAttachCamera", lazyAttachCamera);
         editor.apply();
     }
 

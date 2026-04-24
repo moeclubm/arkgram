@@ -158,6 +158,7 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.SendMessagesHelper;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.SvgHelper;
+import org.telegram.messenger.TranslateController;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
 import org.telegram.messenger.Utilities;
@@ -231,6 +232,7 @@ import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.DotDividerSpan;
 import org.telegram.ui.Components.EmojiPacksAlert;
 import org.telegram.ui.Components.EmptyStubSpan;
+import org.telegram.ui.Components.FiltersListBottomSheet;
 import org.telegram.ui.Components.FloatingDebug.FloatingDebugController;
 import org.telegram.ui.Components.Forum.ForumUtilities;
 import org.telegram.ui.Components.HintView;
@@ -247,6 +249,7 @@ import org.telegram.ui.Components.ProfileActionsView;
 import org.telegram.ui.Components.ProfileGalleryBlurView;
 import org.telegram.ui.Components.Paint.PersistColorPalette;
 import org.telegram.ui.Components.Premium.LimitPreviewView;
+import org.telegram.ui.Components.Premium.LimitReachedBottomSheet;
 import org.telegram.ui.Components.Premium.PremiumFeatureBottomSheet;
 import org.telegram.ui.Components.Premium.PremiumGradient;
 import org.telegram.ui.Components.Premium.PremiumPreviewBottomSheet;
@@ -629,6 +632,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     private int privacyRow;
     private int dataRow;
     private int chatRow;
+    private int addToFolderRow;
     private int filtersRow;
     private int liteModeRow;
     private int stickersRow;
@@ -4451,6 +4455,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 presentFragment(new NotificationsSettingsActivity());
             } else if (position == privacyRow) {
                 presentFragment(new PrivacySettingsActivity().setCurrentPassword(currentPassword));
+            } else if (position == addToFolderRow) {
+                openDialogFolderSheet();
             } else if (position == dataRow) {
                 presentFragment(new DataSettingsActivity());
             } else if (position == chatRow) {
@@ -6393,6 +6399,51 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         }
     }
 
+    private void openDialogFolderSheet() {
+        if (getParentActivity() == null) {
+            return;
+        }
+        ArrayList<Long> selectedDialogs = new ArrayList<>();
+        selectedDialogs.add(getDialogId());
+        FiltersListBottomSheet sheet = new FiltersListBottomSheet(this, selectedDialogs);
+        sheet.setDelegate((filter, checked) -> {
+            ArrayList<Long> alwaysShow = FiltersListBottomSheet.getDialogsCount(ProfileActivity.this, filter, selectedDialogs, true, false);
+            if (!checked) {
+                int currentCount = filter != null ? filter.alwaysShow.size() : 0;
+                int totalCount = currentCount + alwaysShow.size();
+                if ((totalCount > getMessagesController().dialogFiltersChatsLimitDefault && !getUserConfig().isPremium()) || totalCount > getMessagesController().dialogFiltersChatsLimitPremium) {
+                    showDialog(new LimitReachedBottomSheet(ProfileActivity.this, getParentActivity(), LimitReachedBottomSheet.TYPE_CHATS_IN_FOLDER, currentAccount, null));
+                    return;
+                }
+            }
+            if (filter != null) {
+                if (checked) {
+                    for (int a = 0; a < selectedDialogs.size(); a++) {
+                        long did = selectedDialogs.get(a);
+                        filter.neverShow.add(did);
+                        filter.alwaysShow.remove(did);
+                    }
+                    FilterCreateActivity.saveFilterToServer(filter, filter.flags, filter.name, filter.entities, filter.title_noanimate, filter.color, filter.alwaysShow, filter.neverShow, filter.pinnedDialogs, false, false, true, true, false, ProfileActivity.this, null);
+                    if (undoView != null) {
+                        undoView.showWithAction(getDialogId(), UndoView.ACTION_REMOVED_FROM_FOLDER, selectedDialogs.size(), filter, null, null);
+                    }
+                } else if (!alwaysShow.isEmpty()) {
+                    for (int a = 0; a < alwaysShow.size(); a++) {
+                        filter.neverShow.remove(alwaysShow.get(a));
+                    }
+                    filter.alwaysShow.addAll(alwaysShow);
+                    FilterCreateActivity.saveFilterToServer(filter, filter.flags, filter.name, filter.entities, filter.title_noanimate, filter.color, filter.alwaysShow, filter.neverShow, filter.pinnedDialogs, false, false, true, true, false, ProfileActivity.this, null);
+                    if (undoView != null) {
+                        undoView.showWithAction(getDialogId(), UndoView.ACTION_ADDED_TO_FOLDER, alwaysShow.size(), filter, null, null);
+                    }
+                }
+            } else {
+                presentFragment(new FilterCreateActivity(null, alwaysShow));
+            }
+        });
+        showDialog(sheet);
+    }
+
     public void getEmojiStatusLocation(Rect rect) {
         if (nameTextView[1] == null) {
             return;
@@ -7412,7 +7463,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             }
             final String[] fromLanguage = new String[1];
             fromLanguage[0] = "und";
-            final boolean translateButtonEnabled = MessagesController.getInstance(currentAccount).getTranslateController().isContextTranslateEnabled();
+            final TranslateController translateController = MessagesController.getInstance(currentAccount).getTranslateController();
             final boolean[] withTranslate = new boolean[1];
             withTranslate[0] = position == bioRow || position == channelInfoRow || position == userInfoRow;
             final String toLang = TranslateAlert2.getToLanguage();
@@ -7451,9 +7502,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 if (LanguageDetector.hasSupport()) {
                     LanguageDetector.detectLanguage(finalText, (fromLang) -> {
                         fromLanguage[0] = fromLang;
-                        withTranslate[0] = fromLang != null && (!fromLang.equals(toLang) || fromLang.equals("und")) && (
-                                translateButtonEnabled && !RestrictedLanguagesSelectActivity.getRestrictedLanguages().contains(fromLang) ||
-                                        (currentChat != null && (currentChat.has_link || ChatObject.isPublic(currentChat))) && ("uk".equals(fromLang) || "ru".equals(fromLang)));
+                        boolean allowRestrictedOverride = (currentChat != null && (currentChat.has_link || ChatObject.isPublic(currentChat))) && TranslateController.isTranslateOverrideLanguage(fromLang);
+                        withTranslate[0] = translateController.canShowContextTranslate(fromLang, toLang, null, allowRestrictedOverride);
                         showMenu.run();
                     }, (error) -> {
                         FileLog.e("mlkit: failed to detect language in selection", error);
@@ -9426,6 +9476,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         if (listAdapter != null) {
             // saveScrollPosition();
             firstLayout = true;
+            updateRowsIds();
             listAdapter.notifyDataSetChanged();
         }
         if (!parentLayout.isInPreviewMode() && blurredView != null && blurredView.getVisibility() == View.VISIBLE) {
@@ -10310,6 +10361,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         privacyRow = -1;
         dataRow = -1;
         chatRow = -1;
+        addToFolderRow = -1;
         filtersRow = -1;
         liteModeRow = -1;
         stickersRow = -1;
@@ -10561,6 +10613,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 }
                 if (actionsView == null && userId != getUserConfig().getClientUserId()) {
                     notificationsRow = rowCount++;
+                    addToFolderRow = rowCount++;
                 }
                 if (isBot && user != null && user.bot_has_main_app) {
                     botAppRow = rowCount++;
@@ -10704,6 +10757,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     notificationsDividerRow = rowCount++;
                 }
                 notificationsRow = rowCount++;
+                addToFolderRow = rowCount++;
             }
             if (rowCount > 0) {
                 infoSectionRow = rowCount++;
@@ -13614,6 +13668,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                         textCell.setImageLeft(23);
                     } else if (position == notificationRow) {
                         textCell.setTextAndIcon(LocaleController.getString(R.string.NotificationsAndSounds), R.drawable.msg2_notifications, true);
+                    } else if (position == addToFolderRow) {
+                        textCell.setTextAndIcon(LocaleController.getString(R.string.FilterAddTo), R.drawable.msg2_folder, true);
                     } else if (position == privacyRow) {
                         textCell.setTextAndIcon(LocaleController.getString(R.string.PrivacySettings), R.drawable.msg2_secret, true);
                     } else if (position == dataRow) {
@@ -14059,7 +14115,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 int position = holder.getAdapterPosition();
                 return position == notificationRow || position == numberRow || position == datacenterRow || position == privacyRow ||
                         position == languageRow || position == setUsernameRow || position == bioRow ||
-                        position == versionRow || position == dataRow || position == chatRow ||
+                        position == versionRow || position == dataRow || position == chatRow || position == addToFolderRow ||
                         position == questionRow || position == devicesRow || position == filtersRow || position == stickersRow ||
                         position == faqRow || position == policyRow || position == sendLogsRow || position == sendLastLogsRow ||
                         position == clearLogsRow || position == switchBackendRow || position == setAvatarRow ||
@@ -14105,7 +14161,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     position == subscribersRow || position == subscribersRequestsRow || position == administratorsRow || position == settingsRow || position == blockedUsersRow ||
                     position == addMemberRow || position == joinRow || position == unblockRow ||
                     position == sendMessageRow || position == notificationRow || position == privacyRow ||
-                    position == languageRow || position == dataRow || position == chatRow ||
+                    position == languageRow || position == dataRow || position == chatRow || position == addToFolderRow ||
                     position == questionRow || position == devicesRow || position == filtersRow || position == stickersRow ||
                     position == faqRow || position == policyRow || position == sendLogsRow || position == sendLastLogsRow ||
                     position == clearLogsRow || position == switchBackendRow || position == setAvatarRow || position == addToGroupButtonRow ||

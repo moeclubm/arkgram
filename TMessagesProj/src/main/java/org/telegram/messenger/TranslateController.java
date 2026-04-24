@@ -90,21 +90,11 @@ public class TranslateController extends BaseController {
     }
 
     public boolean isFeatureAvailable() {
-        return isChatTranslateEnabled() && (FlexConfig.usesExternalTranslationProvider() || UserConfig.getInstance(currentAccount).isPremium());
+        return isChatTranslateEnabled();
     }
 
     public boolean isFeatureAvailable(long dialogId) {
-        if (!isChatTranslateEnabled()) {
-            return false;
-        }
-        if (FlexConfig.usesExternalTranslationProvider()) {
-            return true;
-        }
-        final TLRPC.Chat chat = getMessagesController().getChat(-dialogId);
-        return (
-            UserConfig.getInstance(currentAccount).isPremium() ||
-            chat != null && chat.autotranslation
-        );
+        return isChatTranslateEnabled();
     }
 
     private Boolean chatTranslateEnabled;
@@ -115,7 +105,7 @@ public class TranslateController extends BaseController {
             return false;
         }
         if (chatTranslateEnabled == null) {
-            chatTranslateEnabled = messagesController.getMainSettings().getBoolean("translate_chat_button", true);
+            chatTranslateEnabled = messagesController.getMainSettings().getBoolean("translate_chat_button", false);
         }
         return chatTranslateEnabled;
     }
@@ -255,11 +245,110 @@ public class TranslateController extends BaseController {
     }
 
     public static String currentLanguage() {
-        String lang = LocaleController.getInstance().getCurrentLocaleInfo().pluralLangCode;
-        if (lang != null) {
-            lang = lang.split("_")[0];
+        return simplifyLanguageCode(LocaleController.getInstance().getCurrentLocaleInfo().pluralLangCode);
+    }
+
+    @Nullable
+    public static String normalizeLanguageCode(String language) {
+        if (TextUtils.isEmpty(language)) {
+            return null;
         }
-        return lang;
+        String normalized = language.trim().toLowerCase(Locale.US).replace('-', '_');
+        if (normalized.isEmpty()) {
+            return null;
+        }
+        if ("nb".equals(normalized) || normalized.startsWith("nb_")) {
+            return "no";
+        }
+        return normalized;
+    }
+
+    @Nullable
+    private static String simplifyLanguageCode(String language) {
+        String normalized = normalizeLanguageCode(language);
+        if (TextUtils.isEmpty(normalized)) {
+            return null;
+        }
+        int divider = normalized.indexOf('_');
+        return divider >= 0 ? normalized.substring(0, divider) : normalized;
+    }
+
+    public static boolean isSameLanguage(String first, String second) {
+        String normalizedFirst = normalizeLanguageCode(first);
+        String normalizedSecond = normalizeLanguageCode(second);
+        if (TextUtils.isEmpty(normalizedFirst) || TextUtils.isEmpty(normalizedSecond)) {
+            return false;
+        }
+        return TextUtils.equals(normalizedFirst, normalizedSecond) || TextUtils.equals(simplifyLanguageCode(normalizedFirst), simplifyLanguageCode(normalizedSecond));
+    }
+
+    public static boolean isTranslateOverrideLanguage(String language) {
+        String simplified = simplifyLanguageCode(language);
+        return "ru".equals(simplified) || "uk".equals(simplified);
+    }
+
+    public static boolean isLanguageRestricted(int currentAccount, String language) {
+        String normalizedLanguage = normalizeLanguageCode(language);
+        if (TextUtils.isEmpty(normalizedLanguage)) {
+            return false;
+        }
+        if (UserConfig.getInstance(currentAccount).isPremium()) {
+            for (String restrictedLanguage : RestrictedLanguagesSelectActivity.getRestrictedLanguages()) {
+                if (isSameLanguage(restrictedLanguage, normalizedLanguage)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        try {
+            return isSameLanguage(LocaleController.getInstance().getCurrentLocaleInfo().pluralLangCode, normalizedLanguage);
+        } catch (Exception ignore) {
+            return false;
+        }
+    }
+
+    public static boolean canTranslateLanguage(int currentAccount, String fromLanguage, @Nullable String toLanguage) {
+        return canTranslateLanguage(currentAccount, fromLanguage, toLanguage, null, false);
+    }
+
+    public static boolean canTranslateLanguage(int currentAccount, String fromLanguage, @Nullable String toLanguage, @Nullable String alternativeToLanguage, boolean ignoreRestrictions) {
+        String normalizedFrom = normalizeLanguageCode(fromLanguage);
+        if (TextUtils.isEmpty(normalizedFrom)) {
+            return false;
+        }
+        if (!UNKNOWN_LANGUAGE.equals(normalizedFrom)) {
+            boolean matchesPrimary = isSameLanguage(normalizedFrom, toLanguage);
+            boolean matchesAlternative = TextUtils.isEmpty(alternativeToLanguage) || isSameLanguage(normalizedFrom, alternativeToLanguage);
+            if (matchesPrimary && matchesAlternative) {
+                return false;
+            }
+        }
+        return ignoreRestrictions || !isLanguageRestricted(currentAccount, normalizedFrom);
+    }
+
+    public boolean canTranslateLanguage(String fromLanguage, @Nullable String toLanguage) {
+        return canTranslateLanguage(currentAccount, fromLanguage, toLanguage, null, false);
+    }
+
+    public boolean canTranslateLanguage(String fromLanguage, @Nullable String toLanguage, @Nullable String alternativeToLanguage) {
+        return canTranslateLanguage(currentAccount, fromLanguage, toLanguage, alternativeToLanguage, false);
+    }
+
+    public boolean canTranslateLanguage(String fromLanguage, @Nullable String toLanguage, @Nullable String alternativeToLanguage, boolean ignoreRestrictions) {
+        return canTranslateLanguage(currentAccount, fromLanguage, toLanguage, alternativeToLanguage, ignoreRestrictions);
+    }
+
+    public boolean canShowContextTranslate(String fromLanguage, @Nullable String toLanguage) {
+        return isContextTranslateEnabled() && canTranslateLanguage(fromLanguage, toLanguage);
+    }
+
+    public boolean canShowContextTranslate(String fromLanguage, @Nullable String toLanguage, @Nullable String alternativeToLanguage) {
+        return isContextTranslateEnabled() && canTranslateLanguage(fromLanguage, toLanguage, alternativeToLanguage);
+    }
+
+    public boolean canShowContextTranslate(String fromLanguage, @Nullable String toLanguage, @Nullable String alternativeToLanguage, boolean allowRestrictedOverride) {
+        return (isContextTranslateEnabled() && canTranslateLanguage(fromLanguage, toLanguage, alternativeToLanguage)) ||
+            (allowRestrictedOverride && canTranslateLanguage(fromLanguage, toLanguage, alternativeToLanguage, true));
     }
 
     public String getDialogTranslateTo(long dialogId) {
@@ -1123,7 +1212,7 @@ public class TranslateController extends BaseController {
                         for (int i = 0; i < count; ++i) {
                             callbacks.get(i).run(isTranscription, ids.get(i), TranslateAlert2.preprocess(texts.get(i), translated.get(i)), toLanguage);
                         }
-                    } else if (err != null && "TRANSLATIONS_DISABLED_ALT".equalsIgnoreCase(err.text)) {
+                    } else if (err != null && "TRANSLATIONS_DISABLED_ALT".equalsIgnoreCase(err.text) && FlexConfig.usesExternalTranslationProvider()) {
                         for (int i = 0; i < ids.size(); ++i) {
                             final int id = ids.get(i);
                             final Utilities.Callback4<Boolean, Integer, TLRPC.TL_textWithEntities, String> _callback = callbacks.get(i);
@@ -1143,6 +1232,10 @@ public class TranslateController extends BaseController {
                         toggleTranslatingDialog(dialogId, false);
                         NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.showBulletin, Bulletin.TYPE_ERROR, getString(R.string.TranslationFailedAlert2));
                     } else {
+                        if (err != null && "TRANSLATIONS_DISABLED_ALT".equalsIgnoreCase(err.text)) {
+                            toggleTranslatingDialog(dialogId, false);
+                            NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.showBulletin, Bulletin.TYPE_ERROR, getString(R.string.TranslationFailedAlert2));
+                        }
                         if (err != null && "QUOTA_EXCEEDED".equals(err.text)) {
                             NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.showBulletin, Bulletin.TYPE_ERROR, getString(R.string.TranslationFailedAlert1));
                         }
@@ -1586,14 +1679,7 @@ public class TranslateController extends BaseController {
     }
 
     private boolean isLanguageRestricted(String lng) {
-        if (getUserConfig().isPremium()) {
-            return RestrictedLanguagesSelectActivity.getRestrictedLanguages().contains(lng);
-        }
-        try {
-            return TextUtils.equals(LocaleController.getInstance().getCurrentLocaleInfo().pluralLangCode, lng);
-        } catch (Exception ignore) {
-            return false;
-        }
+        return isLanguageRestricted(currentAccount, lng);
     }
 
     private void loadTranslatingDialogsCached() {
@@ -1718,8 +1804,8 @@ public class TranslateController extends BaseController {
 
     public boolean canTranslateStory(TL_stories.StoryItem storyItem) {
         return storyItem != null && !TextUtils.isEmpty(storyItem.caption) && !Emoji.fullyConsistsOfEmojis(storyItem.caption) && (
-            storyItem.detectedLng == null && storyItem.translatedText != null && TextUtils.equals(storyItem.translatedLng, TranslateAlert2.getToLanguage()) ||
-            storyItem.detectedLng != null && !isLanguageRestricted(storyItem.detectedLng)
+            storyItem.detectedLng == null && storyItem.translatedText != null && isSameLanguage(storyItem.translatedLng, TranslateAlert2.getToLanguage()) ||
+            storyItem.detectedLng != null && canTranslateLanguage(storyItem.detectedLng, TranslateAlert2.getToLanguage())
         );
     }
 
@@ -1848,12 +1934,15 @@ public class TranslateController extends BaseController {
     }
 
     public boolean canTranslatePhoto(MessageObject messageObject, String detectedLanguage) {
-        if (messageObject != null && messageObject.messageOwner != null && messageObject.messageOwner.originalLanguage != null) {
+        if (messageObject != null && messageObject.messageOwner != null && !TextUtils.isEmpty(messageObject.messageOwner.originalLanguage)) {
             detectedLanguage = messageObject.messageOwner.originalLanguage;
         }
+        if (TextUtils.isEmpty(detectedLanguage)) {
+            detectedLanguage = null;
+        }
         return messageObject != null && messageObject.messageOwner != null && !TextUtils.isEmpty(messageObject.messageOwner.message) && (
-            detectedLanguage == null && messageObject.messageOwner.translatedText != null && TextUtils.equals(messageObject.messageOwner.translatedToLanguage, TranslateAlert2.getToLanguage()) ||
-            detectedLanguage != null && !isLanguageRestricted(messageObject.messageOwner.originalLanguage)
+            detectedLanguage == null && messageObject.messageOwner.translatedText != null && isSameLanguage(messageObject.messageOwner.translatedToLanguage, TranslateAlert2.getToLanguage()) ||
+            detectedLanguage != null && canTranslateLanguage(detectedLanguage, TranslateAlert2.getToLanguage())
         ) && !messageObject.translated;
     }
 

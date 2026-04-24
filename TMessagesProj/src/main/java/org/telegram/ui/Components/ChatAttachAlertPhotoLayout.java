@@ -167,6 +167,7 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
     private float cameraViewOffsetBottomY;
     public boolean cameraOpened;
     private boolean canSaveCameraPreview;
+    private boolean cameraRequestedByUser;
     private boolean cameraAnimationInProgress;
     private float cameraOpenProgress;
     private int[] animateCameraValues = new int[5];
@@ -1527,6 +1528,8 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
 
     private void openCameraByClick() {
         if (SharedConfig.inappCamera) {
+            cameraRequestedByUser = true;
+            checkCamera(true);
             openCamera(true);
         } else {
             if (parentAlert.delegate != null) {
@@ -2397,6 +2400,14 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
         if (fragment == null || fragment.getParentActivity() == null) {
             return;
         }
+        if (SharedConfig.lazyAttachCamera && !request && !cameraOpened && !cameraRequestedByUser) {
+            deviceHasGoodCamera = false;
+            noCameraPermissions = Build.VERSION.SDK_INT >= 23 && fragment.getParentActivity().checkSelfPermission(Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED;
+            if ((old != deviceHasGoodCamera || old2 != noCameraPermissions) && adapter != null) {
+                adapter.notifyDataSetChanged();
+            }
+            return;
+        }
         if (!SharedConfig.inappCamera) {
             deviceHasGoodCamera = false;
         } else {
@@ -2411,13 +2422,13 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
                     }
                     deviceHasGoodCamera = false;
                 } else {
-                    if (request || SharedConfig.hasCameraCache) {
+                    if (request || SharedConfig.hasCameraCache && !SharedConfig.lazyAttachCamera) {
                         CameraController.getInstance().initCamera(null);
                     }
                     deviceHasGoodCamera = CameraController.getInstance().isCameraInitied();
                 }
             } else {
-                if (request || SharedConfig.hasCameraCache) {
+                if (request || SharedConfig.hasCameraCache && !SharedConfig.lazyAttachCamera) {
                     CameraController.getInstance().initCamera(null);
                 }
                 deviceHasGoodCamera = CameraController.getInstance().isCameraInitied();
@@ -2527,6 +2538,7 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
             }
         }
         cameraOpened = true;
+        cameraRequestedByUser = false;
         if (cameraView != null) {
             cameraView.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
         }
@@ -3887,6 +3899,9 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
 
     private void resumeCameraPreview() {
         try {
+            if (SharedConfig.lazyAttachCamera) {
+                return;
+            }
             checkCamera(false);
             if (cameraView != null) {
                 CameraController.getInstance().startPreview(cameraView.getCameraSessionObject());
@@ -4052,12 +4067,15 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
 
     @Override
     public void onOpenAnimationEnd() {
-        checkCamera(parentAlert != null && parentAlert.baseFragment instanceof ChatActivity);
+        checkCamera(!SharedConfig.lazyAttachCamera && parentAlert != null && parentAlert.baseFragment instanceof ChatActivity);
     }
 
     @Override
     public void onDismissWithButtonClick(int item) {
         hideCamera(item != 0 && item != 2);
+        if (!cameraOpened) {
+            cameraRequestedByUser = false;
+        }
     }
 
     @Override
@@ -4069,6 +4087,7 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
             closeCamera(true);
             return true;
         }
+        cameraRequestedByUser = false;
         hideCamera(true);
         return false;
     }
@@ -4248,7 +4267,12 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
                 updateAlbumsDropDown();
             }
         } else if (id == NotificationCenter.cameraInitied) {
-            checkCamera(false);
+            if (!SharedConfig.lazyAttachCamera || cameraOpened || cameraRequestedByUser) {
+                checkCamera(cameraRequestedByUser);
+                if (cameraRequestedByUser && deviceHasGoodCamera) {
+                    openCamera(true);
+                }
+            }
         }
     }
 

@@ -1599,6 +1599,7 @@ public class ChatActivity extends BaseFragment implements
     private final static int translate = 62;
     private final static int scheduled = 63;
     private final static int edit_quick_reply = 64;
+    private final static int add_to_folder = 76;
 
     private final static int copy_business_link = 65;
     private final static int share_business_link = 66;
@@ -3975,6 +3976,8 @@ public class ChatActivity extends BaseFragment implements
                     if (!getMessagesController().getTranslateController().toggleTranslatingDialog(getDialogId(), true)) {
                         updateTopPanel(true);
                     }
+                } else if (id == add_to_folder) {
+                    openDialogFolderSheet();
                 } else if (id == ai_summary) {
                     presentFragment(new FlexAiSummaryActivity(dialog_id, getTopicId(), getAiSummaryChatTitle()));
                 } else if (id == call || id == video_call) {
@@ -4394,6 +4397,9 @@ public class ChatActivity extends BaseFragment implements
             }
             translateItem = headerItem.lazilyAddSubItem(translate, R.drawable.msg_translate, LocaleController.getString(R.string.TranslateMessage));
             updateTranslateItemVisibility();
+            if (!isTopic && dialog_id != 0 && (currentEncryptedChat != null || currentChat != null || currentUser != null && !currentUser.self)) {
+                headerItem.lazilyAddSubItem(add_to_folder, R.drawable.msg2_folder, LocaleController.getString(R.string.FilterAddTo));
+            }
             headerItem.lazilyAddSubItem(ai_summary, R.drawable.outline_ai_translate2, getString(R.string.SummaryTitle));
             if (currentChat != null && !currentChat.creator && !ChatObject.hasAdminRights(currentChat)) {
                 headerItem.lazilyAddSubItem(report, R.drawable.msg_report, LocaleController.getString(R.string.ReportChat));
@@ -5049,10 +5055,14 @@ public class ChatActivity extends BaseFragment implements
                             animator.setInterpolator(CubicBezierInterpolator.DEFAULT);
                             animator.start();
                             pullingDownDrawable.runOnAnimationFinish(() -> {
-                                animateToNextChat();
+                                if (canSwipeToNextChat()) {
+                                    animateToNextChat();
+                                }
                             });
                         } else {
-                            animateToNextChat();
+                            if (canSwipeToNextChat()) {
+                                animateToNextChat();
+                            }
                         }
                     } else {
                         if (pullingDownDrawable != null && pullingDownDrawable.emptyStub && (System.currentTimeMillis() - pullingDownDrawable.lastShowingReleaseTime) < 500 && pullingDownDrawable.animateSwipeToRelease) {
@@ -6560,7 +6570,7 @@ public class ChatActivity extends BaseFragment implements
                     scrolled = super.scrollVerticallyBy(dy, recycler, state);
                 }
                 final boolean allowPullingDownScroll = !isInPollAddOptionMode();
-                if (allowPullingDownScroll && dy > 0 && scrolled == 0 && (ChatObject.isChannel(currentChat) && !currentChat.megagroup || isTopic && !UserObject.isBotForum(currentUser)) && chatMode != MODE_SAVED && chatMode != MODE_SCHEDULED && chatListView.getScrollState() == RecyclerView.SCROLL_STATE_DRAGGING && !chatListView.isFastScrollAnimationRunning() && !chatListView.isMultiselect() && !isReport()) {
+                if (allowPullingDownScroll && canSwipeToNextChat() && dy > 0 && scrolled == 0 && (ChatObject.isChannel(currentChat) && !currentChat.megagroup || isTopic && !UserObject.isBotForum(currentUser)) && chatMode != MODE_SAVED && chatMode != MODE_SCHEDULED && chatListView.getScrollState() == RecyclerView.SCROLL_STATE_DRAGGING && !chatListView.isFastScrollAnimationRunning() && !chatListView.isMultiselect() && !isReport()) {
                     if (pullingDownOffset == 0 && pullingDownDrawable != null) {
                         if (nextChannels != null && !nextChannels.isEmpty()) {
                             pullingDownDrawable.updateDialog(nextChannels.get(0));
@@ -9687,9 +9697,6 @@ public class ChatActivity extends BaseFragment implements
             protected void onButtonClick() {
                 if (getMessagesController().getTranslateController().isFeatureAvailable(getDialogId())) {
                     getMessagesController().getTranslateController().toggleTranslatingDialog(getDialogId());
-                } else {
-                    MessagesController.getNotificationsSettings(currentAccount).edit().putInt("dialog_show_translate_count" + getDialogId(), 14).commit();
-                    showDialog(new PremiumFeatureBottomSheet(ChatActivity.this, PremiumPreviewFragment.PREMIUM_FEATURE_TRANSLATIONS, false));
                 }
                 updateTopPanel(true);
             }
@@ -10984,6 +10991,57 @@ public class ChatActivity extends BaseFragment implements
             replacingChatActivity = true;
             presentFragment(chatActivity, true);
         }
+    }
+
+    private boolean canSwipeToNextChat() {
+        return !SharedConfig.disableChannelSwipeNext;
+    }
+
+    private void openDialogFolderSheet() {
+        if (getParentActivity() == null) {
+            return;
+        }
+        ArrayList<Long> selectedDialogs = new ArrayList<>();
+        selectedDialogs.add(getDialogId());
+        FiltersListBottomSheet sheet = new FiltersListBottomSheet(this, selectedDialogs);
+        sheet.setDelegate((filter, checked) -> {
+            ArrayList<Long> alwaysShow = FiltersListBottomSheet.getDialogsCount(ChatActivity.this, filter, selectedDialogs, true, false);
+            if (!checked) {
+                int currentCount = filter != null ? filter.alwaysShow.size() : 0;
+                int totalCount = currentCount + alwaysShow.size();
+                if ((totalCount > getMessagesController().dialogFiltersChatsLimitDefault && !getUserConfig().isPremium()) || totalCount > getMessagesController().dialogFiltersChatsLimitPremium) {
+                    showDialog(new LimitReachedBottomSheet(ChatActivity.this, getParentActivity(), LimitReachedBottomSheet.TYPE_CHATS_IN_FOLDER, currentAccount, null));
+                    return;
+                }
+            }
+            if (filter != null) {
+                if (checked) {
+                    for (int a = 0; a < selectedDialogs.size(); a++) {
+                        long did = selectedDialogs.get(a);
+                        filter.neverShow.add(did);
+                        filter.alwaysShow.remove(did);
+                    }
+                    FilterCreateActivity.saveFilterToServer(filter, filter.flags, filter.name, filter.entities, filter.title_noanimate, filter.color, filter.alwaysShow, filter.neverShow, filter.pinnedDialogs, false, false, true, true, false, ChatActivity.this, null);
+                    createUndoView();
+                    if (undoView != null) {
+                        undoView.showWithAction(getDialogId(), UndoView.ACTION_REMOVED_FROM_FOLDER, selectedDialogs.size(), filter, null, null);
+                    }
+                } else if (!alwaysShow.isEmpty()) {
+                    for (int a = 0; a < alwaysShow.size(); a++) {
+                        filter.neverShow.remove(alwaysShow.get(a));
+                    }
+                    filter.alwaysShow.addAll(alwaysShow);
+                    FilterCreateActivity.saveFilterToServer(filter, filter.flags, filter.name, filter.entities, filter.title_noanimate, filter.color, filter.alwaysShow, filter.neverShow, filter.pinnedDialogs, false, false, true, true, false, ChatActivity.this, null);
+                    createUndoView();
+                    if (undoView != null) {
+                        undoView.showWithAction(getDialogId(), UndoView.ACTION_ADDED_TO_FOLDER, alwaysShow.size(), filter, null, null);
+                    }
+                }
+            } else {
+                presentFragment(new FilterCreateActivity(null, alwaysShow));
+            }
+        });
+        showDialog(sheet);
     }
 
     private ArrayList<TLRPC.Chat> nextChannels;
@@ -28386,7 +28444,7 @@ public class ChatActivity extends BaseFragment implements
         boolean showTranslate = (
             getMessagesController().getTranslateController().isFeatureAvailable(getDialogId()) ?
                 getMessagesController().getTranslateController().isDialogTranslatable(getDialogId()) && !getMessagesController().getTranslateController().isTranslateDialogHidden(getDialogId()) :
-                !getMessagesController().premiumFeaturesBlocked() && preferences.getInt("dialog_show_translate_count" + did, 5) <= 0
+                false
         ) || DEBUG_TOP_PANELS;
         boolean showAddProfilePicture = UserObject.isBot(currentUser) && currentUser.bot_can_edit && currentUser.photo == null;
         boolean showBizBot = currentEncryptedChat == null && getUserConfig().isPremium() && preferences.getLong("dialog_botid" + did, 0) != 0 || DEBUG_TOP_PANELS;
@@ -31011,7 +31069,7 @@ public class ChatActivity extends BaseFragment implements
                         processSelectedOption(options.get(i));
                     });
                     if (option == OPTION_TRANSLATE) {
-                        final boolean translateEnabled = getMessagesController().getTranslateController().isContextTranslateEnabled();
+                        final TranslateController translateController = getMessagesController().getTranslateController();
                         String toLangDefault = LocaleController.getInstance().getCurrentLocale().getLanguage();
                         String toLang = TranslateAlert2.getToLanguage();
                         int[] messageIdToTranslate = new int[] { message.getId() };
@@ -31025,11 +31083,9 @@ public class ChatActivity extends BaseFragment implements
                         if (selectedObject != null && selectedObject.messageOwner != null && selectedObject.messageOwner.originalLanguage != null) {
                             waitForLangDetection.set(false);
                             String fromLang = selectedObject.messageOwner.originalLanguage;
+                            boolean allowRestrictedOverride = ((currentChat != null && (currentChat.has_link || ChatObject.isPublic(currentChat))) || selectedObject.messageOwner.fwd_from != null) && TranslateController.isTranslateOverrideLanguage(fromLang);
                             cell.setVisibility(
-                                fromLang != null && (!fromLang.equals(toLang) || !fromLang.equals(toLangDefault) || fromLang.equals(TranslateController.UNKNOWN_LANGUAGE)) && (
-                                    translateEnabled && !RestrictedLanguagesSelectActivity.getRestrictedLanguages().contains(fromLang) ||
-                                    (currentChat != null && (currentChat.has_link || ChatObject.isPublic(currentChat)) || selectedObject.messageOwner.fwd_from != null) && ("uk".equals(fromLang) || "ru".equals(fromLang))
-                                ) ? View.VISIBLE : View.GONE
+                                translateController.canShowContextTranslate(fromLang, toLang, toLangDefault, allowRestrictedOverride) ? View.VISIBLE : View.GONE
                             );
                             cell.setOnClickListener(e -> {
                                 if (selectedObject == null || i >= options.size() || getParentActivity() == null) {
@@ -31069,10 +31125,8 @@ public class ChatActivity extends BaseFragment implements
                                 finalMessageText.toString(),
                                 (String lang) -> {
                                     fromLang[0] = lang;
-                                    if (fromLang[0] != null && (!fromLang[0].equals(toLang) || !fromLang[0].equals(toLangDefault) || fromLang[0].equals(TranslateController.UNKNOWN_LANGUAGE)) && (
-                                        translateEnabled && !RestrictedLanguagesSelectActivity.getRestrictedLanguages().contains(fromLang[0]) ||
-                                        (currentChat != null && (currentChat.has_link || ChatObject.isPublic(currentChat)) || selectedObject.messageOwner.fwd_from != null) && ("uk".equals(fromLang[0]) || "ru".equals(fromLang[0]))
-                                    )) {
+                                    boolean allowRestrictedOverride = ((currentChat != null && (currentChat.has_link || ChatObject.isPublic(currentChat))) || selectedObject.messageOwner.fwd_from != null) && TranslateController.isTranslateOverrideLanguage(fromLang[0]);
+                                    if (translateController.canShowContextTranslate(fromLang[0], toLang, toLangDefault, allowRestrictedOverride)) {
                                         cell.setVisibility(View.VISIBLE);
                                     }
                                     waitForLangDetection.set(false);
@@ -31124,7 +31178,7 @@ public class ChatActivity extends BaseFragment implements
                                     onLangDetectionDone.getAndSet(null).run();
                                 }
                             }, 250);
-                        } else if (translateEnabled) {
+                        } else if (translateController.isContextTranslateEnabled()) {
                             cell.setOnClickListener(e -> {
                                 if (selectedObject == null || i >= options.size() || getParentActivity() == null) {
                                     return;
@@ -42872,12 +42926,13 @@ public class ChatActivity extends BaseFragment implements
     }
 
     private void updateBotHelpCellClick(BotHelpCell cell) {
-        final boolean translateButtonEnabled = MessagesController.getInstance(currentAccount).getTranslateController().isContextTranslateEnabled();
+        final TranslateController translateController = MessagesController.getInstance(currentAccount).getTranslateController();
+        final boolean translateButtonEnabled = translateController.isContextTranslateEnabled();
         if (translateButtonEnabled && LanguageDetector.hasSupport()) {
             final CharSequence text = cell.getText();
             LanguageDetector.detectLanguage(text == null ? "" : text.toString(), lang -> {
                 String toLang = LocaleController.getInstance().getCurrentLocale().getLanguage();
-                if (lang != null && (!lang.equals(toLang) || lang.equals("und")) && !RestrictedLanguagesSelectActivity.getRestrictedLanguages().contains(lang)) {
+                if (translateController.canShowContextTranslate(lang, toLang)) {
                     cell.setOnClickListener(e -> {
 
                         ActionBarPopupWindow.ActionBarPopupWindowLayout layout = new ActionBarPopupWindow.ActionBarPopupWindowLayout(getContext());

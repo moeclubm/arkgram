@@ -42,6 +42,10 @@ public class FlexFileManager {
 
         global.put("download_speed_boost", FlexConfig.getDownloadSpeedBoost());
         global.put("default_video_quality", FlexConfig.getDefaultVideoQuality());
+        global.put("default_photo_high_quality", SharedConfig.photoHighQualityDefault);
+        global.put("auto_retry_failed_media_downloads", SharedConfig.autoRetryFailedMediaDownloads);
+        global.put("disable_channel_swipe_next", SharedConfig.disableChannelSwipeNext);
+        global.put("lazy_attach_camera", SharedConfig.lazyAttachCamera);
         global.put("disable_webrtc", FlexConfig.isWebRtcDisabled());
         global.put("disable_no_forwards_restrictions", FlexConfig.isNoForwardsRestrictionsDisabled());
         global.put("show_dc_info", FlexConfig.isDcInfoEnabled());
@@ -103,6 +107,22 @@ public class FlexFileManager {
         }
         if (global.has("default_video_quality")) {
             FlexConfig.setDefaultVideoQuality(global.get("default_video_quality").getAsInt());
+        }
+        if (global.has("default_photo_high_quality")) {
+            SharedConfig.photoHighQualityDefault = global.get("default_photo_high_quality").getAsBoolean();
+            SharedConfig.saveConfig();
+        }
+        if (global.has("auto_retry_failed_media_downloads")) {
+            SharedConfig.autoRetryFailedMediaDownloads = global.get("auto_retry_failed_media_downloads").getAsBoolean();
+            SharedConfig.saveConfig();
+        }
+        if (global.has("disable_channel_swipe_next")) {
+            SharedConfig.disableChannelSwipeNext = global.get("disable_channel_swipe_next").getAsBoolean();
+            SharedConfig.saveConfig();
+        }
+        if (global.has("lazy_attach_camera")) {
+            SharedConfig.lazyAttachCamera = global.get("lazy_attach_camera").getAsBoolean();
+            SharedConfig.saveConfig();
         }
         if (global.has("disable_webrtc")) {
             FlexConfig.setWebRtcDisabled(global.get("disable_webrtc").getAsBoolean());
