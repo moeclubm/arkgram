@@ -37,7 +37,7 @@ public class DarkThemeResourceProvider implements Theme.ResourcesProvider {
         sparseIntArray.put(Theme.key_player_actionBarTitle, Color.WHITE);
         sparseIntArray.put(Theme.key_dialogIcon, Color.WHITE);
         sparseIntArray.put(Theme.key_text_RedBold, 0xFFDB4646);
-        sparseIntArray.put(Theme.key_dialogButton, -10177041);
+        sparseIntArray.put(Theme.key_dialogButton, 0xFFE8C88E);
         sparseIntArray.put(Theme.key_chat_gifSaveHintBackground, ColorUtils.blendARGB(Color.BLACK, Color.WHITE, 0.2f));
         sparseIntArray.put(Theme.key_dialogSearchHint, ColorUtils.blendARGB(Color.BLACK, Color.WHITE, 0.5f));
         sparseIntArray.put(Theme.key_dialogSearchIcon, ColorUtils.blendARGB(Color.BLACK, Color.WHITE, 0.5f));
@@ -93,13 +93,13 @@ public class DarkThemeResourceProvider implements Theme.ResourcesProvider {
         sparseIntArray.put(Theme.key_windowBackgroundWhite, -15198183);
         sparseIntArray.put(Theme.key_windowBackgroundWhiteBlackText, Color.WHITE);
         sparseIntArray.put(Theme.key_chat_emojiPanelEmptyText, -8553090);
-        sparseIntArray.put(Theme.key_progressCircle, -10177027);
+        sparseIntArray.put(Theme.key_progressCircle, 0xFFE8C88E);
         sparseIntArray.put(Theme.key_chat_emojiPanelStickerPackSelector, 181267199);
         sparseIntArray.put(Theme.key_chat_emojiSearchIcon, ColorUtils.setAlphaComponent(Color.WHITE, 125));
         sparseIntArray.put(Theme.key_chat_emojiPanelIcon, 0x80ffffff);
         sparseIntArray.put(Theme.key_chat_emojiBottomPanelIcon, ColorUtils.setAlphaComponent(Color.WHITE, 125));
         sparseIntArray.put(Theme.key_chat_emojiPanelIconSelected, 0xffffffff);
-        sparseIntArray.put(Theme.key_chat_emojiPanelStickerPackSelectorLine, -10177041);
+        sparseIntArray.put(Theme.key_chat_emojiPanelStickerPackSelectorLine, 0xFFC69B5F);
         sparseIntArray.put(Theme.key_chat_emojiPanelShadowLine, ColorUtils.setAlphaComponent(Color.BLACK, 30));
         sparseIntArray.put(Theme.key_chat_emojiPanelBackspace, ColorUtils.setAlphaComponent(Color.WHITE, 125));
         sparseIntArray.put(Theme.key_divider, 0xFF000000);
@@ -109,9 +109,9 @@ public class DarkThemeResourceProvider implements Theme.ResourcesProvider {
         sparseIntArray.put(Theme.key_graySectionText, -8158332);
       //  sparseIntArray.put(Theme.key_windowBackgroundGray, 0xFF1F1F1F);
         sparseIntArray.put(Theme.key_windowBackgroundGray, Color.BLACK);
-        sparseIntArray.put(Theme.key_windowBackgroundWhiteBlueHeader, 0xFFAF8144);
-        sparseIntArray.put(Theme.key_windowBackgroundWhiteInputFieldActivated, -10177041);
-        sparseIntArray.put(Theme.key_windowBackgroundWhiteInputField, -10177041);
+        sparseIntArray.put(Theme.key_windowBackgroundWhiteBlueHeader, 0xFFC69B5F);
+        sparseIntArray.put(Theme.key_windowBackgroundWhiteInputFieldActivated, 0xFFE8C88E);
+        sparseIntArray.put(Theme.key_windowBackgroundWhiteInputField, 0xFF5B4632);
         sparseIntArray.put(Theme.key_windowBackgroundWhiteGrayText3, ColorUtils.blendARGB(Color.WHITE, Color.BLACK, 0.3f));
         sparseIntArray.put(Theme.key_undo_background, 0xFF212426);
         sparseIntArray.put(Theme.key_undo_cancelColor, 0xFFF0D9B0);
@@ -141,22 +141,22 @@ public class DarkThemeResourceProvider implements Theme.ResourcesProvider {
         sparseIntArray.put(Theme.key_groupcreate_spanText, -657931);
         sparseIntArray.put(Theme.key_avatar_text, 0xffffffff);
         sparseIntArray.put(Theme.key_groupcreate_hintText, -8553091);
-        sparseIntArray.put(Theme.key_groupcreate_cursor, -10177041);
+        sparseIntArray.put(Theme.key_groupcreate_cursor, 0xFFE8C88E);
         sparseIntArray.put(Theme.key_actionBarDefaultSubmenuBackground, 0xF21F1F1F);
         sparseIntArray.put(Theme.key_actionBarDefaultSelector, 385875967);
         sparseIntArray.put(Theme.key_fastScrollInactive, -12500671);
-        sparseIntArray.put(Theme.key_fastScrollActive, -13133079);
+        sparseIntArray.put(Theme.key_fastScrollActive, 0xFFE8C88E);
         sparseIntArray.put(Theme.key_fastScrollText, 0xffffffff);
         sparseIntArray.put(Theme.key_featuredStickers_addButton, 0xFFE8C88E);
-        sparseIntArray.put(Theme.key_dialogTextLink, -10177041);
+        sparseIntArray.put(Theme.key_dialogTextLink, 0xFFC69B5F);
         sparseIntArray.put(Theme.key_dialogSearchText, Color.WHITE);
-        sparseIntArray.put(Theme.key_chat_messageLinkIn, 0xFF9F733A);
+        sparseIntArray.put(Theme.key_chat_messageLinkIn, 0xFFC69B5F);
         sparseIntArray.put(Theme.key_dialogTextGray2, -8553091);
 
         sparseIntArray.put(Theme.key_location_actionIcon, -592138);
         sparseIntArray.put(Theme.key_location_actionBackground, 0xFF1F1F1F);
         sparseIntArray.put(Theme.key_location_actionPressedBackground, 0xFF3F3F3F);
-        sparseIntArray.put(Theme.key_location_actionActiveIcon, -8796932);
+        sparseIntArray.put(Theme.key_location_actionActiveIcon, 0xFFC69B5F);
 
         sparseIntArray.put(Theme.key_sheet_other, 1140850687);
 
@@ -166,7 +166,7 @@ public class DarkThemeResourceProvider implements Theme.ResourcesProvider {
         sparseIntArray.put(Theme.key_chat_outBubbleGradient3, 0);
         sparseIntArray.put(Theme.key_chat_textSelectBackground, ColorUtils.setAlphaComponent(Color.WHITE, 75));
 
-        sparseIntArray.put(Theme.key_radioBackgroundChecked, -10177041);
+        sparseIntArray.put(Theme.key_radioBackgroundChecked, 0xFFE8C88E);
         sparseIntArray.put(Theme.key_checkboxDisabled, -12237499);
         sparseIntArray.put(Theme.key_checkboxCheck, 0xFFFFFFFF);
 
@@ -178,7 +178,7 @@ public class DarkThemeResourceProvider implements Theme.ResourcesProvider {
         sparseIntArray.put(Theme.key_share_linkBackground, 352321535);
 
         sparseIntArray.put(Theme.key_player_time, -8553091);
-        sparseIntArray.put(Theme.key_player_progress, -11292689);
+        sparseIntArray.put(Theme.key_player_progress, 0xFFE8C88E);
         sparseIntArray.put(Theme.key_player_progressBackground, -12829636);
         sparseIntArray.put(Theme.key_player_progressCachedBackground, -11184811);
         sparseIntArray.put(Theme.key_glass_targetMainTopPanel, -15198183);
