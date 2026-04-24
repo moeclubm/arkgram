@@ -51,6 +51,8 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
+import org.telegram.messenger.TranslateController;
+import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.ui.ActionBar.ActionBarPopupWindow;
 import org.telegram.ui.ActionBar.FloatingActionMode;
@@ -61,8 +63,6 @@ import org.telegram.ui.Components.AnimatedEmojiSpan;
 import org.telegram.ui.Components.CornerPath;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RecyclerListView;
-import org.telegram.ui.RestrictedLanguagesSelectActivity;
-
 import java.util.ArrayList;
 
 public abstract class TextSelectionHelper<Cell extends TextSelectionHelper.SelectableView> {
@@ -1452,7 +1452,7 @@ public abstract class TextSelectionHelper<Cell extends TextSelectionHelper.Selec
                     onTranslateListener != null && (
                         (
                             translateFromLanguage != null &&
-                            !RestrictedLanguagesSelectActivity.getRestrictedLanguages().contains(translateFromLanguage)
+                            TranslateController.canTranslateLanguage(UserConfig.selectedAccount, translateFromLanguage, translateToLanguage)
                         ) || !LanguageDetector.hasSupport()
                     )
                 );

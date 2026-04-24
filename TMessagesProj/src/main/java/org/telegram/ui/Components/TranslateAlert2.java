@@ -468,7 +468,8 @@ public class TranslateAlert2 extends BottomSheet implements NotificationCenter.N
         if (done == null) return;
         int provider = FlexConfig.getTranslationProvider();
         if (provider == FlexConfig.TRANSLATION_PROVIDER_TELEGRAM) {
-            provider = FlexConfig.TRANSLATION_PROVIDER_GOOGLE;
+            AndroidUtilities.runOnUIThread(() -> done.run(null, false, LocaleController.getString(R.string.TranslationFailedAlert2)));
+            return;
         }
         if ((provider == FlexConfig.TRANSLATION_PROVIDER_GOOGLE || provider == FlexConfig.TRANSLATION_PROVIDER_GOOGLE_CN) && fromLng == null) {
             LanguageDetector.detectLanguage(text, lng -> {
@@ -619,7 +620,8 @@ public class TranslateAlert2 extends BottomSheet implements NotificationCenter.N
         if (done == null) return;
         int provider = FlexConfig.getTranslationProvider();
         if (provider == FlexConfig.TRANSLATION_PROVIDER_TELEGRAM) {
-            provider = FlexConfig.TRANSLATION_PROVIDER_GOOGLE;
+            AndroidUtilities.runOnUIThread(() -> done.run(null, false, LocaleController.getString(R.string.TranslationFailedAlert2)));
+            return;
         }
         final int finalProvider = provider;
         new Thread() {
