@@ -1451,7 +1451,7 @@ public class CaptionContainerView extends FrameLayout {
             activeTextDrawable.setTextSize(dpf2(12));
             activeTextDrawable.setGravity(Gravity.CENTER);
 
-            updateColors(0xffffffff, 0xff1A9CFF, 0xffffffff);
+            updateColors(0xffffffff, 0xffAF8144, 0xffffffff);
         }
 
         public void setTextSize(float dp) {

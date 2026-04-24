@@ -828,7 +828,7 @@ public class EntityView extends FrameLayout {
             paint.setPathEffect(new DashPathEffect(new float[]{dp(10), dp(10)}, .5f));
             paint.setShadowLayer(AndroidUtilities.dpf2(0.75f), 0, 0, 0x50000000);
 
-            dotPaint.setColor(0xff1A9CFF);
+            dotPaint.setColor(0xffAF8144);
             dotStrokePaint.setColor(0xffffffff);
             dotStrokePaint.setStyle(Paint.Style.STROKE);
             dotStrokePaint.setStrokeWidth(AndroidUtilities.dpf2(2.66f));

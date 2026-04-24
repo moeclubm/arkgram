@@ -663,7 +663,7 @@ public class ThemeColors {
         defaultColors[key_chat_inBubbleLocationPlaceholder] = 0x1e506373;
         defaultColors[key_chat_BlurAlpha] = 0xB2000000;
         defaultColors[key_chat_BlurAlphaSlow] = 0xC1000000;
-        defaultColors[key_chat_editMediaButton] = 0xff1A9CFF;
+        defaultColors[key_chat_editMediaButton] = TELEGRAM_COLOR;
 
         defaultColors[key_statisticChartSignature] = 0x7f252529;
         defaultColors[key_statisticChartSignatureAlpha] = 0x7f252529;
@@ -735,7 +735,7 @@ public class ThemeColors {
         defaultColors[key_voipgroup_nameText] = 0xffffffff;
         defaultColors[key_voipgroup_listViewBackground] = 0xff1C2229;
         defaultColors[key_voipgroup_dialogBackground] = 0xff1C2229;
-        defaultColors[key_voipgroup_listeningText] = 0xff4DB8FF;
+        defaultColors[key_voipgroup_listeningText] = TELEGRAM_COLOR_TEXT;
         defaultColors[key_voipgroup_speakingText] = 0xff77EE7D;
         defaultColors[key_voipgroup_listSelector] = 0x0effffff;
         defaultColors[key_voipgroup_inviteMembersBackground] = 0xff222A33;

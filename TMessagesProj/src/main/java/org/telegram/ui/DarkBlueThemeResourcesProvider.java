@@ -22,11 +22,11 @@ public class DarkBlueThemeResourcesProvider extends DarkThemeResourceProvider {
 
         sparseIntArray.put(Theme.key_undo_background, -231982259);
 
-        sparseIntArray.put(Theme.key_windowBackgroundWhiteBlueIcon, 0xFF4DB8FF);
-        sparseIntArray.put(Theme.key_windowBackgroundWhiteBlueButton, 0xFF5DAFEE);
+        sparseIntArray.put(Theme.key_windowBackgroundWhiteBlueIcon, 0xFFAF8144);
+        sparseIntArray.put(Theme.key_windowBackgroundWhiteBlueButton, 0xFFC69B5F);
 
         sparseIntArray.put(Theme.key_checkboxSquareBackground, -12692893);
-        sparseIntArray.put(Theme.key_checkbox, 0xFF1A9CFF);
+        sparseIntArray.put(Theme.key_checkbox, 0xFFE8C88E);
     }
 
 }
