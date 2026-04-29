@@ -106,6 +106,30 @@ public class FlexConfig {
         return !isNoForwardsRestrictionsDisabled() && (peerRestricted || messageRestricted);
     }
 
+    public static boolean isForwardingSourceHiddenByDefault() {
+        return prefs().getBoolean("flex_forwarding_hide_source_default", false);
+    }
+
+    public static void setForwardingSourceHiddenByDefault(boolean value) {
+        SharedPreferences.Editor editor = prefs().edit().putBoolean("flex_forwarding_hide_source_default", value);
+        if (!value) {
+            editor.putBoolean("flex_forwarding_hide_caption_default", false);
+        }
+        editor.apply();
+    }
+
+    public static boolean isForwardingCaptionHiddenByDefault() {
+        return prefs().getBoolean("flex_forwarding_hide_caption_default", false);
+    }
+
+    public static void setForwardingCaptionHiddenByDefault(boolean value) {
+        SharedPreferences.Editor editor = prefs().edit().putBoolean("flex_forwarding_hide_caption_default", value);
+        if (value) {
+            editor.putBoolean("flex_forwarding_hide_source_default", true);
+        }
+        editor.apply();
+    }
+
     public static boolean isDcInfoEnabled() {
         return prefs().getBoolean("flex_show_dc_info", true);
     }

@@ -615,7 +615,6 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     private int channelDividerRow;
     private int numberSectionRow;
     private int numberRow;
-    private int datacenterRow;
     public int birthdayRow;
     private int setUsernameRow;
     private int bioRow;
@@ -4504,9 +4503,6 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 presentFragment(new UserInfoActivity());
             } else if (position == numberRow) {
                 presentFragment(new ActionIntroActivity(ActionIntroActivity.ACTION_TYPE_CHANGE_PHONE_NUMBER));
-            } else if (position == datacenterRow) {
-                AndroidUtilities.addToClipboard(String.valueOf(ConnectionsManager.getInstance(currentAccount).getCurrentDatacenterId()));
-                BulletinFactory.of(this).createCopyBulletin(getString(R.string.FlexDatacenterCopied)).show();
             } else if (position == setAvatarRow) {
                 onWriteButtonClick();
             } else if (position == premiumRow) {
@@ -10336,7 +10332,6 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         setAvatarSectionRow = -1;
         numberSectionRow = -1;
         numberRow = -1;
-        datacenterRow = -1;
         birthdayRow = -1;
         setUsernameRow = -1;
         bioRow = -1;
@@ -10501,9 +10496,6 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 }
                 numberSectionRow = rowCount++;
                 numberRow = rowCount++;
-                if (FlexConfig.isDcInfoEnabled()) {
-                    datacenterRow = rowCount++;
-                }
                 setUsernameRow = rowCount++;
                 bioRow = rowCount++;
 
@@ -11301,7 +11293,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                         onlineTextView[a].setText(textView.getText());
                     }
                 } else {
-                    onlineTextView[a].setText(newString2);
+                    onlineTextView[a].setText(appendFlexDcInfo(user, newString2));
                 }
                 onlineTextView[a].setDrawablePadding(dp(9));
                 onlineTextView[a].setRightDrawableInside(true);
@@ -11690,7 +11682,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     onlineTextView[a].setText(onlineTextOverride);
                 } else {
                     if (copyFromChatActivity || (currentChat.megagroup && chatInfo != null && onlineCount > 0) || isTopic) {
-                        onlineTextView[a].setText(a == 0 ? statusString : profileStatusString);
+                        onlineTextView[a].setText(appendFlexDcInfo(chat, a == 0 ? statusString : profileStatusString));
                     } else if (a == 0 && ChatObject.isChannel(currentChat) && chatInfo != null && chatInfo.participants_count != 0 && (currentChat.megagroup || currentChat.broadcast)) {
                         int[] result = new int[1];
                         boolean ignoreShort = AndroidUtilities.isAccessibilityScreenReaderEnabled();
@@ -11698,20 +11690,20 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                         if (currentChat.megagroup) {
                             if (chatInfo.participants_count == 0) {
                                 if (chat.has_geo) {
-                                    onlineTextView[a].setText(LocaleController.getString(R.string.MegaLocation).toLowerCase());
+                                    onlineTextView[a].setText(appendFlexDcInfo(chat, LocaleController.getString(R.string.MegaLocation).toLowerCase()));
                                 } else if (ChatObject.isPublic(chat)) {
-                                    onlineTextView[a].setText(LocaleController.getString(R.string.MegaPublic).toLowerCase());
+                                    onlineTextView[a].setText(appendFlexDcInfo(chat, LocaleController.getString(R.string.MegaPublic).toLowerCase()));
                                 } else {
-                                    onlineTextView[a].setText(LocaleController.getString(R.string.MegaPrivate).toLowerCase());
+                                    onlineTextView[a].setText(appendFlexDcInfo(chat, LocaleController.getString(R.string.MegaPrivate).toLowerCase()));
                                 }
                             } else {
-                                onlineTextView[a].setText(LocaleController.formatPluralString("Members", result[0]).replace(String.format("%d", result[0]), shortNumber));
+                                onlineTextView[a].setText(appendFlexDcInfo(chat, LocaleController.formatPluralString("Members", result[0]).replace(String.format("%d", result[0]), shortNumber)));
                             }
                         } else {
-                            onlineTextView[a].setText(LocaleController.formatPluralString("Subscribers", result[0]).replace(String.format("%d", result[0]), shortNumber));
+                            onlineTextView[a].setText(appendFlexDcInfo(chat, LocaleController.formatPluralString("Subscribers", result[0]).replace(String.format("%d", result[0]), shortNumber)));
                         }
                     } else {
-                        onlineTextView[a].setText(a == 0 ? statusString : profileStatusString);
+                        onlineTextView[a].setText(appendFlexDcInfo(chat, a == 0 ? statusString : profileStatusString));
                     }
                 }
                 if (a == 1 && isTopic) {
@@ -11781,6 +11773,24 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         }
 
         needLayout(true);
+    }
+
+    private CharSequence appendFlexDcInfo(TLRPC.User user, CharSequence text) {
+        if (!FlexConfig.isDcInfoEnabled() || user == null || UserObject.isReplyUser(user)) {
+            return text;
+        }
+        int dc = user.photo != null && user.photo.dc_id != 0 ? user.photo.dc_id : UserObject.isUserSelf(user) ? getConnectionsManager().getCurrentDatacenterId() : 0;
+        if (dc == 0) {
+            return text;
+        }
+        return TextUtils.concat(text, ", ", LocaleController.formatString(R.string.FlexDatacenterLabel, dc));
+    }
+
+    private CharSequence appendFlexDcInfo(TLRPC.Chat chat, CharSequence text) {
+        if (!FlexConfig.isDcInfoEnabled() || chat == null || chatInfo == null || chatInfo.stats_dc == 0) {
+            return text;
+        }
+        return TextUtils.concat(text, ", ", LocaleController.formatString(R.string.FlexDatacenterLabel, chatInfo.stats_dc));
     }
 
     @Override
@@ -13434,9 +13444,6 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                         }
                         detailCell.setTextAndValue(value, LocaleController.getString(R.string.TapToChangePhone), true);
                         detailCell.setContentDescriptionValueFirst(false);
-                    } else if (position == datacenterRow) {
-                        detailCell.setTextAndValue(LocaleController.formatString(R.string.FlexDatacenterLabel, ConnectionsManager.getInstance(currentAccount).getCurrentDatacenterId()), LocaleController.getString(R.string.FlexCurrentDatacenter), true);
-                        detailCell.setContentDescriptionValueFirst(false);
                     } else if (position == setUsernameRow) {
                         TLRPC.User user = UserConfig.getInstance(currentAccount).getCurrentUser();
                         String text = "";
@@ -14113,7 +14120,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         public boolean isEnabled(RecyclerView.ViewHolder holder) {
             if (notificationRow != -1) {
                 int position = holder.getAdapterPosition();
-                return position == notificationRow || position == numberRow || position == datacenterRow || position == privacyRow ||
+                return position == notificationRow || position == numberRow || position == privacyRow ||
                         position == languageRow || position == setUsernameRow || position == bioRow ||
                         position == versionRow || position == dataRow || position == chatRow || position == addToFolderRow ||
                         position == questionRow || position == devicesRow || position == filtersRow || position == stickersRow ||
@@ -14149,7 +14156,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             if (position == infoHeaderRow || position == membersHeaderRow || position == settingsSectionRow2 ||
                     position == numberSectionRow || position == helpHeaderRow || position == debugHeaderRow || position == botPermissionsHeader) {
                 return VIEW_TYPE_HEADER;
-            } else if (position == phoneRow || position == locationRow || position == numberRow || position == datacenterRow || position == birthdayRow) {
+            } else if (position == phoneRow || position == locationRow || position == numberRow || position == birthdayRow) {
                 return VIEW_TYPE_TEXT_DETAIL;
             } else if (position == usernameRow || position == setUsernameRow) {
                 return VIEW_TYPE_TEXT_DETAIL_MULTILINE;
@@ -15510,7 +15517,6 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             put(++pointer, setAvatarSectionRow, sparseIntArray);
             put(++pointer, numberSectionRow, sparseIntArray);
             put(++pointer, numberRow, sparseIntArray);
-            put(++pointer, datacenterRow, sparseIntArray);
             put(++pointer, setUsernameRow, sparseIntArray);
             put(++pointer, bioRow, sparseIntArray);
             put(++pointer, phoneSuggestionRow, sparseIntArray);

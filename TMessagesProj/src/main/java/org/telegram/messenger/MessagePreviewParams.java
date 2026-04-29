@@ -402,6 +402,14 @@ public class MessagePreviewParams {
                 }
             }
             this.forwardMessages = new Messages(true, 0, forwardMessages, dialogId, this.forwardMessages != null ? this.forwardMessages.selectedIds : null);
+            hideForwardSendersName = false;
+            hideCaption = false;
+            if (FlexConfig.isForwardingCaptionHiddenByDefault() && hasCaption) {
+                hideForwardSendersName = true;
+                hideCaption = true;
+            } else if (FlexConfig.isForwardingSourceHiddenByDefault() && hasSenders) {
+                hideForwardSendersName = true;
+            }
             if (this.forwardMessages.messages.isEmpty()) {
                 this.forwardMessages = null;
             }

@@ -34,6 +34,8 @@ public class FlexSettingsActivity extends UniversalFragment {
     private static final int ID_AUTO_RETRY_FAILED_MEDIA = 15;
     private static final int ID_DISABLE_CHANNEL_SWIPE_NEXT = 16;
     private static final int ID_LAZY_ATTACH_CAMERA = 17;
+    private static final int ID_FORWARD_HIDE_SOURCE = 18;
+    private static final int ID_FORWARD_HIDE_CAPTION = 19;
     private static final int ID_CHAT = 100;
     private static final int ID_DATA = 101;
     private static final int ID_LANGUAGE = 102;
@@ -52,11 +54,19 @@ public class FlexSettingsActivity extends UniversalFragment {
 
         items.add(UItem.asHeader(getString(R.string.ChatSettings)));
         addChatItems(items);
-        items.add(UItem.asShadow(getString(R.string.FlexHideMainTabsInfo) + "\n\n" + getString(R.string.FlexDisableNoForwardsRestrictionsInfo)));
+        items.add(UItem.asShadow(getString(R.string.FlexChatSettingsInfo)));
+
+        items.add(UItem.asHeader(getString(R.string.FlexForwardingSettings)));
+        addForwardingItems(items);
+        items.add(UItem.asShadow(getString(R.string.FlexForwardingSettingsInfo) + "\n\n" + getString(R.string.FlexDisableNoForwardsRestrictionsInfo)));
 
         items.add(UItem.asHeader(getString(R.string.Calls)));
         items.add(UItem.asCheck(ID_DISABLE_WEBRTC, getString(R.string.FlexDisableWebrtc)).setChecked(FlexConfig.isWebRtcDisabled()));
         items.add(UItem.asShadow(getString(R.string.FlexFeaturesInfo)));
+
+        items.add(UItem.asHeader(getString(R.string.ChangeChannelNameColor2)));
+        addAppearanceItems(items);
+        items.add(UItem.asShadow(getString(R.string.FlexHideMainTabsInfo)));
 
         items.add(UItem.asHeader(getString(R.string.General)));
         addGeneralItems(items);
@@ -99,6 +109,14 @@ public class FlexSettingsActivity extends UniversalFragment {
                 break;
             case ID_DISABLE_NO_FORWARDS_RESTRICTIONS:
                 FlexConfig.setNoForwardsRestrictionsDisabled(!FlexConfig.isNoForwardsRestrictionsDisabled());
+                refreshItems();
+                break;
+            case ID_FORWARD_HIDE_SOURCE:
+                FlexConfig.setForwardingSourceHiddenByDefault(!FlexConfig.isForwardingSourceHiddenByDefault());
+                refreshItems();
+                break;
+            case ID_FORWARD_HIDE_CAPTION:
+                FlexConfig.setForwardingCaptionHiddenByDefault(!FlexConfig.isForwardingCaptionHiddenByDefault());
                 refreshItems();
                 break;
             case ID_SHOW_DC_INFO:
@@ -165,15 +183,23 @@ public class FlexSettingsActivity extends UniversalFragment {
         items.add(UItem.asButton(ID_MARKDOWN, R.drawable.menu_feature_code, getString(R.string.FlexMarkdownSettings)));
         items.add(UItem.asCheck(ID_LAZY_ATTACH_CAMERA, getString(R.string.FlexLazyAttachCamera)).setChecked(SharedConfig.lazyAttachCamera));
         items.add(UItem.asCheck(ID_DISABLE_CHANNEL_SWIPE_NEXT, getString(R.string.FlexDisableChannelSwipeNext)).setChecked(SharedConfig.disableChannelSwipeNext));
-        items.add(UItem.asCheck(ID_HIDE_MAIN_TABS, getString(R.string.FlexHideMainTabs)).setChecked(FlexConfig.isMainTabsHidden()));
+    }
+
+    private void addForwardingItems(ArrayList<UItem> items) {
+        items.add(UItem.asCheck(ID_FORWARD_HIDE_SOURCE, getString(R.string.FlexForwardHideSourceDefault)).setChecked(FlexConfig.isForwardingSourceHiddenByDefault()));
+        items.add(UItem.asCheck(ID_FORWARD_HIDE_CAPTION, getString(R.string.FlexForwardHideCaptionDefault)).setChecked(FlexConfig.isForwardingCaptionHiddenByDefault()));
         items.add(UItem.asCheck(ID_DISABLE_NO_FORWARDS_RESTRICTIONS, getString(R.string.FlexDisableNoForwardsRestrictions)).setChecked(FlexConfig.isNoForwardsRestrictionsDisabled()));
+    }
+
+    private void addAppearanceItems(ArrayList<UItem> items) {
+        items.add(UItem.asCheck(ID_HIDE_MAIN_TABS, getString(R.string.FlexHideMainTabs)).setChecked(FlexConfig.isMainTabsHidden()));
+        items.add(UItem.asCheck(ID_SHOW_DC_INFO, getString(R.string.FlexShowDcInfo)).setChecked(FlexConfig.isDcInfoEnabled()));
+        items.add(UItem.asCheck(ID_DISABLE_UI_TRANSPARENCY, getString(R.string.FlexDisableUiTransparency)).setChecked(FlexConfig.isUiTransparencyDisabled()));
+        items.add(UItem.asCheck(ID_DISABLE_UI_BLUR, getString(R.string.FlexDisableUiBlur)).setChecked(FlexConfig.isUiBlurDisabled()));
     }
 
     private void addGeneralItems(ArrayList<UItem> items) {
         items.add(UItem.asButton(ID_LLM_SETTINGS, R.drawable.outline_ai_translate2, getString(R.string.FlexLlmSettings)));
-        items.add(UItem.asCheck(ID_SHOW_DC_INFO, getString(R.string.FlexShowDcInfo)).setChecked(FlexConfig.isDcInfoEnabled()));
-        items.add(UItem.asCheck(ID_DISABLE_UI_TRANSPARENCY, getString(R.string.FlexDisableUiTransparency)).setChecked(FlexConfig.isUiTransparencyDisabled()));
-        items.add(UItem.asCheck(ID_DISABLE_UI_BLUR, getString(R.string.FlexDisableUiBlur)).setChecked(FlexConfig.isUiBlurDisabled()));
     }
 
     private void addQuickAccessItems(ArrayList<UItem> items) {

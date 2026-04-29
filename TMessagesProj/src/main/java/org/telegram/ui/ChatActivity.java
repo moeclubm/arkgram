@@ -73,6 +73,7 @@ import android.text.Spanned;
 import android.text.StaticLayout;
 import android.text.TextPaint;
 import android.text.TextUtils;
+import android.text.method.ScrollingMovementMethod;
 import android.text.style.CharacterStyle;
 import android.text.style.ClickableSpan;
 import android.text.style.ForegroundColorSpan;
@@ -130,6 +131,8 @@ import androidx.viewpager.widget.PagerAdapter;
 import androidx.viewpager.widget.ViewPager;
 
 import com.google.android.exoplayer2.ui.AspectRatioFrameLayout;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.google.zxing.common.detector.MathUtils;
 
 import org.telegram.PhoneFormat.PhoneFormat;
@@ -195,6 +198,7 @@ import org.telegram.messenger.utils.ViewOutlineProviderImpl;
 import org.telegram.messenger.utils.tlutils.TlUtils;
 import org.telegram.messenger.voip.VoIPService;
 import org.telegram.tgnet.ConnectionsManager;
+import org.telegram.tgnet.SerializedData;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.tl.TL_account;
@@ -326,6 +330,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -1180,6 +1185,9 @@ public class ChatActivity extends BaseFragment implements
     public final static int OPTION_GIFT = 108;
     public final static int OPTION_EDIT_TODO = 109;
     public final static int OPTION_ADD_TO_TODO = 110;
+    public final static int OPTION_FLEX_QUICK_FORWARD = 120;
+    public final static int OPTION_FLEX_VIEW_RAW_JSON = 121;
+    private static final Gson FLEX_MESSAGE_JSON_GSON = new GsonBuilder().setPrettyPrinting().create();
 
     public final static int OPTION_SUGGESTION_EDIT_PRICE = 111;
     public final static int OPTION_SUGGESTION_EDIT_TIME = 112;
@@ -32516,6 +32524,21 @@ public class ChatActivity extends BaseFragment implements
                 presentFragment(fragment);
                 break;
             }
+            case OPTION_FLEX_QUICK_FORWARD: {
+                ArrayList<MessageObject> messages = new ArrayList<>();
+                if (selectedObjectGroup != null) {
+                    messages.addAll(selectedObjectGroup.messages);
+                } else {
+                    messages.add(selectedObject);
+                }
+                forwardMessages(messages, FlexConfig.isForwardingSourceHiddenByDefault(), FlexConfig.isForwardingCaptionHiddenByDefault(), true, 0, 0);
+                break;
+            }
+            case OPTION_FLEX_VIEW_RAW_JSON: {
+                preserveDim = true;
+                showFlexRawJsonDialog(selectedObject);
+                break;
+            }
             case OPTION_COPY: {
                 if (selectedObject.isDice()) {
                     AndroidUtilities.addToClipboard(selectedObject.getDiceEmoji());
@@ -33372,6 +33395,38 @@ public class ChatActivity extends BaseFragment implements
         closeMenu(!preserveDim);
     }
 
+    private void showFlexRawJsonDialog(MessageObject messageObject) {
+        LinkedHashMap<String, Object> json = new LinkedHashMap<>();
+        json.put("class", messageObject.messageOwner.getClass().getSimpleName());
+        SerializedData data = new SerializedData(messageObject.messageOwner.getObjectSize());
+        messageObject.messageOwner.serializeToStream(data);
+        json.put("serialized_hex", Utilities.bytesToHex(data.toByteArray()));
+        json.put("message", messageObject.messageOwner);
+        final String text = FLEX_MESSAGE_JSON_GSON.toJson(json);
+        data.cleanup();
+
+        TextView textView = new TextView(getParentActivity());
+        textView.setText(text);
+        textView.setTextColor(getThemedColor(Theme.key_dialogTextBlack));
+        textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
+        textView.setTypeface(Typeface.MONOSPACE);
+        textView.setTextIsSelectable(true);
+        textView.setMovementMethod(new ScrollingMovementMethod());
+        textView.setPadding(dp(24), 0, dp(24), 0);
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity(), themeDelegate);
+        builder.setTitle(LocaleController.getString(R.string.FlexViewRawJson));
+        builder.setView(textView, dp(360));
+        builder.setPositiveButton(LocaleController.getString(R.string.Copy), (dialog, which) -> {
+            AndroidUtilities.addToClipboard(text);
+            BulletinFactory.of(ChatActivity.this).createCopyBulletin(LocaleController.getString(R.string.FlexRawJsonCopied)).show();
+        });
+        builder.setNegativeButton(LocaleController.getString(R.string.Close), null);
+        builder.setDimEnabled(false);
+        builder.setOnPreDismissListener(di -> dimBehindView(false));
+        showDialog(builder.create());
+    }
+
     public void showSuggestionOfferForEditMessage(MessageSuggestionParams oldParams) {
         if (editingMessageObject == null) {
             return;
@@ -33491,6 +33546,8 @@ public class ChatActivity extends BaseFragment implements
                     updateVisibleRows();
                 }
 
+                final boolean hideForwardSendersName = messagePreviewParams != null && messagePreviewParams.forwardMessages != null ? messagePreviewParams.hideForwardSendersName : FlexConfig.isForwardingSourceHiddenByDefault();
+                final boolean hideCaption = messagePreviewParams != null && messagePreviewParams.forwardMessages != null ? messagePreviewParams.hideCaption : FlexConfig.isForwardingCaptionHiddenByDefault();
                 messagePreviewParams = null;
                 hideFieldPanel(false);
                 for (int a = 0; a < dids.size(); a++) {
@@ -33505,7 +33562,7 @@ public class ChatActivity extends BaseFragment implements
                         params.suggestionParams = messageSuggestionParams;
                         getSendMessagesHelper().sendMessage(params);
                     }
-                    getSendMessagesHelper().sendMessage(fmessages, did, false, false, notify, scheduleDate, scheduleRepeatPeriod, null, -1, price == null ? 0 : price, getSendMonoForumPeerId(), getSendMessageSuggestionParams());
+                    getSendMessagesHelper().sendMessage(fmessages, did, hideForwardSendersName, hideCaption, notify, scheduleDate, scheduleRepeatPeriod, null, -1, price == null ? 0 : price, getSendMonoForumPeerId(), getSendMessageSuggestionParams());
                 }
                 fragment.finishFragment();
                 createUndoView();
@@ -44762,6 +44819,11 @@ public class ChatActivity extends BaseFragment implements
                     !selectedObject.isLiveLocation() && selectedObject.type != MessageObject.TYPE_PHONE_CALL && !noforwards && selectedObject.type != MessageObject.TYPE_SHARING_OFFER &&
                     selectedObject.type != MessageObject.TYPE_GIFT_PREMIUM && selectedObject.type != MessageObject.TYPE_GIFT_OFFER && selectedObject.type != MessageObject.TYPE_GIFT_OFFER_REJECTED && selectedObject.type != MessageObject.TYPE_GIFT_PREMIUM_CHANNEL && selectedObject.type != MessageObject.TYPE_SUGGEST_PHOTO && !selectedObject.isWallpaperAction()
                     && !message.isExpiredStory() && message.type != MessageObject.TYPE_STORY_MENTION && message.type != MessageObject.TYPE_GIFT_STARS) {
+                    if (allowChatActions && !isInsideContainer) {
+                        items.add(LocaleController.getString(R.string.FlexQuickForward));
+                        options.add(OPTION_FLEX_QUICK_FORWARD);
+                        icons.add(R.drawable.msg_filled_plus);
+                    }
                     items.add(LocaleController.getString(R.string.Forward));
                     options.add(OPTION_FORWARD);
                     icons.add(R.drawable.msg_forward);
@@ -44913,6 +44975,11 @@ public class ChatActivity extends BaseFragment implements
                 options.add(OPTION_DELETE);
                 icons.add(deleteIconRes);
             }
+        }
+        if (!options.contains(OPTION_FLEX_VIEW_RAW_JSON)) {
+            items.add(LocaleController.getString(R.string.FlexViewRawJson));
+            options.add(OPTION_FLEX_VIEW_RAW_JSON);
+            icons.add(R.drawable.msg_info);
         }
     }
 

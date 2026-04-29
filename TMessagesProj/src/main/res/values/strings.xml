@@ -10683,6 +10683,11 @@
     <string name="FlexFeatures">Features</string>
     <string name="FlexQuickAccess">Quick Access</string>
     <string name="FlexFeaturesInfo">Call changes apply to new calls.</string>
+    <string name="FlexChatSettingsInfo">Chat input and message display options.</string>
+    <string name="FlexForwardingSettings">Forwarding</string>
+    <string name="FlexForwardingSettingsInfo">Default forwarding preferences are applied before sending. You can still change them in the forwarding preview when it is shown.</string>
+    <string name="FlexForwardHideSourceDefault">Hide Forward Source by Default</string>
+    <string name="FlexForwardHideCaptionDefault">Hide Forward Caption by Default</string>
     <string name="FlexEnhancedDownload">Download Acceleration</string>
     <string name="FlexDownloadSpeedBoostOff">Off</string>
     <string name="FlexDownloadSpeedBoostAverage">Normal Boost</string>
@@ -10712,9 +10717,10 @@
     <string name="FlexFileExported">Settings exported</string>
     <string name="FlexFileImported">Settings imported</string>
     <string name="FlexFileUnavailable">The selected file could not be opened.</string>
-    <string name="FlexCurrentDatacenter">Current Datacenter</string>
     <string name="FlexDatacenterLabel">DC %1$d</string>
-    <string name="FlexDatacenterCopied">Datacenter ID copied to clipboard</string>
+    <string name="FlexQuickForward">+1</string>
+    <string name="FlexViewRawJson">View Raw JSON</string>
+    <string name="FlexRawJsonCopied">Raw JSON copied to clipboard</string>
     <string name="FlexDisableMarkdown">Disable Markdown Parsing</string>
     <string name="FlexNewMarkdownParser">Use New Markdown Parser</string>
     <string name="FlexMarkdownParseLinks">Parse Markdown Links</string>

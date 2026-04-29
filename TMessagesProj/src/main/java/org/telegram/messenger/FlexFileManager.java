@@ -48,6 +48,8 @@ public class FlexFileManager {
         global.put("lazy_attach_camera", SharedConfig.lazyAttachCamera);
         global.put("disable_webrtc", FlexConfig.isWebRtcDisabled());
         global.put("disable_no_forwards_restrictions", FlexConfig.isNoForwardsRestrictionsDisabled());
+        global.put("forwarding_hide_source_default", FlexConfig.isForwardingSourceHiddenByDefault());
+        global.put("forwarding_hide_caption_default", FlexConfig.isForwardingCaptionHiddenByDefault());
         global.put("show_dc_info", FlexConfig.isDcInfoEnabled());
         global.put("hide_main_tabs", FlexConfig.isMainTabsHidden());
         global.put("disable_ui_transparency", FlexConfig.isUiTransparencyDisabled());
@@ -129,6 +131,12 @@ public class FlexFileManager {
         }
         if (global.has("disable_no_forwards_restrictions")) {
             FlexConfig.setNoForwardsRestrictionsDisabled(global.get("disable_no_forwards_restrictions").getAsBoolean());
+        }
+        if (global.has("forwarding_hide_source_default")) {
+            FlexConfig.setForwardingSourceHiddenByDefault(global.get("forwarding_hide_source_default").getAsBoolean());
+        }
+        if (global.has("forwarding_hide_caption_default")) {
+            FlexConfig.setForwardingCaptionHiddenByDefault(global.get("forwarding_hide_caption_default").getAsBoolean());
         }
         if (global.has("show_dc_info")) {
             FlexConfig.setDcInfoEnabled(global.get("show_dc_info").getAsBoolean());
