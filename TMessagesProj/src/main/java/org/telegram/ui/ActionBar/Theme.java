@@ -2363,6 +2363,10 @@ public class Theme {
                 return getString(R.string.ThemeDay);
             } else if ("Night".equals(name)) {
                 return getString(R.string.ThemeNight);
+            } else if ("Flex Light".equals(name)) {
+                return getString(R.string.ThemeFlexLight);
+            } else if ("Flex Dark".equals(name)) {
+                return getString(R.string.ThemeFlexDark);
             }
             return info != null ? info.title : name;
         }
@@ -2479,9 +2483,9 @@ public class Theme {
             if (isDark != UNKNOWN) {
                 return isDark == DARK;
             }
-            if ("Dark Blue".equals(name) || "Night".equals(name)) {
+            if ("Dark Blue".equals(name) || "Night".equals(name) || "Flex Dark".equals(name)) {
                 isDark = DARK;
-            } else if ("Blue".equals(name) || "Arctic Blue".equals(name) || "Day".equals(name)) {
+            } else if ("Blue".equals(name) || "Arctic Blue".equals(name) || "Day".equals(name) || "Flex Light".equals(name)) {
                 isDark = LIGHT;
             }
             if (isDark == UNKNOWN) {
@@ -4722,6 +4726,26 @@ public class Theme {
         sortAccents(themeInfo);
         themes.add(themeInfo);
         themesDict.put("Night", themeInfo);
+
+        themeInfo = new ThemeInfo();
+        themeInfo.name = "Flex Light";
+        themeInfo.assetName = "flex_light.attheme";
+        themeInfo.previewBackgroundColor = 0xfff6e7cb;
+        themeInfo.previewInColor = 0xffffffff;
+        themeInfo.previewOutColor = 0xfff0d9b0;
+        themeInfo.sortIndex = 0;
+        themes.add(currentDayTheme = defaultTheme = themeInfo);
+        themesDict.put("Flex Light", themeInfo);
+
+        themeInfo = new ThemeInfo();
+        themeInfo.name = "Flex Dark";
+        themeInfo.assetName = "flex_dark.attheme";
+        themeInfo.previewBackgroundColor = 0xff222b33;
+        themeInfo.previewInColor = 0xff303b47;
+        themeInfo.previewOutColor = 0xffc69b5f;
+        themeInfo.sortIndex = 6;
+        themes.add(currentNightTheme = themeInfo);
+        themesDict.put("Flex Dark", themeInfo);
 
         String themesString = themeConfig.getString("themes2", null);
 
@@ -7672,13 +7696,13 @@ public class Theme {
     public static TLRPC.BaseTheme getBaseThemeByKey(String key) {
         if ("Blue".equals(key)) {
             return new TLRPC.TL_baseThemeClassic();
-        } else if ("Day".equals(key)) {
+        } else if ("Day".equals(key) || "Flex Light".equals(key)) {
             return new TLRPC.TL_baseThemeDay();
         } else if ("Dark Blue".equals(key)) {
             return new TLRPC.TL_baseThemeTinted();
         } else if ("Arctic Blue".equals(key)) {
             return new TLRPC.TL_baseThemeArctic();
-        } else if ("Night".equals(key)) {
+        } else if ("Night".equals(key) || "Flex Dark".equals(key)) {
             return new TLRPC.TL_baseThemeNight();
         }
         return null;
