@@ -303,6 +303,20 @@ public class Browser {
             tryTelegraph = false;
             _allowCustom = false;
         }
+        boolean forceInAppBrowser = false;
+        String modeScheme = uri.getScheme() != null ? uri.getScheme().toLowerCase() : "";
+        boolean canApplyBrowserOpenMode = !internalUri && TextUtils.isEmpty(browserPackage) && (TextUtils.isEmpty(modeScheme) || "http".equals(modeScheme) || "https".equals(modeScheme));
+        if (canApplyBrowserOpenMode) {
+            if (SharedConfig.browserOpenMode == SharedConfig.BROWSER_OPEN_MODE_SYSTEM) {
+                tryTelegraph = false;
+                _allowCustom = false;
+                allowInAppBrowser = false;
+            } else if (SharedConfig.browserOpenMode == SharedConfig.BROWSER_OPEN_MODE_INAPP && allowInAppBrowser) {
+                tryTelegraph = false;
+                _allowCustom = false;
+                forceInAppBrowser = true;
+            }
+        }
         final boolean allowCustom = _allowCustom;
         if (tryTelegraph) {
             try {
@@ -413,7 +427,7 @@ public class Browser {
         try {
             final boolean inappBrowser = (
                 allowInAppBrowser && BubbleActivity.instance == null &&
-                SharedConfig.inappBrowser &&
+                (forceInAppBrowser || SharedConfig.inappBrowser) &&
                 TextUtils.isEmpty(browserPackage) &&
                 !RestrictedDomainsList.getInstance().isRestricted(AndroidUtilities.getHostAuthority(uri, true)) &&
                 (uri.getScheme() == null || "https".equals(uri.getScheme()) || "http".equals(uri.getScheme()) || "tonsite".equals(uri.getScheme()))

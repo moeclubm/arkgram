@@ -98,4 +98,9 @@
     <string name="FlexAiSummaryTopSpeakers">发言最多的成员</string>
     <string name="FlexAiSummaryMessagesUnit">条消息</string>
     <string name="FlexAiSummaryCharactersUnit">个字符</string>
+    <string name="BrowserSettingsOpenModeTitle">默认链接打开方式</string>
+    <string name="BrowserSettingsOpenModeDefault">使用当前设置</string>
+    <string name="BrowserSettingsOpenModeSystem">系统浏览器</string>
+    <string name="BrowserSettingsOpenModeInApp">应用内浏览器</string>
+    <string name="BrowserSettingsOpenModeInfo">选择普通网页链接默认使用的打开方式。</string>
 </resources>

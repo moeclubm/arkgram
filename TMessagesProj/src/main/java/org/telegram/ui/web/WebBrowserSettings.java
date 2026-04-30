@@ -207,6 +207,9 @@ public class WebBrowserSettings extends UniversalFragment implements Notificatio
     public static final int BUTTON_OPEN_HISTORY = 9;
     public static final int BUTTON_CUSTOMTABS_ON = 10;
     public static final int BUTTON_CUSTOMTABS_OFF = 11;
+    public static final int BUTTON_OPEN_MODE_DEFAULT = 14;
+    public static final int BUTTON_OPEN_MODE_SYSTEM = 15;
+    public static final int BUTTON_OPEN_MODE_INAPP = 16;
 
     public int enableRow;
     public int clearCookiesRow;
@@ -230,6 +233,11 @@ public class WebBrowserSettings extends UniversalFragment implements Notificatio
         enableRow = items.size();
         items.add(UItem.asRippleCheck(BUTTON_TOGGLE, getString(R.string.BrowserSettingsEnable)).setChecked(SharedConfig.inappBrowser));
         items.add(UItem.asShadow(LocaleController.getString(R.string.BrowserSettingsEnableInfo)));
+        items.add(UItem.asHeader(getString(R.string.BrowserSettingsOpenModeTitle)));
+        items.add(UItem.asRadio(BUTTON_OPEN_MODE_DEFAULT, getString(R.string.BrowserSettingsOpenModeDefault)).setChecked(SharedConfig.browserOpenMode == SharedConfig.BROWSER_OPEN_MODE_DEFAULT));
+        items.add(UItem.asRadio(BUTTON_OPEN_MODE_SYSTEM, getString(R.string.BrowserSettingsOpenModeSystem)).setChecked(SharedConfig.browserOpenMode == SharedConfig.BROWSER_OPEN_MODE_SYSTEM));
+        items.add(UItem.asRadio(BUTTON_OPEN_MODE_INAPP, getString(R.string.BrowserSettingsOpenModeInApp)).setChecked(SharedConfig.browserOpenMode == SharedConfig.BROWSER_OPEN_MODE_INAPP));
+        items.add(UItem.asShadow(getString(R.string.BrowserSettingsOpenModeInfo)));
         if (!SharedConfig.inappBrowser) {
             items.add(UItem.asHeader(getString(R.string.BrowserSettingsCustomTabsTitle)));
             items.add(UItem.asRadio(BUTTON_CUSTOMTABS_ON, getString(R.string.BrowserSettingsCustomTabs)).setChecked(SharedConfig.customTabs));
@@ -294,6 +302,15 @@ public class WebBrowserSettings extends UniversalFragment implements Notificatio
             listView.adapter.update(true);
         } else if (item.id == BUTTON_CUSTOMTABS_OFF) {
             SharedConfig.toggleCustomTabs(false);
+            listView.adapter.update(true);
+        } else if (item.id == BUTTON_OPEN_MODE_DEFAULT) {
+            SharedConfig.setBrowserOpenMode(SharedConfig.BROWSER_OPEN_MODE_DEFAULT);
+            listView.adapter.update(true);
+        } else if (item.id == BUTTON_OPEN_MODE_SYSTEM) {
+            SharedConfig.setBrowserOpenMode(SharedConfig.BROWSER_OPEN_MODE_SYSTEM);
+            listView.adapter.update(true);
+        } else if (item.id == BUTTON_OPEN_MODE_INAPP) {
+            SharedConfig.setBrowserOpenMode(SharedConfig.BROWSER_OPEN_MODE_INAPP);
             listView.adapter.update(true);
         } else if (item.id == BUTTON_CLEAR_CACHE) {
             new AlertDialog.Builder(getContext(), getResourceProvider())

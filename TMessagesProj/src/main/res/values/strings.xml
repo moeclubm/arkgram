@@ -8508,6 +8508,11 @@
     <string name="BrowserSettingsNoCustomTabs">New Tabs in External Browser</string>
     <string name="BrowserSettingsNoCustomTabsInfo">You can choose to open external link without leaving Telegram.</string>
     <string name="BrowserSettingsEnableInfo">Open links inside Telegram without starting an external browser.</string>
+    <string name="BrowserSettingsOpenModeTitle">Default link opening</string>
+    <string name="BrowserSettingsOpenModeDefault">Use current settings</string>
+    <string name="BrowserSettingsOpenModeSystem">System browser</string>
+    <string name="BrowserSettingsOpenModeInApp">In-app browser</string>
+    <string name="BrowserSettingsOpenModeInfo">Choose how regular web links are opened by default.</string>
     <string name="BrowserSettingsCacheClear">Clear Cache</string>
     <string name="BrowserSettingsCookiesClear">Clear Cookies</string>
     <string name="BrowserSettingsCacheClearText">Are you sure you want to clear browser cache%s?</string>

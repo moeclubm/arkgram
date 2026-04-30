@@ -287,6 +287,10 @@ public class SharedConfig {
     public static boolean recordViaSco = false;
     public static boolean customTabs = true;
     public static boolean inappBrowser = true;
+    public static final int BROWSER_OPEN_MODE_DEFAULT = 0;
+    public static final int BROWSER_OPEN_MODE_SYSTEM = 1;
+    public static final int BROWSER_OPEN_MODE_INAPP = 2;
+    public static int browserOpenMode = BROWSER_OPEN_MODE_DEFAULT;
     public static boolean adaptableColorInBrowser = true;
     public static boolean onlyLocalInstantView = false;
     public static boolean directShare = true;
@@ -605,6 +609,7 @@ public class SharedConfig {
             recordViaSco = preferences.getBoolean("record_via_sco", false);
             customTabs = preferences.getBoolean("custom_tabs", true);
             inappBrowser = preferences.getBoolean("inapp_browser", true);
+            browserOpenMode = preferences.getInt("browser_open_mode", BROWSER_OPEN_MODE_DEFAULT);
             adaptableColorInBrowser = preferences.getBoolean("adaptableBrowser", false);
             onlyLocalInstantView = preferences.getBoolean("onlyLocalInstantView", BuildVars.DEBUG_PRIVATE_VERSION);
             directShare = preferences.getBoolean("direct_share", true);
@@ -1300,6 +1305,14 @@ public class SharedConfig {
         SharedPreferences preferences = MessagesController.getGlobalMainSettings();
         SharedPreferences.Editor editor = preferences.edit();
         editor.putBoolean("inapp_browser", inappBrowser);
+        editor.apply();
+    }
+
+    public static void setBrowserOpenMode(int mode) {
+        browserOpenMode = mode;
+        SharedPreferences preferences = MessagesController.getGlobalMainSettings();
+        SharedPreferences.Editor editor = preferences.edit();
+        editor.putInt("browser_open_mode", browserOpenMode);
         editor.apply();
     }
 
