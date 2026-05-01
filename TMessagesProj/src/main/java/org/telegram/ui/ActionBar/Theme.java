@@ -2610,17 +2610,17 @@ public class Theme {
                 }
 
                 //override default themes
-                if (isHome(themeAccent) && name.equals("Dark Blue") || name.equals("Night")) {
-                    themeAccent.myMessagesAccentColor = 0xff258DE5;
-                    themeAccent.myMessagesGradientAccentColor1 = 0xff4272DF;
-                    themeAccent.myMessagesGradientAccentColor2 = 0xff8146D7;
-                    themeAccent.myMessagesGradientAccentColor3 = 0xff9F3EAA;
-                    if (name.equals("Night")) {
+                if ((isHome(themeAccent) && (name.equals("Dark Blue") || name.equals("Flex Dark"))) || name.equals("Night")) {
+                    themeAccent.myMessagesAccentColor = name.equals("Flex Dark") ? 0xFFE8C88E : 0xff258DE5;
+                    themeAccent.myMessagesGradientAccentColor1 = name.equals("Flex Dark") ? 0xFFD4A45B : 0xff4272DF;
+                    themeAccent.myMessagesGradientAccentColor2 = name.equals("Flex Dark") ? 0xFFB9894A : 0xff8146D7;
+                    themeAccent.myMessagesGradientAccentColor3 = name.equals("Flex Dark") ? 0xFF9F733A : 0xff9F3EAA;
+                    if (name.equals("Night") || name.equals("Flex Dark")) {
                         themeAccent.patternIntensity = -0.57f;
-                        themeAccent.backgroundOverrideColor = 0xff6c7fa6;
-                        themeAccent.backgroundGradientOverrideColor1 = 0xff2e344b;
-                        themeAccent.backgroundGradientOverrideColor2 = 0xff7874a7;
-                        themeAccent.backgroundGradientOverrideColor3 = 0xff333258;
+                        themeAccent.backgroundOverrideColor = name.equals("Flex Dark") ? 0xff6A5846 : 0xff6c7fa6;
+                        themeAccent.backgroundGradientOverrideColor1 = name.equals("Flex Dark") ? 0xff2D241C : 0xff2e344b;
+                        themeAccent.backgroundGradientOverrideColor2 = name.equals("Flex Dark") ? 0xff6E5C4A : 0xff7874a7;
+                        themeAccent.backgroundGradientOverrideColor3 = name.equals("Flex Dark") ? 0xff3A2E22 : 0xff333258;
                     }
                 }
                 themeAccentsMap.put(themeAccent.id, themeAccent);
@@ -4746,8 +4746,8 @@ public class Theme {
         themeInfo = new ThemeInfo();
         themeInfo.name = "Flex Dark";
         themeInfo.assetName = "flex_dark.attheme";
-        themeInfo.previewBackgroundColor = 0xff222b33;
-        themeInfo.previewInColor = 0xff303b47;
+        themeInfo.previewBackgroundColor = 0xff433427;
+        themeInfo.previewInColor = 0xff6A5846;
         themeInfo.previewOutColor = 0xffc69b5f;
         themeInfo.sortIndex = 6;
         themeInfo.setAccentColorOptions(new int[] {

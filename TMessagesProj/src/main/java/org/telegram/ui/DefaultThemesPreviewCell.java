@@ -297,7 +297,7 @@ public class DefaultThemesPreviewCell extends LinearLayout {
 
                 EmojiThemes flexTheme = EmojiThemes.createFlexPreviewTheme(parentFragment.getCurrentAccount());
                 flexTheme.loadPreviewColors(parentFragment.getCurrentAccount());
-                themes.add(1, new ChatThemeBottomSheet.ChatThemeItem(flexTheme));
+                themes.add(0, new ChatThemeBottomSheet.ChatThemeItem(flexTheme));
 
                 EmojiThemes chatTheme = EmojiThemes.createPreviewCustom(parentFragment.getCurrentAccount());
                 chatTheme.loadPreviewColors(parentFragment.getCurrentAccount());

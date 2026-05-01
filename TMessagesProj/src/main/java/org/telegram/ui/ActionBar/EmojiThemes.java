@@ -776,6 +776,12 @@ public class EmojiThemes {
         if (themeInfo.getKey().equals("Dark Blue") && accentId == 0) {
             return;
         }
+        if (themeInfo.getKey().equals("Flex Light") && accentId == 0) {
+            return;
+        }
+        if (themeInfo.getKey().equals("Flex Dark") && accentId == 0) {
+            return;
+        }
 
         boolean dark = themeInfo.isDark();
         String key = dark ? "lastDarkCustomTheme" : "lastDayCustomTheme";
