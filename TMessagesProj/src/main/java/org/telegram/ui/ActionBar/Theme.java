@@ -4734,6 +4734,12 @@ public class Theme {
         themeInfo.previewInColor = 0xffffffff;
         themeInfo.previewOutColor = 0xfff0d9b0;
         themeInfo.sortIndex = 0;
+        themeInfo.setAccentColorOptions(new int[] {
+                0xFFE8C88E, 0xFFC69B5F, 0xFFAF8144, 0xFF9F733A,
+                0xFFE1B86F, 0xFFD28036, 0xFFCD5F93, 0xFF8366CC,
+                0xFF328ACF, 0xFF52AC44, 0xFFCE4E57, 0xFF7B88AB
+        });
+        sortAccents(themeInfo);
         themes.add(currentDayTheme = defaultTheme = themeInfo);
         themesDict.put("Flex Light", themeInfo);
 
@@ -4744,6 +4750,12 @@ public class Theme {
         themeInfo.previewInColor = 0xff303b47;
         themeInfo.previewOutColor = 0xffc69b5f;
         themeInfo.sortIndex = 6;
+        themeInfo.setAccentColorOptions(new int[] {
+                0xFFE8C88E, 0xFFC69B5F, 0xFFAF8144, 0xFF9F733A,
+                0xFFEE902A, 0xFFEB7CB1, 0xFFA281F0, 0xFF3685FA,
+                0xFF46C8ED, 0xFF64AC5F, 0xFFD34324, 0xFF7F8FAB
+        });
+        sortAccents(themeInfo);
         themes.add(currentNightTheme = themeInfo);
         themesDict.put("Flex Dark", themeInfo);
 
@@ -10574,6 +10586,9 @@ public class Theme {
                 return true;
             }
             if ((accent.parentTheme.getKey().equals("Night") || accent.parentTheme.getKey().equals("Dark Blue")) && accent.id == 0) {
+                return true;
+            }
+            if ((accent.parentTheme.getKey().equals("Flex Light") || accent.parentTheme.getKey().equals("Flex Dark")) && accent.id == 0) {
                 return true;
             }
         }
