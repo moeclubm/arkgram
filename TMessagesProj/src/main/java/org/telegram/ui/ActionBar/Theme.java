@@ -4730,7 +4730,7 @@ public class Theme {
         themeInfo = new ThemeInfo();
         themeInfo.name = "Flex Light";
         themeInfo.assetName = "flex_light.attheme";
-        themeInfo.previewBackgroundColor = 0xfff6e7cb;
+        themeInfo.previewBackgroundColor = 0xffffffff;
         themeInfo.previewInColor = 0xffffffff;
         themeInfo.previewOutColor = 0xfff0d9b0;
         themeInfo.sortIndex = 0;
