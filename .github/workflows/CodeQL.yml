@@ -55,6 +55,14 @@ jobs:
           distribution: temurin
           java-version: '17'
 
+      - name: Set up Gradle
+        if: ${{ matrix.build-mode == 'manual' }}
+        uses: gradle/actions/setup-gradle@v5
+        with:
+          cache-cleanup: always
+          cache-encryption-key: ${{ secrets.GRADLE_ENCRYPTION_KEY }}
+          cache-read-only: ${{ github.ref != 'refs/heads/master' }}
+
       - name: Set up Android SDK
         if: ${{ matrix.build-mode == 'manual' }}
         uses: android-actions/setup-android@v4
@@ -100,7 +108,7 @@ jobs:
         shell: bash
         run: |
           chmod +x gradlew
-          ./gradlew :TMessagesProj_App:assembleAfatDebug --stacktrace
+          ./gradlew :TMessagesProj_App:assembleAfatDebug --build-cache --stacktrace
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v4
