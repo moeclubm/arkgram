@@ -8816,6 +8816,61 @@ public class MessagesController extends BaseController implements NotificationCe
         }));
     }
 
+    public void clearBlockedPeers(Utilities.Callback2<Integer, TLRPC.TL_error> callback) {
+        ArrayList<TLRPC.Peer> peers = new ArrayList<>();
+        loadBlockedPeersForClear(0, peers, callback);
+    }
+
+    private void loadBlockedPeersForClear(int offset, ArrayList<TLRPC.Peer> peers, Utilities.Callback2<Integer, TLRPC.TL_error> callback) {
+        TLRPC.TL_contacts_getBlocked req = new TLRPC.TL_contacts_getBlocked();
+        req.offset = offset;
+        req.limit = 100;
+        getConnectionsManager().sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+            if (error != null) {
+                callback.run(0, error);
+                return;
+            }
+            TLRPC.contacts_Blocked res = (TLRPC.contacts_Blocked) response;
+            putUsers(res.users, false);
+            putChats(res.chats, false);
+            getMessagesStorage().putUsersAndChats(res.users, res.chats, true, true);
+            for (int a = 0, N = res.blocked.size(); a < N; a++) {
+                peers.add(res.blocked.get(a).peer_id);
+            }
+            if (res.blocked.size() == req.limit) {
+                loadBlockedPeersForClear(offset + res.blocked.size(), peers, callback);
+            } else {
+                clearLoadedBlockedPeers(peers, 0, callback);
+            }
+        }));
+    }
+
+    private void clearLoadedBlockedPeers(ArrayList<TLRPC.Peer> peers, int index, Utilities.Callback2<Integer, TLRPC.TL_error> callback) {
+        if (index >= peers.size()) {
+            blockePeers.clear();
+            totalBlockedCount = 0;
+            blockedEndReached = true;
+            getNotificationCenter().postNotificationName(NotificationCenter.blockedUsersDidLoad);
+            callback.run(peers.size(), null);
+            return;
+        }
+        TLRPC.Peer peer = peers.get(index);
+        TLRPC.TL_contacts_unblock req = new TLRPC.TL_contacts_unblock();
+        req.id = getInputPeer(peer);
+        getConnectionsManager().sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+            if (error != null) {
+                callback.run(index, error);
+                return;
+            }
+            blockePeers.delete(MessageObject.getPeerId(peer));
+            if (totalBlockedCount > 0) {
+                totalBlockedCount--;
+            }
+            getNotificationCenter().postNotificationName(NotificationCenter.blockedUsersDidLoad);
+            clearLoadedBlockedPeers(peers, index + 1, callback);
+        }));
+    }
+
     public void getBlockedPeers(boolean reset) {
         if (!getUserConfig().isClientActivated() || loadingBlockedPeers) {
             return;

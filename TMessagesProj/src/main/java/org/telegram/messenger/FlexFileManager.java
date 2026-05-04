@@ -34,7 +34,7 @@ public class FlexFileManager {
         LinkedHashMap<String, Object> global = new LinkedHashMap<>();
         LinkedHashMap<String, Object> account = new LinkedHashMap<>();
 
-        root.put("version", 4);
+        root.put("version", 5);
         root.put("exported_at", System.currentTimeMillis());
         root.put("current_account", currentAccount);
         root.put("global", global);
@@ -60,6 +60,8 @@ public class FlexFileManager {
         global.put("ad_block_enabled", FlexConfig.isAdBlockEnabled());
         global.put("ad_block_keywords", FlexConfig.getAdBlockKeywordsText());
         global.put("ad_blocked_message_ids", FlexConfig.getAdBlockedMessageIdsText());
+        global.put("ad_blocked_message_rules", FlexConfig.getAdBlockedMessageRulesText());
+        global.put("ad_blocked_user_ids", FlexConfig.getAdBlockedUsersText());
         global.put("translation_provider", FlexConfig.getTranslationProvider());
         global.put("translation_target_language", TranslateAlert2.getToLanguage());
         global.put("translation_deepl_api_url", FlexConfig.getDeepLApiUrl());
@@ -170,6 +172,12 @@ public class FlexFileManager {
         }
         if (global.has("ad_blocked_message_ids")) {
             FlexConfig.setAdBlockedMessageIdsText(global.get("ad_blocked_message_ids").getAsString());
+        }
+        if (global.has("ad_blocked_message_rules")) {
+            FlexConfig.setAdBlockedMessageRulesText(global.get("ad_blocked_message_rules").getAsString());
+        }
+        if (global.has("ad_blocked_user_ids")) {
+            FlexConfig.setAdBlockedUsersText(global.get("ad_blocked_user_ids").getAsString());
         }
         if (global.has("translation_provider")) {
             FlexConfig.setTranslationProvider(global.get("translation_provider").getAsInt());

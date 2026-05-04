@@ -7,6 +7,8 @@ import android.util.Base64;
 
 import androidx.core.graphics.ColorUtils;
 
+import org.telegram.tgnet.TLRPC;
+
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.Locale;
@@ -245,6 +247,22 @@ public class FlexConfig {
         prefs().edit().putString("flex_ad_block_keywords", joinLineList(splitLineList(value))).apply();
     }
 
+    public static void addAdBlockKeyword(String value) {
+        LinkedHashSet<String> keywords = new LinkedHashSet<>(getAdBlockKeywords());
+        String keyword = clean(value);
+        if (!keyword.isEmpty()) {
+            keywords.add(keyword);
+            prefs().edit().putString("flex_ad_block_keywords", joinLineList(keywords)).apply();
+        }
+    }
+
+    public static void removeAdBlockKeyword(String value) {
+        LinkedHashSet<String> keywords = new LinkedHashSet<>(getAdBlockKeywords());
+        if (keywords.remove(clean(value))) {
+            prefs().edit().putString("flex_ad_block_keywords", joinLineList(keywords)).apply();
+        }
+    }
+
     public static String getAdBlockedMessageIdsText() {
         Set<String> values = prefs().getStringSet("flex_ad_blocked_message_ids", new LinkedHashSet<>());
         return joinLineList(values);
@@ -262,10 +280,85 @@ public class FlexConfig {
         prefs().edit().remove("flex_ad_blocked_message_ids").apply();
     }
 
+    public static int getAdBlockedMessageRuleCount() {
+        return prefs().getStringSet("flex_ad_blocked_message_keys", new LinkedHashSet<>()).size();
+    }
+
+    public static String getAdBlockedMessageRulesText() {
+        Set<String> values = prefs().getStringSet("flex_ad_blocked_message_keys", new LinkedHashSet<>());
+        return joinLineList(values);
+    }
+
+    public static void setAdBlockedMessageRulesText(String value) {
+        prefs().edit().putStringSet("flex_ad_blocked_message_keys", new LinkedHashSet<>(splitLineList(value))).apply();
+    }
+
+    public static int getAdBlockedUserCount() {
+        return prefs().getStringSet("flex_ad_blocked_user_ids", new LinkedHashSet<>()).size();
+    }
+
+    public static String getAdBlockedUsersText() {
+        Set<String> values = prefs().getStringSet("flex_ad_blocked_user_ids", new LinkedHashSet<>());
+        return joinLineList(values);
+    }
+
+    public static void setAdBlockedUsersText(String value) {
+        prefs().edit().putStringSet("flex_ad_blocked_user_ids", new LinkedHashSet<>(splitLineList(value))).apply();
+    }
+
+    public static int getAdBlockRuleCount() {
+        return getAdBlockKeywords().size() + getAdBlockedMessageCount() + getAdBlockedMessageRuleCount() + getAdBlockedUserCount();
+    }
+
+    public static void clearAdBlockRules() {
+        prefs().edit()
+                .remove("flex_ad_block_keywords")
+                .remove("flex_ad_blocked_message_ids")
+                .remove("flex_ad_blocked_message_keys")
+                .remove("flex_ad_blocked_user_ids")
+                .apply();
+    }
+
     public static void addAdBlockedMessage(MessageObject messageObject) {
         LinkedHashSet<String> ids = new LinkedHashSet<>(prefs().getStringSet("flex_ad_blocked_message_ids", new LinkedHashSet<>()));
         ids.add(Base64.encodeToString(messageObject.sponsoredId, Base64.NO_WRAP));
         prefs().edit().putStringSet("flex_ad_blocked_message_ids", ids).apply();
+    }
+
+    public static void addAdBlockedMessageRule(MessageObject messageObject) {
+        LinkedHashSet<String> keys = new LinkedHashSet<>(prefs().getStringSet("flex_ad_blocked_message_keys", new LinkedHashSet<>()));
+        keys.addAll(getMessageRuleKeys(messageObject));
+        prefs().edit().putStringSet("flex_ad_blocked_message_keys", keys).apply();
+    }
+
+    public static void addAdBlockedUserRule(MessageObject messageObject) {
+        long senderId = messageObject.getSenderId();
+        if (senderId != 0) {
+            LinkedHashSet<String> ids = new LinkedHashSet<>(prefs().getStringSet("flex_ad_blocked_user_ids", new LinkedHashSet<>()));
+            ids.add(Long.toString(senderId));
+            prefs().edit().putStringSet("flex_ad_blocked_user_ids", ids).apply();
+        }
+    }
+
+    public static boolean isMessageBlocked(MessageObject messageObject) {
+        if (!isAdBlockEnabled()) {
+            return false;
+        }
+        if (messageObject.isSponsored()) {
+            return isSponsoredMessageBlocked(messageObject);
+        }
+        if (prefs().getStringSet("flex_ad_blocked_user_ids", new LinkedHashSet<>()).contains(Long.toString(messageObject.getSenderId()))) {
+            return true;
+        }
+        Set<String> blockedMessageKeys = prefs().getStringSet("flex_ad_blocked_message_keys", new LinkedHashSet<>());
+        ArrayList<String> messageKeys = getMessageRuleKeys(messageObject);
+        for (int i = 0; i < messageKeys.size(); ++i) {
+            if (blockedMessageKeys.contains(messageKeys.get(i))) {
+                return true;
+            }
+        }
+        ArrayList<String> keywords = getAdBlockKeywords();
+        return !keywords.isEmpty() && containsAdBlockKeyword(getMessageSearchText(messageObject), keywords);
     }
 
     public static boolean isSponsoredMessageBlocked(MessageObject messageObject) {
@@ -277,10 +370,35 @@ public class FlexConfig {
             return true;
         }
         ArrayList<String> keywords = getAdBlockKeywords();
-        if (keywords.isEmpty()) {
-            return false;
+        return !keywords.isEmpty() && containsAdBlockKeyword(getMessageSearchText(messageObject), keywords);
+    }
+
+    private static ArrayList<String> getMessageRuleKeys(MessageObject messageObject) {
+        LinkedHashSet<String> keys = new LinkedHashSet<>();
+        int messageId = messageObject.getId();
+        long dialogId = messageObject.getDialogId();
+        if (dialogId != 0 && messageId > 0) {
+            keys.add(dialogId + ":" + messageId);
         }
-        String text = getSponsoredMessageSearchText(messageObject).toLowerCase(Locale.US);
+        TLRPC.MessageFwdHeader fwdFrom = messageObject.messageOwner.fwd_from;
+        if (fwdFrom != null) {
+            long fromId = MessageObject.getPeerId(fwdFrom.from_id);
+            if (fromId != 0 && fwdFrom.channel_post > 0) {
+                keys.add(fromId + ":" + fwdFrom.channel_post);
+            }
+            long savedFromPeerId = MessageObject.getPeerId(fwdFrom.saved_from_peer);
+            if (savedFromPeerId != 0 && fwdFrom.saved_from_msg_id > 0) {
+                keys.add(savedFromPeerId + ":" + fwdFrom.saved_from_msg_id);
+            }
+            if (savedFromPeerId != 0 && fwdFrom.channel_post > 0) {
+                keys.add(savedFromPeerId + ":" + fwdFrom.channel_post);
+            }
+        }
+        return new ArrayList<>(keys);
+    }
+
+    private static boolean containsAdBlockKeyword(String value, ArrayList<String> keywords) {
+        String text = value.toLowerCase(Locale.US);
         for (int i = 0; i < keywords.size(); ++i) {
             if (text.contains(keywords.get(i).toLowerCase(Locale.US))) {
                 return true;
@@ -289,10 +407,11 @@ public class FlexConfig {
         return false;
     }
 
-    private static String getSponsoredMessageSearchText(MessageObject messageObject) {
+    private static String getMessageSearchText(MessageObject messageObject) {
         StringBuilder builder = new StringBuilder();
         appendSearchText(builder, messageObject.messageText);
         appendSearchText(builder, messageObject.caption);
+        appendSearchText(builder, messageObject.messageOwner.message);
         appendSearchText(builder, messageObject.sponsoredTitle);
         appendSearchText(builder, messageObject.sponsoredUrl);
         appendSearchText(builder, messageObject.sponsoredInfo);
