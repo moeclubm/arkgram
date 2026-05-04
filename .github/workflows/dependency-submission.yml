@@ -1,0 +1,46 @@
+name: Dependency Submission
+
+run-name: Dependency Submission · ${{ github.ref_name }} · @${{ github.actor }} · #${{ github.run_number }}
+
+on:
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: dependency-submission-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  submit-gradle-dependencies:
+    runs-on: ubuntu-latest
+    env:
+      ORG_GRADLE_PROJECT_CI_ABI_FILTERS: arm64-v8a
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v4
+        with:
+          packages: 'platforms;android-36 build-tools;36.0.0 ndk;21.4.7075529 cmake;3.22.1'
+
+      - name: Prepare local.properties
+        shell: bash
+        run: |
+          sdk_root="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
+          printf 'sdk.dir=%s\n' "$sdk_root" > local.properties
+
+      - name: Submit Gradle dependency graph
+        uses: gradle/actions/dependency-submission@v5
