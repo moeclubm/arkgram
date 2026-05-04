@@ -10730,10 +10730,10 @@
     <string name="FlexAdBlockMessageHidden">Message hidden</string>
     <string name="FlexAdBlockUserHidden">User messages hidden</string>
     <string name="FlexBlockThisMessageAndForwards">Block This Message and Forwards</string>
-    <string name="FlexBlockThisUserMessages">Block This User's Messages</string>
+    <string name="FlexBlockThisUserMessages">Block This User\'s Messages</string>
     <string name="FlexTelegramBlocklist">Telegram Blocklist</string>
     <string name="FlexClearTelegramBlocklist">Clear Telegram Blocklist</string>
-    <string name="FlexClearTelegramBlocklistConfirm">Unblock every user and chat in Telegram's built-in blocklist?</string>
+    <string name="FlexClearTelegramBlocklistConfirm">Unblock every user and chat in Telegram\'s built-in blocklist?</string>
     <string name="FlexTelegramBlocklistCleared">Telegram blocklist cleared: %1$d</string>
     <string name="FlexAdBlockClearMessages">Clear Blocked Messages</string>
     <string name="FlexAdBlockInfo">When enabled, matching ads, keywords, messages, forwards, or users are hidden locally. Use a message menu to add message or user rules.</string>
