@@ -2615,12 +2615,12 @@ public class Theme {
                     themeAccent.myMessagesGradientAccentColor1 = name.equals("Flex Dark") ? 0xFFD4A45B : 0xff4272DF;
                     themeAccent.myMessagesGradientAccentColor2 = name.equals("Flex Dark") ? 0xFFB9894A : 0xff8146D7;
                     themeAccent.myMessagesGradientAccentColor3 = name.equals("Flex Dark") ? 0xFF9F733A : 0xff9F3EAA;
-                    if (name.equals("Night") || name.equals("Flex Dark")) {
+                    if (name.equals("Night")) {
                         themeAccent.patternIntensity = -0.57f;
-                        themeAccent.backgroundOverrideColor = name.equals("Flex Dark") ? 0xff6A5846 : 0xff6c7fa6;
-                        themeAccent.backgroundGradientOverrideColor1 = name.equals("Flex Dark") ? 0xff2D241C : 0xff2e344b;
-                        themeAccent.backgroundGradientOverrideColor2 = name.equals("Flex Dark") ? 0xff6E5C4A : 0xff7874a7;
-                        themeAccent.backgroundGradientOverrideColor3 = name.equals("Flex Dark") ? 0xff3A2E22 : 0xff333258;
+                        themeAccent.backgroundOverrideColor = 0xff6c7fa6;
+                        themeAccent.backgroundGradientOverrideColor1 = 0xff2e344b;
+                        themeAccent.backgroundGradientOverrideColor2 = 0xff7874a7;
+                        themeAccent.backgroundGradientOverrideColor3 = 0xff333258;
                     }
                 }
                 themeAccentsMap.put(themeAccent.id, themeAccent);
@@ -4730,7 +4730,7 @@ public class Theme {
         themeInfo = new ThemeInfo();
         themeInfo.name = "Flex Light";
         themeInfo.assetName = "flex_light.attheme";
-        themeInfo.previewBackgroundColor = 0xffffffff;
+        themeInfo.previewBackgroundColor = 0xff95beec;
         themeInfo.previewInColor = 0xffffffff;
         themeInfo.previewOutColor = 0xfff0d9b0;
         themeInfo.sortIndex = 0;
@@ -4746,7 +4746,7 @@ public class Theme {
         themeInfo = new ThemeInfo();
         themeInfo.name = "Flex Dark";
         themeInfo.assetName = "flex_dark.attheme";
-        themeInfo.previewBackgroundColor = 0xff433427;
+        themeInfo.previewBackgroundColor = 0xff5f6e82;
         themeInfo.previewInColor = 0xff6A5846;
         themeInfo.previewOutColor = 0xffc69b5f;
         themeInfo.sortIndex = 6;
