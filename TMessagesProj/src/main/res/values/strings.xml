@@ -10714,6 +10714,13 @@
     <string name="FlexDisableUiTransparency">Disable UI Transparency</string>
     <string name="FlexDisableUiBlur">Disable UI Blur</string>
     <string name="FlexMarkdownSettings">Markdown</string>
+    <string name="FlexAdBlockSettings">Ad Block</string>
+    <string name="FlexAdBlockEnabled">Enable Custom Ad Block</string>
+    <string name="FlexAdBlockKeywords">Blocked Keywords</string>
+    <string name="FlexAdBlockKeywordsHint">One keyword per line. Sponsored messages matching the message text, title, URL, sponsor info, or button text will be hidden.</string>
+    <string name="FlexAdBlockClearMessages">Clear Blocked Messages</string>
+    <string name="FlexAdBlockInfo">When enabled, matching sponsored messages are hidden locally. Tap the close button or use the message menu to block a specific sponsored message.</string>
+    <string name="FlexBlockThisAd">Block This Ad</string>
     <string name="FlexTranslationSettings">Translation</string>
     <string name="FlexFileManagement">File Management</string>
     <string name="FlexFileExportSettings">Export Flexgram Settings</string>

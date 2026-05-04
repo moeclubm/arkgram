@@ -36,6 +36,7 @@ public class FlexSettingsActivity extends UniversalFragment {
     private static final int ID_LAZY_ATTACH_CAMERA = 17;
     private static final int ID_FORWARD_HIDE_SOURCE = 18;
     private static final int ID_FORWARD_HIDE_CAPTION = 19;
+    private static final int ID_AD_BLOCK = 20;
     private static final int ID_CHAT = 100;
     private static final int ID_DATA = 101;
     private static final int ID_LANGUAGE = 102;
@@ -150,6 +151,9 @@ public class FlexSettingsActivity extends UniversalFragment {
             case ID_LLM_SETTINGS:
                 presentFragment(new FlexLlmSettingsActivity());
                 break;
+            case ID_AD_BLOCK:
+                presentFragment(new FlexAdBlockSettingsActivity());
+                break;
             case ID_CHAT:
                 presentFragment(new ThemeActivity(ThemeActivity.THEME_TYPE_BASIC));
                 break;
@@ -181,6 +185,7 @@ public class FlexSettingsActivity extends UniversalFragment {
     private void addChatItems(ArrayList<UItem> items) {
         items.add(UItem.asButton(ID_TRANSLATE, R.drawable.msg_translate, getString(R.string.FlexTranslationSettings)));
         items.add(UItem.asButton(ID_MARKDOWN, R.drawable.menu_feature_code, getString(R.string.FlexMarkdownSettings)));
+        items.add(UItem.asButton(ID_AD_BLOCK, R.drawable.msg_block, getString(R.string.FlexAdBlockSettings)));
         items.add(UItem.asCheck(ID_LAZY_ATTACH_CAMERA, getString(R.string.FlexLazyAttachCamera)).setChecked(SharedConfig.lazyAttachCamera));
         items.add(UItem.asCheck(ID_DISABLE_CHANNEL_SWIPE_NEXT, getString(R.string.FlexDisableChannelSwipeNext)).setChecked(SharedConfig.disableChannelSwipeNext));
     }

@@ -292,7 +292,7 @@ public class MusicPlayerService extends Service implements NotificationCenter.No
         if (messageObject.isMusic()) {
             intent.setAction("com.tmessages.openplayer");
             intent.addCategory(Intent.CATEGORY_LAUNCHER);
-        } else if (messageObject.isVoice() || messageObject.isRoundVideo()) {
+        } else if (messageObject.isVoice() || messageObject.isRoundVideo() || messageObject.isVideo()) {
             intent.setAction(Intent.ACTION_VIEW);
             long fromId = 0;
             TLRPC.Message owner = messageObject.messageOwner;
@@ -336,7 +336,7 @@ public class MusicPlayerService extends Service implements NotificationCenter.No
             } else {
                 loadingFilePath = FileLoader.getInstance(UserConfig.selectedAccount).getPathToAttach(messageObject.getDocument()).getAbsolutePath();
             }
-        } else if (messageObject.isVoice() || messageObject.isRoundVideo()) {
+        } else if (messageObject.isVoice() || messageObject.isRoundVideo() || messageObject.isVideo()) {
             long senderId = messageObject.getSenderId();
             if (messageObject.isFromUser()) {
                 TLRPC.User user = MessagesController.getInstance(UserConfig.selectedAccount).getUser(senderId);
@@ -360,8 +360,10 @@ public class MusicPlayerService extends Service implements NotificationCenter.No
             }
             if (messageObject.isVoice()) {
                 contentText = LocaleController.getString(R.string.AttachAudio);
-            } else {
+            } else if (messageObject.isRoundVideo()) {
                 contentText = LocaleController.getString(R.string.AttachRound);
+            } else {
+                contentText = LocaleController.getString(R.string.AttachVideo);
             }
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
@@ -377,7 +379,7 @@ public class MusicPlayerService extends Service implements NotificationCenter.No
             Notification.MediaStyle mediaStyle = new Notification.MediaStyle().setMediaSession(mediaSession.getSessionToken());
             if (messageObject.isMusic()) {
                 mediaStyle.setShowActionsInCompactView(0, 1, 2);
-            } else if (messageObject.isVoice() || messageObject.isRoundVideo()) {
+            } else if (messageObject.isVoice() || messageObject.isRoundVideo() || messageObject.isVideo()) {
                 mediaStyle.setShowActionsInCompactView(0);
             }
             Notification.Builder bldr = new Notification.Builder(this);
@@ -645,7 +647,7 @@ public class MusicPlayerService extends Service implements NotificationCenter.No
 
     private float getPlaybackSpeed(boolean isPlaying, MessageObject messageObject) {
         if (isPlaying) {
-            if (messageObject != null && (messageObject.isVoice() || messageObject.isRoundVideo())) {
+            if (messageObject != null && (messageObject.isVoice() || messageObject.isRoundVideo() || messageObject.isVideo())) {
                 return MediaController.getInstance().getPlaybackSpeed(false);
             }
             return 1;

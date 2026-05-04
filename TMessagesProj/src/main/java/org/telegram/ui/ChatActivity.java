@@ -1187,6 +1187,7 @@ public class ChatActivity extends BaseFragment implements
     public final static int OPTION_ADD_TO_TODO = 110;
     public final static int OPTION_FLEX_QUICK_FORWARD = 120;
     public final static int OPTION_FLEX_VIEW_RAW_JSON = 121;
+    public final static int OPTION_FLEX_BLOCK_SPONSORED_MESSAGE = 122;
     private static final Gson FLEX_MESSAGE_JSON_GSON = new GsonBuilder().setPrettyPrinting().create();
 
     public final static int OPTION_SUGGESTION_EDIT_PRICE = 111;
@@ -2820,6 +2821,7 @@ public class ChatActivity extends BaseFragment implements
         getNotificationCenter().addObserver(this, NotificationCenter.loadingMessagesFailed);
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.emojiLoaded);
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.invalidateMotionBackground);
+        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.flexAdBlockSettingsChanged);
         getNotificationCenter().addObserver(this, NotificationCenter.didUpdateConnectionState);
         getNotificationCenter().addObserver(this, NotificationCenter.updateInterfaces);
         getNotificationCenter().addObserver(this, NotificationCenter.updateDefaultSendAsPeer);
@@ -3297,6 +3299,7 @@ public class ChatActivity extends BaseFragment implements
         getNotificationCenter().removeObserver(this, NotificationCenter.updatedChatRanks);
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.emojiLoaded);
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.invalidateMotionBackground);
+        NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.flexAdBlockSettingsChanged);
         getNotificationCenter().removeObserver(this, NotificationCenter.didUpdateConnectionState);
         getNotificationCenter().removeObserver(this, NotificationCenter.updateInterfaces);
         getNotificationCenter().removeObserver(this, NotificationCenter.updateDefaultSendAsPeer);
@@ -20119,7 +20122,9 @@ public class ChatActivity extends BaseFragment implements
 
     @Override
     public void didReceivedNotification(int id, int account, final Object... args) {
-        if (id == NotificationCenter.messagesDidLoad) {
+        if (id == NotificationCenter.flexAdBlockSettingsChanged) {
+            applySponsoredAdBlockSettings();
+        } else if (id == NotificationCenter.messagesDidLoad) {
             int guid = (Integer) args[10];
             if (guid != classGuid) {
                 return;
@@ -24397,8 +24402,13 @@ public class ChatActivity extends BaseFragment implements
         if (res == null || res.messages == null) {
             return;
         }
+        ArrayList<MessageObject> messagesToAdd = new ArrayList<>();
         for (int i = 0; i < res.messages.size(); i++) {
             MessageObject messageObject = res.messages.get(i);
+            if (FlexConfig.isSponsoredMessageBlocked(messageObject)) {
+                continue;
+            }
+            messagesToAdd.add(messageObject);
             messageObject.resetLayout();
             if (messageObject.sponsoredUrl != null) {
                 try {
@@ -24431,15 +24441,36 @@ public class ChatActivity extends BaseFragment implements
         }
         sponsoredMessagesAdded = true;
         if (UserObject.isBot(currentUser)) {
-            botSponsoredMessage = res == null || res.messages == null || res.messages.isEmpty() ? null : res.messages.get(0);
+            botSponsoredMessage = messagesToAdd.isEmpty() ? null : messagesToAdd.get(0);
             updateTopPanel(true);
         } else {
             sponsoredMessagesPostsBetween = res.posts_between != null ? res.posts_between : 0;
             if (notPushedSponsoredMessages != null) {
                 notPushedSponsoredMessages.clear();
             }
-            processNewMessages(res.messages, false);
+            if (!messagesToAdd.isEmpty()) {
+                processNewMessages(messagesToAdd, false);
+            }
         }
+    }
+
+    private void applySponsoredAdBlockSettings() {
+        if (chatMode != 0) {
+            return;
+        }
+        for (int i = messages.size() - 1; i >= 0; --i) {
+            MessageObject messageObject = messages.get(i);
+            if (messageObject.isSponsored()) {
+                removeMessageObject(messageObject);
+            }
+        }
+        botSponsoredMessage = null;
+        sponsoredMessagesAdded = false;
+        if (notPushedSponsoredMessages != null) {
+            notPushedSponsoredMessages.clear();
+        }
+        addSponsoredMessages(true);
+        updateTopPanel(true);
     }
 
     public void removeFromSponsored(MessageObject message) {
@@ -33335,6 +33366,10 @@ public class ChatActivity extends BaseFragment implements
                 hideAds();
                 break;
             }
+            case OPTION_FLEX_BLOCK_SPONSORED_MESSAGE: {
+                blockSponsoredAd(selectedObject);
+                break;
+            }
             case OPTION_ABOUT_REVENUE_SHARING_ADS: {
                 RevenueSharingAdsInfoBottomSheet.showAlert(contentView.getContext(),ChatActivity.this, false, resourceProvider);
                 break;
@@ -33483,6 +33518,15 @@ public class ChatActivity extends BaseFragment implements
         } else {
             showDialog(new PremiumFeatureBottomSheet(ChatActivity.this, PremiumPreviewFragment.PREMIUM_FEATURE_ADS, true));
         }
+    }
+
+    private void blockSponsoredAd(MessageObject messageObject) {
+        FlexConfig.addAdBlockedMessage(messageObject);
+        removeFromSponsored(messageObject);
+        removeMessageWithThanos(messageObject);
+        BulletinFactory.of(ChatActivity.this)
+                .createAdReportedBulletin(LocaleController.getString(R.string.AdHidden))
+                .show();
     }
 
     @Override
@@ -38423,7 +38467,11 @@ public class ChatActivity extends BaseFragment implements
         @Override
         public void didPressSponsoredClose(ChatMessageCell cell) {
             selectedObject = cell.getMessageObject();
-            hideAds();
+            if (FlexConfig.isAdBlockEnabled()) {
+                blockSponsoredAd(selectedObject);
+            } else {
+                hideAds();
+            }
         }
 
         @Override
@@ -44429,7 +44477,13 @@ public class ChatActivity extends BaseFragment implements
             allowChatActions = false;
         }
 
-        if (message.isSponsored() && !getUserConfig().isPremium() && !getMessagesController().premiumFeaturesBlocked() && !message.sponsoredCanReport) {
+        if (message.isSponsored() && FlexConfig.isAdBlockEnabled()) {
+            items.add(LocaleController.getString(R.string.FlexBlockThisAd));
+            options.add(OPTION_FLEX_BLOCK_SPONSORED_MESSAGE);
+            icons.add(R.drawable.msg_block2);
+        }
+
+        if (message.isSponsored() && !FlexConfig.isAdBlockEnabled() && !getUserConfig().isPremium() && !getMessagesController().premiumFeaturesBlocked() && !message.sponsoredCanReport) {
             items.add(LocaleController.getString(R.string.HideAd));
             options.add(OPTION_HIDE_SPONSORED_MESSAGE);
             icons.add(R.drawable.msg_block2);

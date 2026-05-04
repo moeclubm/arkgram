@@ -5,7 +5,7 @@ run-name: Beta Builds · ${{ github.ref_name }} · @${{ github.actor }} · #${{ 
 on:
   push:
     branches:
-      - master
+      - '**'
   workflow_dispatch:
 
 permissions:

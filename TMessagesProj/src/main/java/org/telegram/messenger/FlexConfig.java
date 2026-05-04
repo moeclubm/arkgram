@@ -1,12 +1,16 @@
 package org.telegram.messenger;
 
-import android.graphics.Color;
 import android.content.SharedPreferences;
+import android.graphics.Color;
+import android.text.TextUtils;
+import android.util.Base64;
 
 import androidx.core.graphics.ColorUtils;
 
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
+import java.util.Locale;
+import java.util.Set;
 
 public class FlexConfig {
 
@@ -36,6 +40,33 @@ public class FlexConfig {
 
     private static String clean(String value) {
         return value == null ? "" : value.trim();
+    }
+
+    private static ArrayList<String> splitLineList(String value) {
+        LinkedHashSet<String> lines = new LinkedHashSet<>();
+        String[] parts = clean(value).replace('\r', '\n').split("\n");
+        for (int i = 0; i < parts.length; ++i) {
+            String line = clean(parts[i]);
+            if (!line.isEmpty()) {
+                lines.add(line);
+            }
+        }
+        return new ArrayList<>(lines);
+    }
+
+    private static String joinLineList(Iterable<String> values) {
+        StringBuilder builder = new StringBuilder();
+        for (String value : values) {
+            String line = clean(value);
+            if (line.isEmpty()) {
+                continue;
+            }
+            if (builder.length() > 0) {
+                builder.append('\n');
+            }
+            builder.append(line);
+        }
+        return builder.toString();
     }
 
     public static String getLlmProviderDefaultApiUrl(int provider) {
@@ -192,6 +223,92 @@ public class FlexConfig {
 
     public static void setMarkdownParseLinksEnabled(boolean value) {
         prefs().edit().putBoolean("flex_markdown_parse_links", value).apply();
+    }
+
+    public static boolean isAdBlockEnabled() {
+        return prefs().getBoolean("flex_ad_block_enabled", false);
+    }
+
+    public static void setAdBlockEnabled(boolean value) {
+        prefs().edit().putBoolean("flex_ad_block_enabled", value).apply();
+    }
+
+    public static String getAdBlockKeywordsText() {
+        return joinLineList(splitLineList(prefs().getString("flex_ad_block_keywords", "")));
+    }
+
+    public static ArrayList<String> getAdBlockKeywords() {
+        return splitLineList(getAdBlockKeywordsText());
+    }
+
+    public static void setAdBlockKeywordsText(String value) {
+        prefs().edit().putString("flex_ad_block_keywords", joinLineList(splitLineList(value))).apply();
+    }
+
+    public static String getAdBlockedMessageIdsText() {
+        Set<String> values = prefs().getStringSet("flex_ad_blocked_message_ids", new LinkedHashSet<>());
+        return joinLineList(values);
+    }
+
+    public static void setAdBlockedMessageIdsText(String value) {
+        prefs().edit().putStringSet("flex_ad_blocked_message_ids", new LinkedHashSet<>(splitLineList(value))).apply();
+    }
+
+    public static int getAdBlockedMessageCount() {
+        return prefs().getStringSet("flex_ad_blocked_message_ids", new LinkedHashSet<>()).size();
+    }
+
+    public static void clearAdBlockedMessages() {
+        prefs().edit().remove("flex_ad_blocked_message_ids").apply();
+    }
+
+    public static void addAdBlockedMessage(MessageObject messageObject) {
+        LinkedHashSet<String> ids = new LinkedHashSet<>(prefs().getStringSet("flex_ad_blocked_message_ids", new LinkedHashSet<>()));
+        ids.add(Base64.encodeToString(messageObject.sponsoredId, Base64.NO_WRAP));
+        prefs().edit().putStringSet("flex_ad_blocked_message_ids", ids).apply();
+    }
+
+    public static boolean isSponsoredMessageBlocked(MessageObject messageObject) {
+        if (!isAdBlockEnabled() || !messageObject.isSponsored()) {
+            return false;
+        }
+        String sponsoredId = Base64.encodeToString(messageObject.sponsoredId, Base64.NO_WRAP);
+        if (prefs().getStringSet("flex_ad_blocked_message_ids", new LinkedHashSet<>()).contains(sponsoredId)) {
+            return true;
+        }
+        ArrayList<String> keywords = getAdBlockKeywords();
+        if (keywords.isEmpty()) {
+            return false;
+        }
+        String text = getSponsoredMessageSearchText(messageObject).toLowerCase(Locale.US);
+        for (int i = 0; i < keywords.size(); ++i) {
+            if (text.contains(keywords.get(i).toLowerCase(Locale.US))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static String getSponsoredMessageSearchText(MessageObject messageObject) {
+        StringBuilder builder = new StringBuilder();
+        appendSearchText(builder, messageObject.messageText);
+        appendSearchText(builder, messageObject.caption);
+        appendSearchText(builder, messageObject.sponsoredTitle);
+        appendSearchText(builder, messageObject.sponsoredUrl);
+        appendSearchText(builder, messageObject.sponsoredInfo);
+        appendSearchText(builder, messageObject.sponsoredAdditionalInfo);
+        appendSearchText(builder, messageObject.sponsoredButtonText);
+        return builder.toString();
+    }
+
+    private static void appendSearchText(StringBuilder builder, CharSequence value) {
+        if (TextUtils.isEmpty(value)) {
+            return;
+        }
+        if (builder.length() > 0) {
+            builder.append('\n');
+        }
+        builder.append(value);
     }
 
     public static int getTranslationProvider() {

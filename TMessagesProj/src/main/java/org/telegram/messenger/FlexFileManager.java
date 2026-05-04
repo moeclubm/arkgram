@@ -34,7 +34,7 @@ public class FlexFileManager {
         LinkedHashMap<String, Object> global = new LinkedHashMap<>();
         LinkedHashMap<String, Object> account = new LinkedHashMap<>();
 
-        root.put("version", 3);
+        root.put("version", 4);
         root.put("exported_at", System.currentTimeMillis());
         root.put("current_account", currentAccount);
         root.put("global", global);
@@ -57,6 +57,9 @@ public class FlexFileManager {
         global.put("disable_markdown", FlexConfig.isMarkdownDisabled());
         global.put("new_markdown_parser", FlexConfig.isNewMarkdownParserEnabled());
         global.put("markdown_parse_links", FlexConfig.isMarkdownParseLinksEnabled());
+        global.put("ad_block_enabled", FlexConfig.isAdBlockEnabled());
+        global.put("ad_block_keywords", FlexConfig.getAdBlockKeywordsText());
+        global.put("ad_blocked_message_ids", FlexConfig.getAdBlockedMessageIdsText());
         global.put("translation_provider", FlexConfig.getTranslationProvider());
         global.put("translation_target_language", TranslateAlert2.getToLanguage());
         global.put("translation_deepl_api_url", FlexConfig.getDeepLApiUrl());
@@ -159,6 +162,15 @@ public class FlexFileManager {
         if (global.has("markdown_parse_links")) {
             FlexConfig.setMarkdownParseLinksEnabled(global.get("markdown_parse_links").getAsBoolean());
         }
+        if (global.has("ad_block_enabled")) {
+            FlexConfig.setAdBlockEnabled(global.get("ad_block_enabled").getAsBoolean());
+        }
+        if (global.has("ad_block_keywords")) {
+            FlexConfig.setAdBlockKeywordsText(global.get("ad_block_keywords").getAsString());
+        }
+        if (global.has("ad_blocked_message_ids")) {
+            FlexConfig.setAdBlockedMessageIdsText(global.get("ad_blocked_message_ids").getAsString());
+        }
         if (global.has("translation_provider")) {
             FlexConfig.setTranslationProvider(global.get("translation_provider").getAsInt());
         }
@@ -238,5 +250,6 @@ public class FlexFileManager {
 
         Theme.refreshThemeColors();
         NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.mainTabsVisibilityToggled);
+        NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.flexAdBlockSettingsChanged);
     }
 }

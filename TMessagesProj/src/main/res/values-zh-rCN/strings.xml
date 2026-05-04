@@ -32,6 +32,13 @@
     <string name="FlexDisableUiTransparency">禁用界面透明效果</string>
     <string name="FlexDisableUiBlur">禁用界面模糊效果</string>
     <string name="FlexMarkdownSettings">Markdown</string>
+    <string name="FlexAdBlockSettings">广告屏蔽</string>
+    <string name="FlexAdBlockEnabled">启用自定义广告屏蔽</string>
+    <string name="FlexAdBlockKeywords">屏蔽关键词</string>
+    <string name="FlexAdBlockKeywordsHint">每行一个关键词。赞助消息的正文、标题、链接、赞助方信息或按钮文字命中后会在本地隐藏。</string>
+    <string name="FlexAdBlockClearMessages">清空已屏蔽消息</string>
+    <string name="FlexAdBlockInfo">启用后，会在本地隐藏命中的赞助消息。点按广告关闭按钮，或在消息菜单中选择屏蔽此广告，可按单条消息屏蔽。</string>
+    <string name="FlexBlockThisAd">屏蔽此广告</string>
     <string name="FlexTranslationSettings">翻译</string>
     <string name="FlexFileManagement">文件管理</string>
     <string name="FlexFileExportSettings">导出 Flexgram 设置</string>
