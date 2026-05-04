@@ -1,5 +1,115 @@
+buildscript {
+    dependencies {
+        constraints {
+            classpath 'io.netty:netty-buffer:4.1.132.Final'
+            classpath 'io.netty:netty-codec:4.1.132.Final'
+            classpath 'io.netty:netty-codec-http:4.1.132.Final'
+            classpath 'io.netty:netty-codec-http2:4.1.132.Final'
+            classpath 'io.netty:netty-codec-socks:4.1.132.Final'
+            classpath 'io.netty:netty-common:4.1.132.Final'
+            classpath 'io.netty:netty-handler:4.1.132.Final'
+            classpath 'io.netty:netty-handler-proxy:4.1.132.Final'
+            classpath 'io.netty:netty-resolver:4.1.132.Final'
+            classpath 'io.netty:netty-transport:4.1.132.Final'
+            classpath 'io.netty:netty-transport-native-unix-common:4.1.132.Final'
+            classpath 'org.bouncycastle:bcpkix-jdk18on:1.84'
+            classpath 'org.bouncycastle:bcprov-jdk18on:1.84'
+            classpath 'org.bouncycastle:bcutil-jdk18on:1.84'
+            classpath 'org.bitbucket.b_c:jose4j:0.9.6'
+            classpath 'org.jdom:jdom2:2.0.6.1'
+            classpath 'org.apache.commons:commons-lang3:3.18.0'
+            classpath 'org.apache.httpcomponents:httpclient:4.5.14'
+        }
+        components {
+            all { details ->
+                details.allVariants {
+                    withDependencies { dependencies ->
+                        dependencies.each { dependency ->
+                            if (dependency.group == 'io.netty' && dependency.name.startsWith('netty-')) {
+                                dependency.version { require '4.1.132.Final' }
+                            } else if (dependency.group == 'org.bouncycastle' && dependency.name.endsWith('-jdk18on')) {
+                                dependency.version { require '1.84' }
+                            } else if (dependency.group == 'org.bitbucket.b_c' && dependency.name == 'jose4j') {
+                                dependency.version { require '0.9.6' }
+                            } else if (dependency.group == 'org.jdom' && dependency.name == 'jdom2') {
+                                dependency.version { require '2.0.6.1' }
+                            } else if (dependency.group == 'org.apache.commons' && dependency.name == 'commons-lang3') {
+                                dependency.version { require '3.18.0' }
+                            } else if (dependency.group == 'org.apache.httpcomponents' && dependency.name == 'httpclient') {
+                                dependency.version { require '4.5.14' }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    configurations.classpath {
+        resolutionStrategy.eachDependency { details ->
+            if (details.requested.group == 'io.netty' && details.requested.name.startsWith('netty-')) {
+                details.useVersion '4.1.132.Final'
+            } else if (details.requested.group == 'org.bouncycastle' && details.requested.name.endsWith('-jdk18on')) {
+                details.useVersion '1.84'
+            } else if (details.requested.group == 'org.bitbucket.b_c' && details.requested.name == 'jose4j') {
+                details.useVersion '0.9.6'
+            } else if (details.requested.group == 'org.jdom' && details.requested.name == 'jdom2') {
+                details.useVersion '2.0.6.1'
+            } else if (details.requested.group == 'org.apache.commons' && details.requested.name == 'commons-lang3') {
+                details.useVersion '3.18.0'
+            } else if (details.requested.group == 'org.apache.httpcomponents' && details.requested.name == 'httpclient') {
+                details.useVersion '4.5.14'
+            }
+        }
+    }
+}
+
 plugins {
     id 'com.android.application' version '9.1.1' apply false
     id 'com.android.library' version '9.1.1' apply false
     id 'com.google.gms.google-services' version '4.4.4' apply false
+}
+
+subprojects {
+    dependencies {
+        components {
+            all { details ->
+                details.allVariants {
+                    withDependencies { dependencies ->
+                        dependencies.each { dependency ->
+                            if (dependency.group == 'io.netty' && dependency.name.startsWith('netty-')) {
+                                dependency.version { require '4.1.132.Final' }
+                            } else if (dependency.group == 'org.bouncycastle' && dependency.name.endsWith('-jdk18on')) {
+                                dependency.version { require '1.84' }
+                            } else if (dependency.group == 'org.bitbucket.b_c' && dependency.name == 'jose4j') {
+                                dependency.version { require '0.9.6' }
+                            } else if (dependency.group == 'org.jdom' && dependency.name == 'jdom2') {
+                                dependency.version { require '2.0.6.1' }
+                            } else if (dependency.group == 'org.apache.commons' && dependency.name == 'commons-lang3') {
+                                dependency.version { require '3.18.0' }
+                            } else if (dependency.group == 'org.apache.httpcomponents' && dependency.name == 'httpclient') {
+                                dependency.version { require '4.5.14' }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    configurations.configureEach {
+        resolutionStrategy.eachDependency { details ->
+            if (details.requested.group == 'io.netty' && details.requested.name.startsWith('netty-')) {
+                details.useVersion '4.1.132.Final'
+            } else if (details.requested.group == 'org.bouncycastle' && details.requested.name.endsWith('-jdk18on')) {
+                details.useVersion '1.84'
+            } else if (details.requested.group == 'org.bitbucket.b_c' && details.requested.name == 'jose4j') {
+                details.useVersion '0.9.6'
+            } else if (details.requested.group == 'org.jdom' && details.requested.name == 'jdom2') {
+                details.useVersion '2.0.6.1'
+            } else if (details.requested.group == 'org.apache.commons' && details.requested.name == 'commons-lang3') {
+                details.useVersion '3.18.0'
+            } else if (details.requested.group == 'org.apache.httpcomponents' && details.requested.name == 'httpclient') {
+                details.useVersion '4.5.14'
+            }
+        }
+    }
 }
