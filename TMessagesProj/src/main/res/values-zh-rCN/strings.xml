@@ -46,6 +46,8 @@
     <string name="FlexAdBlockClearRulesConfirm">要清空所有自定义关键词、已屏蔽广告、已屏蔽消息和已屏蔽用户规则吗？</string>
     <string name="FlexAdBlockRulesCleared">屏蔽规则已清空</string>
     <string name="FlexAdBlockMessageHidden">消息已隐藏</string>
+    <string name="FlexAdBlockMessageCollapsed">广告已折叠</string>
+    <string name="FlexAdBlockMessagesCollapsed">已折叠 %1$d 条广告</string>
     <string name="FlexAdBlockUserHidden">此用户消息已隐藏</string>
     <string name="FlexBlockThisMessageAndForwards">屏蔽此消息及转发</string>
     <string name="FlexBlockThisUserMessages">屏蔽此用户消息</string>
@@ -118,7 +120,9 @@
     <string name="FlexLlmModel">LLM 模型</string>
     <string name="FlexLlmModelHint">输入请求使用的模型名称。</string>
     <string name="FlexLlmModels">LLM 模型列表</string>
-    <string name="FlexLlmModelsHint">每行输入一个模型。功能页面会从合并后的模型列表中选择。</string>
+    <string name="FlexLlmModelsHint">逐个添加模型，或自动获取提供商模型列表后手动选择添加。</string>
+    <string name="FlexLlmAddModel">添加模型</string>
+    <string name="FlexLlmFetchModels">获取模型列表</string>
     <string name="FlexLlmPrompt">LLM 提示词</string>
     <string name="FlexLlmPromptHint">描述模型应输出的格式与约束。</string>
     <string name="FlexLlmNotSet">未设置</string>

@@ -11779,7 +11779,19 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         if (!FlexConfig.isDcInfoEnabled() || user == null || UserObject.isReplyUser(user)) {
             return text;
         }
-        int dc = user.photo != null && user.photo.dc_id != 0 ? user.photo.dc_id : UserObject.isUserSelf(user) ? getConnectionsManager().getCurrentDatacenterId() : 0;
+        int dc = 0;
+        if (user.photo != null) {
+            if (user.photo.dc_id != 0) {
+                dc = user.photo.dc_id;
+            } else if (user.photo.photo_big != null && user.photo.photo_big.dc_id != 0) {
+                dc = user.photo.photo_big.dc_id;
+            } else if (user.photo.photo_small != null && user.photo.photo_small.dc_id != 0) {
+                dc = user.photo.photo_small.dc_id;
+            }
+        }
+        if (dc == 0 && UserObject.isUserSelf(user)) {
+            dc = getConnectionsManager().getCurrentDatacenterId();
+        }
         if (dc == 0) {
             return text;
         }
@@ -11787,10 +11799,26 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     }
 
     private CharSequence appendFlexDcInfo(TLRPC.Chat chat, CharSequence text) {
-        if (!FlexConfig.isDcInfoEnabled() || chat == null || chatInfo == null || chatInfo.stats_dc == 0) {
+        if (!FlexConfig.isDcInfoEnabled() || chat == null) {
             return text;
         }
-        return TextUtils.concat(text, ", ", LocaleController.formatString(R.string.FlexDatacenterLabel, chatInfo.stats_dc));
+        int dc = 0;
+        if (chat.photo != null) {
+            if (chat.photo.dc_id != 0) {
+                dc = chat.photo.dc_id;
+            } else if (chat.photo.photo_big != null && chat.photo.photo_big.dc_id != 0) {
+                dc = chat.photo.photo_big.dc_id;
+            } else if (chat.photo.photo_small != null && chat.photo.photo_small.dc_id != 0) {
+                dc = chat.photo.photo_small.dc_id;
+            }
+        }
+        if (dc == 0 && chatInfo != null) {
+            dc = chatInfo.stats_dc;
+        }
+        if (dc == 0) {
+            return text;
+        }
+        return TextUtils.concat(text, ", ", LocaleController.formatString(R.string.FlexDatacenterLabel, dc));
     }
 
     @Override

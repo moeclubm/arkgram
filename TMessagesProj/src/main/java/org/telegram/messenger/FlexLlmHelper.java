@@ -15,6 +15,7 @@ import java.io.OutputStream;
 import java.io.Reader;
 import java.net.HttpURLConnection;
 import java.net.URI;
+import java.util.ArrayList;
 
 public class FlexLlmHelper {
 
@@ -100,6 +101,64 @@ public class FlexLlmHelper {
         }, "FlexLlmRequest").start();
     }
 
+    public static void requestModels(String apiUrl, String apiKey, Utilities.Callback2<ArrayList<String>, String> done) {
+        if (done == null) {
+            return;
+        }
+        if (TextUtils.isEmpty(apiUrl)) {
+            AndroidUtilities.runOnUIThread(() -> done.run(null, LocaleController.getString(R.string.FlexLlmApiUrlMissing)));
+            return;
+        }
+        new Thread(() -> {
+            HttpURLConnection connection = null;
+            String responseText = null;
+            try {
+                connection = (HttpURLConnection) new URI(getModelsApiUrl(apiUrl)).toURL().openConnection();
+                connection.setConnectTimeout(15000);
+                connection.setReadTimeout(30000);
+                connection.setRequestMethod("GET");
+                connection.setRequestProperty("Accept", "application/json");
+                if (!TextUtils.isEmpty(apiKey)) {
+                    connection.setRequestProperty("Authorization", "Bearer " + apiKey);
+                }
+
+                responseText = readConnectionText(connection, false);
+                JSONArray data = new JSONObject(responseText).optJSONArray("data");
+                if (data == null) {
+                    throw new IllegalStateException(LocaleController.getString(R.string.FlexLlmInvalidResponse));
+                }
+                ArrayList<String> models = new ArrayList<>();
+                for (int i = 0; i < data.length(); ++i) {
+                    JSONObject model = data.optJSONObject(i);
+                    String id = model != null ? model.optString("id", "").trim() : "";
+                    if (!TextUtils.isEmpty(id) && !models.contains(id)) {
+                        models.add(id);
+                    }
+                }
+                if (models.isEmpty()) {
+                    throw new IllegalStateException(LocaleController.getString(R.string.FlexLlmInvalidResponse));
+                }
+                AndroidUtilities.runOnUIThread(() -> done.run(models, null));
+            } catch (Exception e) {
+                String errorMessage = e.getMessage();
+                if (TextUtils.isEmpty(errorMessage) || errorMessage.startsWith("org.json.")) {
+                    try {
+                        responseText = readConnectionText(connection, true);
+                    } catch (Exception ignore) {
+                    }
+                    errorMessage = getErrorMessage(connection, responseText);
+                }
+                FileLog.e(e);
+                String finalErrorMessage = errorMessage;
+                AndroidUtilities.runOnUIThread(() -> done.run(null, finalErrorMessage));
+            } finally {
+                if (connection != null) {
+                    connection.disconnect();
+                }
+            }
+        }, "FlexLlmModelsRequest").start();
+    }
+
     private static String readConnectionText(HttpURLConnection connection, boolean errorStream) throws IOException {
         if (connection == null) {
             return null;
@@ -150,6 +209,24 @@ public class FlexLlmHelper {
         } catch (Exception ignore) {
         }
         return LocaleController.getString(R.string.FlexLlmRequestFailed);
+    }
+
+    private static String getModelsApiUrl(String apiUrl) {
+        String value = apiUrl.trim();
+        int queryIndex = value.indexOf('?');
+        if (queryIndex >= 0) {
+            value = value.substring(0, queryIndex);
+        }
+        while (value.endsWith("/")) {
+            value = value.substring(0, value.length() - 1);
+        }
+        if (value.endsWith("/chat/completions")) {
+            return value.substring(0, value.length() - "/chat/completions".length()) + "/models";
+        }
+        if (value.endsWith("/completions")) {
+            return value.substring(0, value.length() - "/completions".length()) + "/models";
+        }
+        return value + "/models";
     }
 
     private static String extractMessageContent(JSONObject message) {

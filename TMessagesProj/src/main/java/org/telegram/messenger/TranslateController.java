@@ -101,9 +101,6 @@ public class TranslateController extends BaseController {
     private Boolean contextTranslateEnabled;
 
     public boolean isChatTranslateEnabled() {
-        if (!FlexConfig.usesExternalTranslationProvider() && !getMessagesController().isTranslationsAutoEnabled()) {
-            return false;
-        }
         if (chatTranslateEnabled == null) {
             chatTranslateEnabled = messagesController.getMainSettings().getBoolean("translate_chat_button", false);
         }
@@ -111,9 +108,6 @@ public class TranslateController extends BaseController {
     }
 
     public boolean isContextTranslateEnabled() {
-        if (!FlexConfig.usesExternalTranslationProvider() && !getMessagesController().isTranslationsManualEnabled()) {
-            return false;
-        }
         if (contextTranslateEnabled == null) {
             contextTranslateEnabled = messagesController.getMainSettings().getBoolean("translate_button", MessagesController.getGlobalMainSettings().getBoolean("translate_button", false));
         }

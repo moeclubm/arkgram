@@ -20160,13 +20160,7 @@ public class ChatActivity extends BaseFragment implements
                 postponedScrollToLastMessageQueryIndex = 0;
             }
             ArrayList<MessageObject> messArr = (ArrayList<MessageObject>) args[2];
-            if (FlexConfig.isAdBlockEnabled()) {
-                for (int a = messArr.size() - 1; a >= 0; --a) {
-                    if (FlexConfig.isMessageBlocked(messArr.get(a))) {
-                        messArr.remove(a);
-                    }
-                }
-            }
+            collapseBlockedMessages(messArr);
 
             boolean universalNotify = false;
             HashMap<Integer, MessageObject> oldMessages = null;
@@ -24412,9 +24406,15 @@ public class ChatActivity extends BaseFragment implements
             return;
         }
         ArrayList<MessageObject> messagesToAdd = new ArrayList<>();
+        int blockedSponsoredCount = 0;
+        MessageObject firstBlockedSponsoredMessage = null;
         for (int i = 0; i < res.messages.size(); i++) {
             MessageObject messageObject = res.messages.get(i);
             if (FlexConfig.isMessageBlocked(messageObject)) {
+                blockedSponsoredCount++;
+                if (firstBlockedSponsoredMessage == null) {
+                    firstBlockedSponsoredMessage = messageObject;
+                }
                 continue;
             }
             messagesToAdd.add(messageObject);
@@ -24448,6 +24448,9 @@ public class ChatActivity extends BaseFragment implements
                 }
             }
         }
+        if (blockedSponsoredCount > 0 && !UserObject.isBot(currentUser)) {
+            messagesToAdd.add(createFlexAdBlockCollapsedMessage(firstBlockedSponsoredMessage, blockedSponsoredCount));
+        }
         sponsoredMessagesAdded = true;
         if (UserObject.isBot(currentUser)) {
             botSponsoredMessage = messagesToAdd.isEmpty() ? null : messagesToAdd.get(0);
@@ -24467,10 +24470,44 @@ public class ChatActivity extends BaseFragment implements
         if (chatMode != 0) {
             return;
         }
+        HashSet<Long> blockedGroupIds = new HashSet<>();
+        for (int i = 0; i < messages.size(); ++i) {
+            MessageObject messageObject = messages.get(i);
+            if (FlexConfig.isMessageBlocked(messageObject) && messageObject.hasValidGroupId()) {
+                blockedGroupIds.add(messageObject.getGroupIdForUse());
+            }
+        }
+        int blockedCount = 0;
+        int insertIndex = -1;
+        MessageObject firstBlockedMessage = null;
         for (int i = messages.size() - 1; i >= 0; --i) {
             MessageObject messageObject = messages.get(i);
-            if (messageObject.isSponsored() || FlexConfig.isMessageBlocked(messageObject)) {
+            if (messageObject.messageOwner != null && messageObject.messageOwner.local_id == FlexConfig.AD_BLOCK_COLLAPSED_LOCAL_ID) {
+                if (!FlexConfig.isAdBlockEnabled() || FlexConfig.getAdBlockRuleCount() == 0) {
+                    removeMessageObject(messageObject);
+                }
+                continue;
+            }
+            boolean blocked = FlexConfig.isMessageBlocked(messageObject) || messageObject.hasValidGroupId() && blockedGroupIds.contains(messageObject.getGroupIdForUse());
+            if (messageObject.isSponsored() || blocked) {
+                if (blocked) {
+                    blockedCount++;
+                    insertIndex = i;
+                    firstBlockedMessage = messageObject;
+                }
                 removeMessageObject(messageObject);
+                if (!blocked && insertIndex > i) {
+                    insertIndex--;
+                }
+            }
+        }
+        if (blockedCount > 0) {
+            if (insertIndex < 0 || insertIndex > messages.size()) {
+                insertIndex = 0;
+            }
+            messages.add(insertIndex, createFlexAdBlockCollapsedMessage(firstBlockedMessage, blockedCount));
+            if (chatAdapter != null && !chatAdapter.isFiltered) {
+                chatAdapter.notifyItemInserted(chatAdapter.messagesStartRow + insertIndex);
             }
         }
         botSponsoredMessage = null;
@@ -24823,20 +24860,65 @@ public class ChatActivity extends BaseFragment implements
         }
     }
 
+    private int flexAdBlockCollapsedMessageId = -210410100;
     private ArrayList<MessageObject> notPushedSponsoredMessages;
+
+    private boolean collapseBlockedMessages(ArrayList<MessageObject> arr) {
+        if (!FlexConfig.isAdBlockEnabled()) {
+            return false;
+        }
+        HashSet<MessageObject> blockedMessages = new HashSet<>();
+        HashSet<Long> blockedGroupIds = new HashSet<>();
+        for (int i = 0; i < arr.size(); ++i) {
+            MessageObject messageObject = arr.get(i);
+            if (messageObject.messageOwner != null && messageObject.messageOwner.local_id == FlexConfig.AD_BLOCK_COLLAPSED_LOCAL_ID) {
+                continue;
+            }
+            if (FlexConfig.isMessageBlocked(messageObject)) {
+                blockedMessages.add(messageObject);
+                if (messageObject.hasValidGroupId()) {
+                    blockedGroupIds.add(messageObject.getGroupIdForUse());
+                }
+            }
+        }
+        int blockedCount = 0;
+        int insertIndex = -1;
+        MessageObject firstBlockedMessage = null;
+        for (int i = arr.size() - 1; i >= 0; --i) {
+            MessageObject messageObject = arr.get(i);
+            boolean blocked = blockedMessages.contains(messageObject) || messageObject.hasValidGroupId() && blockedGroupIds.contains(messageObject.getGroupIdForUse());
+            if (blocked) {
+                blockedCount++;
+                insertIndex = i;
+                firstBlockedMessage = messageObject;
+                arr.remove(i);
+            }
+        }
+        if (blockedCount > 0) {
+            arr.add(Math.min(insertIndex, arr.size()), createFlexAdBlockCollapsedMessage(firstBlockedMessage, blockedCount));
+        }
+        return blockedCount > 0;
+    }
+
+    private MessageObject createFlexAdBlockCollapsedMessage(MessageObject baseMessage, int blockedCount) {
+        TLRPC.Message message = new TLRPC.TL_message();
+        message.message = blockedCount > 1 ? LocaleController.formatString(R.string.FlexAdBlockMessagesCollapsed, blockedCount) : LocaleController.getString(R.string.FlexAdBlockMessageCollapsed);
+        message.id = flexAdBlockCollapsedMessageId--;
+        message.local_id = FlexConfig.AD_BLOCK_COLLAPSED_LOCAL_ID;
+        message.dialog_id = dialog_id;
+        message.date = baseMessage != null && baseMessage.messageOwner != null ? baseMessage.messageOwner.date : getConnectionsManager().getCurrentTime();
+        MessageObject messageObject = new MessageObject(currentAccount, message, false, false);
+        messageObject.type = MessageObject.TYPE_DATE;
+        messageObject.contentType = 1;
+        return messageObject;
+    }
+
     private void processNewMessages(ArrayList<MessageObject> arr) {
         processNewMessages(arr, true);
     }
     private void processNewMessages(ArrayList<MessageObject> arr, final boolean animatedFromBottom) {
-        if (FlexConfig.isAdBlockEnabled()) {
-            for (int a = arr.size() - 1; a >= 0; --a) {
-                if (FlexConfig.isMessageBlocked(arr.get(a))) {
-                    arr.remove(a);
-                }
-            }
-            if (arr.isEmpty()) {
-                return;
-            }
+        if (collapseBlockedMessages(arr) && arr.isEmpty()) {
+            return;
         }
         FileLog.d("processNewMessages " + arr.size() + " messages");
         long currentUserId = getUserConfig().getClientUserId();
@@ -28500,9 +28582,8 @@ public class ChatActivity extends BaseFragment implements
 
         boolean showRestartTopic = !isInPreviewMode() && forumTopic != null && forumTopic.closed && !forumTopic.hidden && ChatObject.canManageTopic(currentAccount, currentChat, forumTopic);
         boolean showTranslate = (
-            getMessagesController().getTranslateController().isFeatureAvailable(getDialogId()) ?
-                getMessagesController().getTranslateController().isDialogTranslatable(getDialogId()) && !getMessagesController().getTranslateController().isTranslateDialogHidden(getDialogId()) :
-                false
+            getMessagesController().getTranslateController().isFeatureAvailable(getDialogId()) &&
+                !getMessagesController().getTranslateController().isTranslateDialogHidden(getDialogId())
         ) || DEBUG_TOP_PANELS;
         boolean showAddProfilePicture = UserObject.isBot(currentUser) && currentUser.bot_can_edit && currentUser.photo == null;
         boolean showBizBot = currentEncryptedChat == null && getUserConfig().isPremium() && preferences.getLong("dialog_botid" + did, 0) != 0 || DEBUG_TOP_PANELS;
@@ -31143,7 +31224,7 @@ public class ChatActivity extends BaseFragment implements
                             String fromLang = selectedObject.messageOwner.originalLanguage;
                             boolean allowRestrictedOverride = ((currentChat != null && (currentChat.has_link || ChatObject.isPublic(currentChat))) || selectedObject.messageOwner.fwd_from != null) && TranslateController.isTranslateOverrideLanguage(fromLang);
                             cell.setVisibility(
-                                translateController.canShowContextTranslate(fromLang, toLang, toLangDefault, allowRestrictedOverride) ? View.VISIBLE : View.GONE
+                                translateController.isContextTranslateEnabled() || translateController.canShowContextTranslate(fromLang, toLang, toLangDefault, allowRestrictedOverride) ? View.VISIBLE : View.GONE
                             );
                             cell.setOnClickListener(e -> {
                                 if (selectedObject == null || i >= options.size() || getParentActivity() == null) {
@@ -31177,14 +31258,14 @@ public class ChatActivity extends BaseFragment implements
                             });
                         } else if (LanguageDetector.hasSupport()) {
                             final String[] fromLang = {null};
-                            cell.setVisibility(View.GONE);
+                            cell.setVisibility(translateController.isContextTranslateEnabled() ? View.VISIBLE : View.GONE);
                             waitForLangDetection.set(true);
                             LanguageDetector.detectLanguage(
                                 finalMessageText.toString(),
                                 (String lang) -> {
                                     fromLang[0] = lang;
                                     boolean allowRestrictedOverride = ((currentChat != null && (currentChat.has_link || ChatObject.isPublic(currentChat))) || selectedObject.messageOwner.fwd_from != null) && TranslateController.isTranslateOverrideLanguage(fromLang[0]);
-                                    if (translateController.canShowContextTranslate(fromLang[0], toLang, toLangDefault, allowRestrictedOverride)) {
+                                    if (translateController.isContextTranslateEnabled() || translateController.canShowContextTranslate(fromLang[0], toLang, toLangDefault, allowRestrictedOverride)) {
                                         cell.setVisibility(View.VISIBLE);
                                     }
                                     waitForLangDetection.set(false);
@@ -33550,7 +33631,8 @@ public class ChatActivity extends BaseFragment implements
     private void blockSponsoredAd(MessageObject messageObject) {
         FlexConfig.addAdBlockedMessage(messageObject);
         removeFromSponsored(messageObject);
-        removeMessageWithThanos(messageObject);
+        applyAdBlockSettings();
+        NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.flexAdBlockSettingsChanged);
         BulletinFactory.of(ChatActivity.this)
                 .createAdReportedBulletin(LocaleController.getString(R.string.AdHidden))
                 .show();
@@ -33558,7 +33640,6 @@ public class ChatActivity extends BaseFragment implements
 
     private void blockFlexMessage(MessageObject messageObject) {
         FlexConfig.addAdBlockedMessageRule(messageObject);
-        removeMessageWithThanos(messageObject);
         NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.flexAdBlockSettingsChanged);
         BulletinFactory.of(ChatActivity.this)
                 .createSimpleBulletin(R.raw.ic_delete, LocaleController.getString(R.string.FlexAdBlockMessageHidden))
@@ -33567,7 +33648,6 @@ public class ChatActivity extends BaseFragment implements
 
     private void blockFlexUser(MessageObject messageObject) {
         FlexConfig.addAdBlockedUserRule(messageObject);
-        applyAdBlockSettings();
         NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.flexAdBlockSettingsChanged);
         BulletinFactory.of(ChatActivity.this)
                 .createSimpleBulletin(R.raw.ic_delete, LocaleController.getString(R.string.FlexAdBlockUserHidden))

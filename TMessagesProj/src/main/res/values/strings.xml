@@ -10728,6 +10728,8 @@
     <string name="FlexAdBlockClearRulesConfirm">Clear all custom keywords, blocked ads, blocked messages, and blocked user rules?</string>
     <string name="FlexAdBlockRulesCleared">Block rules cleared</string>
     <string name="FlexAdBlockMessageHidden">Message hidden</string>
+    <string name="FlexAdBlockMessageCollapsed">Ad collapsed</string>
+    <string name="FlexAdBlockMessagesCollapsed">%1$d ads collapsed</string>
     <string name="FlexAdBlockUserHidden">User messages hidden</string>
     <string name="FlexBlockThisMessageAndForwards">Block This Message and Forwards</string>
     <string name="FlexBlockThisUserMessages">Block This User\'s Messages</string>
@@ -10800,7 +10802,9 @@
     <string name="FlexLlmModel">LLM Model</string>
     <string name="FlexLlmModelHint">Enter the model name used for requests.</string>
     <string name="FlexLlmModels">LLM Models</string>
-    <string name="FlexLlmModelsHint">Enter one model per line. Feature pages choose from the combined model list.</string>
+    <string name="FlexLlmModelsHint">Add models one by one, or fetch the provider list and select models to add.</string>
+    <string name="FlexLlmAddModel">Add Model</string>
+    <string name="FlexLlmFetchModels">Fetch Models</string>
     <string name="FlexLlmPrompt">LLM Prompt</string>
     <string name="FlexLlmPromptHint">Describe the expected output format and constraints for the model.</string>
     <string name="FlexLlmNotSet">Not set</string>

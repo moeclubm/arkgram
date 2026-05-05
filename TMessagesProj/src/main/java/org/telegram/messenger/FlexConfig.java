@@ -33,6 +33,7 @@ public class FlexConfig {
     public static final int LLM_PROVIDER_DEEPSEEK = 3;
     public static final int LLM_PROVIDER_GROQ = 4;
     public static final int LLM_PROVIDER_SILICONFLOW = 5;
+    public static final int AD_BLOCK_COLLAPSED_LOCAL_ID = -21041001;
     public static final String DEFAULT_DEEPL_API_URL = "https://api-free.deepl.com/v2/translate";
     public static final String DEFAULT_TRANSLATION_LLM_PROMPT = "You are a professional translation engine. Translate the user's text into the requested target language. Return only the translated text. Preserve line breaks, markdown, URLs, mentions, hashtags, emoji, punctuation, and list structure. Do not add explanations.";
     public static final String DEFAULT_AI_SUMMARY_PROMPT = "You analyze group and channel discussions. Write a structured report in the requested output language based only on the provided messages and local statistics. Cover overview, main topics, hotspots, participant activity, timeline changes, decisions or action items, and unresolved questions. If the messages do not support a conclusion, state that explicitly.";
@@ -342,6 +343,9 @@ public class FlexConfig {
 
     public static boolean isMessageBlocked(MessageObject messageObject) {
         if (!isAdBlockEnabled()) {
+            return false;
+        }
+        if (messageObject.messageOwner != null && messageObject.messageOwner.local_id == AD_BLOCK_COLLAPSED_LOCAL_ID) {
             return false;
         }
         if (messageObject.isSponsored()) {

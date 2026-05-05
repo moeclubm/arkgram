@@ -4732,7 +4732,7 @@ public class Theme {
         themeInfo.assetName = "flex_light.attheme";
         themeInfo.previewBackgroundColor = 0xff95beec;
         themeInfo.previewInColor = 0xffffffff;
-        themeInfo.previewOutColor = 0xfff0d9b0;
+        themeInfo.previewOutColor = 0xfff6e7cb;
         themeInfo.sortIndex = 0;
         themeInfo.setAccentColorOptions(new int[] {
                 0xFFE8C88E, 0xFFC69B5F, 0xFFAF8144, 0xFF9F733A,
@@ -4746,8 +4746,8 @@ public class Theme {
         themeInfo = new ThemeInfo();
         themeInfo.name = "Flex Dark";
         themeInfo.assetName = "flex_dark.attheme";
-        themeInfo.previewBackgroundColor = 0xff5f6e82;
-        themeInfo.previewInColor = 0xff6A5846;
+        themeInfo.previewBackgroundColor = 0xff535659;
+        themeInfo.previewInColor = 0xff747A84;
         themeInfo.previewOutColor = 0xffc69b5f;
         themeInfo.sortIndex = 6;
         themeInfo.setAccentColorOptions(new int[] {
