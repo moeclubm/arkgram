@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="FlexSettings">Flexgram</string>
+    <string name="FlexSettings">ArkGram</string>
     <string name="FlexSettingsInfo">自定义功能与快捷入口</string>
     <string name="ThemeFlexLight">Flex 亮色</string>
     <string name="ThemeFlexDark">Flex 深色</string>
@@ -60,11 +60,11 @@
     <string name="FlexBlockThisAd">屏蔽此广告</string>
     <string name="FlexTranslationSettings">翻译</string>
     <string name="FlexFileManagement">文件管理</string>
-    <string name="FlexFileExportSettings">导出 Flexgram 设置</string>
-    <string name="FlexFileImportSettings">导入 Flexgram 设置</string>
-    <string name="FlexFileManagementInfo">将 Flexgram 设置导入或导出为 JSON 文件。导出的文件会包含翻译和 AI 提供商凭据。</string>
+    <string name="FlexFileExportSettings">导出 ArkGram 设置</string>
+    <string name="FlexFileImportSettings">导入 ArkGram 设置</string>
+    <string name="FlexFileManagementInfo">将 ArkGram 设置导入或导出为 JSON 文件。导出的文件会包含翻译和 AI 提供商凭据。</string>
     <string name="FlexFileImportConfirmTitle">导入设置</string>
-    <string name="FlexFileImportConfirmText">导入会覆盖当前 Flexgram 设置，以及此安装中的翻译或 AI 提供商凭据。</string>
+    <string name="FlexFileImportConfirmText">导入会覆盖当前 ArkGram 设置，以及此安装中的翻译或 AI 提供商凭据。</string>
     <string name="FlexFileExported">设置已导出</string>
     <string name="FlexFileImported">设置已导入</string>
     <string name="FlexFileUnavailable">无法打开所选文件。</string>

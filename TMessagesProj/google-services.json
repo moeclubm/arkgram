@@ -1,15 +1,15 @@
 {
   "project_info": {
     "project_number": "696826812685",
-    "project_id": "flexgram",
-    "storage_bucket": "flexgram.firebasestorage.app"
+    "project_id": "arkgram",
+    "storage_bucket": "arkgram.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
         "mobilesdk_app_id": "1:696826812685:android:5964c13ae60add9a7f3844",
         "android_client_info": {
-          "package_name": "moe.telecom.flexgram"
+          "package_name": "moe.telecom.arkgram"
         }
       },
       "oauth_client": [],
@@ -28,7 +28,7 @@
       "client_info": {
         "mobilesdk_app_id": "1:696826812685:android:06279611f300669b7f3844",
         "android_client_info": {
-          "package_name": "moe.telecom.flexgram.beta"
+          "package_name": "moe.telecom.arkgram.beta"
         }
       },
       "oauth_client": [],
@@ -47,7 +47,7 @@
       "client_info": {
         "mobilesdk_app_id": "1:696826812685:android:44110fcc16fc2bb97f3844",
         "android_client_info": {
-          "package_name": "moe.telecom.flexgram.web"
+          "package_name": "moe.telecom.arkgram.web"
         }
       },
       "oauth_client": [],

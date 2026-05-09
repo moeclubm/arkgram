@@ -1,6 +1,6 @@
-name: Beta Builds
+name: ArkGram Beta Builds
 
-run-name: Beta Builds · ${{ github.ref_name }} · @${{ github.actor }} · #${{ github.run_number }}
+run-name: ArkGram Beta Builds · ${{ github.ref_name }} · @${{ github.actor }} · #${{ github.run_number }}
 
 on:
   push:
@@ -65,6 +65,13 @@ jobs:
           test -n "${ORG_GRADLE_PROJECT_APP_VERSION_CODE}"
           test -f TMessagesProj/config/release.keystore
 
+      - name: Resolve release key alias
+        shell: bash
+        run: |
+          release_alias="$(keytool -list -keystore TMessagesProj/config/release.keystore -storepass "${ORG_GRADLE_PROJECT_RELEASE_STORE_PASSWORD}" | awk -F, '/PrivateKeyEntry/ {print $1; exit}')"
+          test -n "${release_alias}"
+          echo "ORG_GRADLE_PROJECT_RELEASE_KEY_ALIAS=${release_alias}" >> "$GITHUB_ENV"
+
       - name: Build beta APK and Play beta AAB
         shell: bash
         run: |
@@ -74,13 +81,13 @@ jobs:
       - name: Upload beta APK
         uses: actions/upload-artifact@v6
         with:
-          name: flexgram-beta-apk-${{ github.sha }}
+          name: arkgram-beta-apk-${{ github.sha }}
           path: TMessagesProj_App/build/outputs/apk/afat/beta/*.apk
           if-no-files-found: error
 
       - name: Upload Play beta AAB
         uses: actions/upload-artifact@v6
         with:
-          name: flexgram-play-beta-aab-${{ github.sha }}
+          name: arkgram-play-beta-aab-${{ github.sha }}
           path: TMessagesProj_App/build/outputs/bundle/bundleAfatBeta/*.aab
           if-no-files-found: error

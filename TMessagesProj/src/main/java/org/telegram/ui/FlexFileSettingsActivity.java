@@ -48,7 +48,7 @@ public class FlexFileSettingsActivity extends UniversalFragment {
             Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
             intent.addCategory(Intent.CATEGORY_OPENABLE);
             intent.setType("application/json");
-            intent.putExtra(Intent.EXTRA_TITLE, String.format(Locale.US, "flexgram-settings-%1$tY%1$tm%1$td-%1$tH%1$tM%1$tS.json", System.currentTimeMillis()));
+            intent.putExtra(Intent.EXTRA_TITLE, String.format(Locale.US, "arkgram-settings-%1$tY%1$tm%1$td-%1$tH%1$tM%1$tS.json", System.currentTimeMillis()));
             startActivityForResult(intent, REQUEST_EXPORT_SETTINGS);
         } else if (item.id == ID_IMPORT_SETTINGS) {
             Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);

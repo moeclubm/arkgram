@@ -29,7 +29,7 @@ public class BuildVars {
     public static int APP_ID = 13971793;
     public static String APP_HASH = "151ccffd40d80d1ae131889c8b80649c";
 
-    public static String PLAYSTORE_APP_URL = "https://play.google.com/store/apps/details?id=moe.telecom.flexgram";
+    public static String PLAYSTORE_APP_URL = "https://play.google.com/store/apps/details?id=moe.telecom.arkgram";
     public static String GOOGLE_AUTH_CLIENT_ID = "760348033671-81kmi3pi84p11ub8hp9a1funsv0rn2p9.apps.googleusercontent.com";
 
     // You can use this flag to disable Google Play Billing (If you're making fork and want it to be in Google Play)

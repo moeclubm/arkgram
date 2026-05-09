@@ -1,4 +1,4 @@
-# AGENTS.md instructions for C:\Users\QwQ\Documents\GitHub\Flexgram
+# AGENTS.md instructions for C:\Users\QwQ\Documents\GitHub\ArkGram
 
 在你给我写代码或改代码时，必须遵守：
 1. 拒绝过度封装：简单逻辑直接内联，非必要不拆分新函数。

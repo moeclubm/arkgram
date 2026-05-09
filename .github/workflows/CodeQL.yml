@@ -1,6 +1,6 @@
-name: CodeQL
+name: ArkGram CodeQL
 
-run-name: CodeQL · ${{ github.head_ref || github.ref_name }} · @${{ github.actor }} · #${{ github.run_number }}
+run-name: ArkGram CodeQL · ${{ github.head_ref || github.ref_name }} · @${{ github.actor }} · #${{ github.run_number }}
 
 on:
   push:
@@ -86,13 +86,13 @@ jobs:
             -v \
             -storetype PKCS12 \
             -keystore "$ci_keystore" \
-            -alias flexgram \
+            -alias arkgram \
             -storepass ci-debug-pass \
             -keypass ci-debug-pass \
             -keyalg RSA \
             -keysize 2048 \
             -validity 3650 \
-            -dname "CN=Flexgram CI, OU=CI, O=Flexgram, L=CI, ST=CI, C=US"
+            -dname "CN=ArkGram CI, OU=CI, O=ArkGram, L=CI, ST=CI, C=US"
           echo "ORG_GRADLE_PROJECT_RELEASE_KEY_PASSWORD=ci-debug-pass" >> "$GITHUB_ENV"
           echo "ORG_GRADLE_PROJECT_RELEASE_STORE_PASSWORD=ci-debug-pass" >> "$GITHUB_ENV"
 
