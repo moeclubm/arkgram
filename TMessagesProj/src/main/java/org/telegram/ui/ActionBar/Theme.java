@@ -4748,7 +4748,7 @@ public class Theme {
         themeInfo.assetName = "flex_dark.attheme";
         themeInfo.previewBackgroundColor = 0xff535659;
         themeInfo.previewInColor = 0xff747A84;
-        themeInfo.previewOutColor = 0xffc69b5f;
+        themeInfo.previewOutColor = 0xfff6e7cb;
         themeInfo.sortIndex = 6;
         themeInfo.setAccentColorOptions(new int[] {
                 0xFFE8C88E, 0xFFC69B5F, 0xFFAF8144, 0xFF9F733A,
