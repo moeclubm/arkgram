@@ -7,6 +7,7 @@
 4. 避免冗杂：功能模块按功能拆分开，防止单代码文件过大。
 5. 使用命令行编辑文件前请注意文件内容编码与命令行环境是否匹配；不匹配的情况下不允许编辑，防止产生强制转换导致非英文被破坏。
 6. 不要本地运行任何构建/测试，全部使用 CI 测试。
+7. 修改完成后提交并推送，使用 CI 验证结果。
 
 Do not introduce new boundary rules / guardrails / blockers / caps (e.g. max-turns), fallback behaviors, or silent degradation just to make it run.
 Do not add mock/simulation fake success paths (e.g. returning (mock) ok, templated outputs that bypass real execution, or swallowing errors).
