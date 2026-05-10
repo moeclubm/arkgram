@@ -80,7 +80,6 @@ import org.telegram.ui.Components.RLottieDrawable;
 import org.telegram.ui.Components.RLottieImageView;
 import org.telegram.ui.Components.ScaleStateListAnimator;
 import org.telegram.ui.Components.SimpleThemeDescription;
-import org.telegram.ui.Components.voip.CellFlickerDrawable;
 
 import java.util.ArrayList;
 
@@ -332,33 +331,19 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
             }
         });
 
-        startMessagingButtonBackground = new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT, null);
+        startMessagingButtonBackground = new GradientDrawable();
         startMessagingButton = new TextView(context) {
-            private final CellFlickerDrawable cellFlickerDrawable = new CellFlickerDrawable(); {
-                cellFlickerDrawable.drawFrame = false;
-                cellFlickerDrawable.repeatProgress = 2f;
-            }
-
             @Override
             protected void onSizeChanged(int w, int h, int oldw, int oldh) {
                 super.onSizeChanged(w, h, oldw, oldh);
                 startMessagingButtonBackground.setBounds(0, 0, w, h);
                 startMessagingButtonBackground.setCornerRadius(Math.min(w, h) / 2f);
-                cellFlickerDrawable.setParentWidth(w);
             }
 
             @Override
             public void draw(@NonNull Canvas canvas) {
                 startMessagingButtonBackground.draw(canvas);
                 super.draw(canvas);
-            }
-
-            @Override
-            protected void onDraw(Canvas canvas) {
-                super.onDraw(canvas);
-                AndroidUtilities.rectTmp.set(0, 0, getMeasuredWidth(), getMeasuredHeight());
-                cellFlickerDrawable.draw(canvas, AndroidUtilities.rectTmp, getMeasuredHeight() / 2f, null);
-                invalidate();
             }
 
             @Override
@@ -801,7 +786,7 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
             loadTexture(R.drawable.intro_powerful_star, 18);
             loadTexture(R.drawable.intro_private_door, 19);
             loadTexture(R.drawable.intro_private_screw, 20);
-            loadTexture(R.drawable.intro_tg_plane, 21);
+            loadTexture(R.drawable.intro_tg_plane, 21, 0xFF2F2A24, false);
             loadTexture(v -> {
                 Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
                 paint.setColor(ThemeColors.TELEGRAM_COLOR); // It's logo color, it should not be colored by the theme
@@ -972,7 +957,7 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
     }
 
     private void updateColors(boolean fromTheme) {
-        startMessagingButtonBackground.setColors(new int[]{getThemedColor(Theme.key_featuredStickers_addButton), getThemedColor(Theme.key_featuredStickers_addButton2)});
+        startMessagingButtonBackground.setColor(getThemedColor(Theme.key_featuredStickers_addButton));
         logoDrawable.setColorFilter(Theme.multAlpha(getThemedColor(Theme.key_actionBarDefaultTitle), 0.9f), PorterDuff.Mode.MULTIPLY);
         fragmentView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
         switchLanguageTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText4));

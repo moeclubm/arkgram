@@ -594,11 +594,11 @@ public class ThemeColors {
         defaultColors[key_featuredStickers_addedIcon] = TELEGRAM_COLOR;
         defaultColors[key_featuredStickers_buttonProgress] = 0xffffffff;
         defaultColors[key_featuredStickers_addButton] = TELEGRAM_COLOR;
-        defaultColors[key_featuredStickers_addButton2] = 0xFF56baf0;
-        defaultColors[key_featuredStickers_addButtonPressed] = 0xff2288d1;
-        defaultColors[key_featuredStickers_removeButtonText] = 0xff5093d3;
-        defaultColors[key_featuredStickers_buttonText] = 0xffffffff;
-        defaultColors[key_featuredStickers_unread] = 0xff4da6ea;
+        defaultColors[key_featuredStickers_addButton2] = 0xFFF4E2B8;
+        defaultColors[key_featuredStickers_addButtonPressed] = 0xFFC69B5F;
+        defaultColors[key_featuredStickers_removeButtonText] = TELEGRAM_COLOR_TEXT;
+        defaultColors[key_featuredStickers_buttonText] = 0xFF2F2A24;
+        defaultColors[key_featuredStickers_unread] = TELEGRAM_COLOR_TEXT;
         defaultColors[key_buttonNeutral] = 0xFFE4E4E4;
         defaultColors[key_buttonNeutralText] = DEFAULT_BLACK_TEXT;
 
