@@ -10,19 +10,27 @@
         android:translateY="7.56">
         <path
             android:fillColor="#FF2F2A24"
-            android:pathData="M54,18 L26,62 L49,62 Z" />
-        <path
-            android:fillAlpha="0.88"
-            android:fillColor="#FF3F3830"
-            android:pathData="M57,23 L82,62 L57,62 Z" />
+            android:pathData="M54,16 L21,70 L54,70 Z" />
         <path
             android:fillColor="#FF2F2A24"
-            android:pathData="M51,27 L57,27 L57,67 L51,67 Z" />
+            android:pathData="M57,25 L90,70 L57,70 Z" />
         <path
             android:fillColor="#FF2F2A24"
-            android:pathData="M24,68 L84,68 L72,84 L36,84 Z" />
+            android:pathData="M52,15 L58,15 L58,73 L52,73 Z" />
+        <path
+            android:fillColor="#FF3D362E"
+            android:pathData="M27,68 L83,68 L76,76 L33,76 Z" />
         <path
             android:fillColor="#FF2F2A24"
-            android:pathData="M37,62 L71,62 L65,70 L43,70 Z" />
+            android:pathData="M13,74 L95,74 L76,94 L32,94 Z" />
+        <path
+            android:fillColor="#FFF6F2E8"
+            android:pathData="M43,82 L68,82 L63,87 L46,87 Z" />
+        <path
+            android:fillColor="#FFF6F2E8"
+            android:pathData="M44,49 L47,70 L44,70 Z" />
+        <path
+            android:fillColor="#FFF6F2E8"
+            android:pathData="M65,45 L68,70 L65,70 Z" />
     </group>
 </vector>
