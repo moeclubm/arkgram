@@ -1264,7 +1264,7 @@
     <string name="Page4Title">Seguro</string>
     <string name="Page5Title">Poderoso</string>
     <string name="Page6Title">Basado en la nube</string>
-    <string name="Page1Message">第三方 Telegram Client\nIt is **free** and **secure**.</string>
+    <string name="Page1Message">Not official Telegram Client\nIt is **free** and **secure**.</string>
     <string name="Page2Message">**Telegram** entrega mensajes más\nrápido que cualquier otra aplicación.</string>
     <string name="Page3Message">**Telegram** da almacenamiento gratuito e\nilimitado en la nube para chats y multimedia.</string>
     <string name="Page4Message">**Telegram** mantiene tus mensajes\na salvo del ataque de hackers.</string>
