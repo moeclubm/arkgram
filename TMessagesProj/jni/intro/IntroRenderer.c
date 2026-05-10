@@ -2714,7 +2714,7 @@ JNIEXPORT void Java_org_telegram_messenger_Intro_onSurfaceCreated(JNIEnv *env, j
 
     setup_shaders();
 
-    vec4 start_button_col = {44 / 255.0f, 165 / 255.0f, 224 / 255.0f, 1.0f};
+    vec4 start_button_col = {244 / 255.0f, 226 / 255.0f, 184 / 255.0f, 1.0f};
     start_button = create_rounded_rectangle(CSizeMake(172, 44), 2, 3, start_button_col);
     start_button.params.anchor.y = -22;
 
