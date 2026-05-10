@@ -93,7 +93,10 @@ public class DefaultThemesPreviewCell extends LinearLayout {
         recyclerView.setOnItemClickListener((view, position) -> {
             ChatThemeBottomSheet.ChatThemeItem chatTheme = adapter.items.get(position);
             Theme.ThemeInfo info = chatTheme.chatTheme.getThemeInfo(themeIndex);
-            int accentId = info != null ? chatTheme.chatTheme.getAccentId(themeIndex) : -1;
+            int accentId = -1;
+            if (chatTheme.chatTheme.getEmoticonOrSlug().equals("\uD83C\uDFE0") || chatTheme.chatTheme.getEmoticonOrSlug().equals("\uD83C\uDFA8")) {
+                accentId = chatTheme.chatTheme.getAccentId(themeIndex);
+            }
             if (info == null) {
                 TLRPC.TL_theme theme = chatTheme.chatTheme.getTlTheme(themeIndex);
                 int settingsIndex = chatTheme.chatTheme.getSettingsIndex(themeIndex);
@@ -295,10 +298,6 @@ public class DefaultThemesPreviewCell extends LinearLayout {
             ArrayList<ChatThemeBottomSheet.ChatThemeItem> themes = new ArrayList<>(MediaDataController.getInstance(parentFragment.getCurrentAccount()).defaultEmojiThemes);
             if (currentType == ThemeActivity.THEME_TYPE_BASIC) {
 
-                EmojiThemes flexTheme = EmojiThemes.createFlexPreviewTheme(parentFragment.getCurrentAccount());
-                flexTheme.loadPreviewColors(parentFragment.getCurrentAccount());
-                themes.add(0, new ChatThemeBottomSheet.ChatThemeItem(flexTheme));
-
                 EmojiThemes chatTheme = EmojiThemes.createPreviewCustom(parentFragment.getCurrentAccount());
                 chatTheme.loadPreviewColors(parentFragment.getCurrentAccount());
                 ChatThemeBottomSheet.ChatThemeItem item = new ChatThemeBottomSheet.ChatThemeItem(chatTheme);
@@ -358,11 +357,7 @@ public class DefaultThemesPreviewCell extends LinearLayout {
                 themeIndex = 0;
             } else if (Theme.getActiveTheme().getKey().equals("Day")) {
                 themeIndex = 1;
-            } else if (Theme.getActiveTheme().getKey().equals("Flex Light")) {
-                themeIndex = 1;
             } else if (Theme.getActiveTheme().getKey().equals("Night")) {
-                themeIndex = 2;
-            } else if (Theme.getActiveTheme().getKey().equals("Flex Dark")) {
                 themeIndex = 2;
             } else if (Theme.getActiveTheme().getKey().equals("Dark Blue")) {
                 themeIndex = 3;

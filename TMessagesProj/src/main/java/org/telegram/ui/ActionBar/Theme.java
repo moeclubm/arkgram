@@ -2363,10 +2363,6 @@ public class Theme {
                 return getString(R.string.ThemeDay);
             } else if ("Night".equals(name)) {
                 return getString(R.string.ThemeNight);
-            } else if ("Flex Light".equals(name)) {
-                return getString(R.string.ThemeFlexLight);
-            } else if ("Flex Dark".equals(name)) {
-                return getString(R.string.ThemeFlexDark);
             }
             return info != null ? info.title : name;
         }
@@ -2483,9 +2479,9 @@ public class Theme {
             if (isDark != UNKNOWN) {
                 return isDark == DARK;
             }
-            if ("Dark Blue".equals(name) || "Night".equals(name) || "Flex Dark".equals(name)) {
+            if ("Dark Blue".equals(name) || "Night".equals(name)) {
                 isDark = DARK;
-            } else if ("Blue".equals(name) || "Arctic Blue".equals(name) || "Day".equals(name) || "Flex Light".equals(name)) {
+            } else if ("Blue".equals(name) || "Arctic Blue".equals(name) || "Day".equals(name)) {
                 isDark = LIGHT;
             }
             if (isDark == UNKNOWN) {
@@ -2610,11 +2606,11 @@ public class Theme {
                 }
 
                 //override default themes
-                if ((isHome(themeAccent) && (name.equals("Dark Blue") || name.equals("Flex Dark"))) || name.equals("Night")) {
-                    themeAccent.myMessagesAccentColor = name.equals("Flex Dark") ? 0xFFE8C88E : 0xff258DE5;
-                    themeAccent.myMessagesGradientAccentColor1 = name.equals("Flex Dark") ? 0xFFD4A45B : 0xff4272DF;
-                    themeAccent.myMessagesGradientAccentColor2 = name.equals("Flex Dark") ? 0xFFB9894A : 0xff8146D7;
-                    themeAccent.myMessagesGradientAccentColor3 = name.equals("Flex Dark") ? 0xFF9F733A : 0xff9F3EAA;
+                if (isHome(themeAccent) && name.equals("Dark Blue") || name.equals("Night")) {
+                    themeAccent.myMessagesAccentColor = 0xfff4e2b8;
+                    themeAccent.myMessagesGradientAccentColor1 = 0xfff4e2b8;
+                    themeAccent.myMessagesGradientAccentColor2 = 0xfff4e2b8;
+                    themeAccent.myMessagesGradientAccentColor3 = 0xfff4e2b8;
                     if (name.equals("Night")) {
                         themeAccent.patternIntensity = -0.57f;
                         themeAccent.backgroundOverrideColor = 0xff6c7fa6;
@@ -4610,7 +4606,7 @@ public class Theme {
         themeInfo.assetName = "bluebubbles.attheme";
         themeInfo.previewBackgroundColor = 0xff95beec;
         themeInfo.previewInColor = 0xffffffff;
-        themeInfo.previewOutColor = 0xffd0e6ff;
+        themeInfo.previewOutColor = 0xfff4e2b8;
         themeInfo.firstAccentIsDefault = true;
         themeInfo.currentAccentId = DEFALT_THEME_ACCENT_ID;
         themeInfo.sortIndex = 1;
@@ -4636,7 +4632,7 @@ public class Theme {
         themeInfo.assetName = "darkblue.attheme";
         themeInfo.previewBackgroundColor = 0xff5f6e82;
         themeInfo.previewInColor = 0xff76869c;
-        themeInfo.previewOutColor = 0xff82a8e3;
+        themeInfo.previewOutColor = 0xfff4e2b8;
         themeInfo.sortIndex = 3;
         themeInfo.setAccentColorOptions(
                 new int[]    {                    0xFF927BD4,                    0xFF698AFB,                    0xFF23A7F0,                    0xFF7B71D1,                    0xFF69B955,                    0xFF2990EA,                    0xFF7082E9,                    0xFF66BAED,                    0xff3685fa,                    0xff46c8ed,                    0xff64AC5F,                    0xffeb7cb1,                    0xffee902a,                    0xffa281f0,                    0xffd34324,                    0xffeebd34,                    0xff7f8fab,                    0xff3581e3 },
@@ -4727,37 +4723,6 @@ public class Theme {
         themes.add(themeInfo);
         themesDict.put("Night", themeInfo);
 
-        themeInfo = new ThemeInfo();
-        themeInfo.name = "Flex Light";
-        themeInfo.assetName = "flex_light.attheme";
-        themeInfo.previewBackgroundColor = 0xff95beec;
-        themeInfo.previewInColor = 0xffffffff;
-        themeInfo.previewOutColor = 0xfff6e7cb;
-        themeInfo.sortIndex = 0;
-        themeInfo.setAccentColorOptions(new int[] {
-                0xFFE8C88E, 0xFFC69B5F, 0xFFAF8144, 0xFF9F733A,
-                0xFFE1B86F, 0xFFD28036, 0xFFCD5F93, 0xFF8366CC,
-                0xFF328ACF, 0xFF52AC44, 0xFFCE4E57, 0xFF7B88AB
-        });
-        sortAccents(themeInfo);
-        themes.add(currentDayTheme = defaultTheme = themeInfo);
-        themesDict.put("Flex Light", themeInfo);
-
-        themeInfo = new ThemeInfo();
-        themeInfo.name = "Flex Dark";
-        themeInfo.assetName = "flex_dark.attheme";
-        themeInfo.previewBackgroundColor = 0xff535659;
-        themeInfo.previewInColor = 0xff747A84;
-        themeInfo.previewOutColor = 0xfff6e7cb;
-        themeInfo.sortIndex = 6;
-        themeInfo.setAccentColorOptions(new int[] {
-                0xFFE8C88E, 0xFFC69B5F, 0xFFAF8144, 0xFF9F733A,
-                0xFFEE902A, 0xFFEB7CB1, 0xFFA281F0, 0xFF3685FA,
-                0xFF46C8ED, 0xFF64AC5F, 0xFFD34324, 0xFF7F8FAB
-        });
-        sortAccents(themeInfo);
-        themes.add(currentNightTheme = themeInfo);
-        themesDict.put("Flex Dark", themeInfo);
 
         String themesString = themeConfig.getString("themes2", null);
 
@@ -7708,13 +7673,13 @@ public class Theme {
     public static TLRPC.BaseTheme getBaseThemeByKey(String key) {
         if ("Blue".equals(key)) {
             return new TLRPC.TL_baseThemeClassic();
-        } else if ("Day".equals(key) || "Flex Light".equals(key)) {
+        } else if ("Day".equals(key)) {
             return new TLRPC.TL_baseThemeDay();
         } else if ("Dark Blue".equals(key)) {
             return new TLRPC.TL_baseThemeTinted();
         } else if ("Arctic Blue".equals(key)) {
             return new TLRPC.TL_baseThemeArctic();
-        } else if ("Night".equals(key) || "Flex Dark".equals(key)) {
+        } else if ("Night".equals(key)) {
             return new TLRPC.TL_baseThemeNight();
         }
         return null;
@@ -10586,9 +10551,6 @@ public class Theme {
                 return true;
             }
             if ((accent.parentTheme.getKey().equals("Night") || accent.parentTheme.getKey().equals("Dark Blue")) && accent.id == 0) {
-                return true;
-            }
-            if ((accent.parentTheme.getKey().equals("Flex Light") || accent.parentTheme.getKey().equals("Flex Dark")) && accent.id == 0) {
                 return true;
             }
         }

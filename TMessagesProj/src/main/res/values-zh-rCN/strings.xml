@@ -2,8 +2,6 @@
 <resources>
     <string name="FlexSettings">ArkGram</string>
     <string name="FlexSettingsInfo">自定义功能与快捷入口</string>
-    <string name="ThemeFlexLight">Flex 亮色</string>
-    <string name="ThemeFlexDark">Flex 深色</string>
     <string name="FlexFeatures">功能</string>
     <string name="FlexQuickAccess">快捷入口</string>
     <string name="FlexFeaturesInfo">通话相关更改会在新通话中生效。</string>
