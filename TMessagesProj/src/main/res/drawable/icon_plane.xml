@@ -9,20 +9,20 @@
         android:translateX="9.72"
         android:translateY="7.56">
         <path
-            android:fillColor="#FFFFFFFF"
+            android:fillColor="#FF2F2A24"
             android:pathData="M54,18 L26,62 L49,62 Z" />
         <path
             android:fillAlpha="0.88"
-            android:fillColor="#FFFFFFFF"
+            android:fillColor="#FF3F3830"
             android:pathData="M59,25 L82,62 L60,62 Z" />
         <path
-            android:fillColor="#FFFFFFFF"
+            android:fillColor="#FF2F2A24"
             android:pathData="M51,27 L57,27 L57,67 L51,67 Z" />
         <path
-            android:fillColor="#FFFFFFFF"
+            android:fillColor="#FF2F2A24"
             android:pathData="M24,68 L84,68 L72,84 L36,84 Z" />
         <path
-            android:fillColor="#FFFFFFFF"
+            android:fillColor="#FF2F2A24"
             android:pathData="M37,62 L71,62 L65,70 L43,70 Z" />
     </group>
 </vector>

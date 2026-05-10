@@ -11,8 +11,8 @@ import java.util.HashMap;
 
 public class ThemeColors {
 
-    public static final int TELEGRAM_COLOR = 0xFF229AF0;        // -14509328
-    public static final int TELEGRAM_COLOR_TEXT = 0xFF298ACF;   // -14054705
+    public static final int TELEGRAM_COLOR = 0xFFF4E2B8;        // -728392
+    public static final int TELEGRAM_COLOR_TEXT = 0xFFAF8144;   // -5275324
     public static final int DEFAULT_BLACK_TEXT = 0xFF1A1D21;   // -15065823
 
     private static SparseArray<String> colorKeysMap;
@@ -78,7 +78,7 @@ public class ThemeColors {
 
         defaultColors[key_windowBackgroundWhite] = 0xffffffff;
         defaultColors[key_windowBackgroundUnchecked] = 0xff96A2AD;
-        defaultColors[key_windowBackgroundChecked] = 0xff229AF0;
+        defaultColors[key_windowBackgroundChecked] = TELEGRAM_COLOR;
         defaultColors[key_windowBackgroundCheckText] = 0xffffffff;
         defaultColors[key_progressCircle] = 0xff1c93e3;
         defaultColors[key_windowBackgroundWhiteGrayIcon] = 0xff1a1d21;
@@ -208,7 +208,7 @@ public class ThemeColors {
         defaultColors[key_actionBarTabActiveText] = TELEGRAM_COLOR_TEXT;
         defaultColors[key_actionBarTabUnactiveText] = 0xff777c7f;
         defaultColors[key_actionBarTabLine] = TELEGRAM_COLOR_TEXT;
-        defaultColors[key_chats_tabUnreadActiveBackground] = 0xFF66ade1; //TELEGRAM_COLOR_TEXT;
+        defaultColors[key_chats_tabUnreadActiveBackground] = TELEGRAM_COLOR;
         defaultColors[key_chats_tabUnreadUnactiveBackground] = 0xffc5c9cc;
         defaultColors[key_actionBarTabSelector] = 0x121a1d21;
         defaultColors[key_actionBarBrowser] = 0xffffffff;
