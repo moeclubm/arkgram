@@ -1796,7 +1796,7 @@ JNIEXPORT void Java_org_telegram_messenger_Intro_onDrawFrame(JNIEnv *env, jclass
         float dx = sinf(tt) * 75;
         float dy = 0;
 
-        telegram_plane.params.position = xyzMake(dx, dy, 0);
+        telegram_plane.params.position = xyzMake(dx - 4, dy, 0);
         telegram_plane.params.scale = xyzMake(1, 1, 1);
 
         if (tt < D2R(125)) {
@@ -2170,7 +2170,7 @@ JNIEXPORT void Java_org_telegram_messenger_Intro_onDrawFrame(JNIEnv *env, jclass
             float tt = MINf(0, (float) (-M_PI * 125.0f / 180.0f + time * M_PI * 2 * 1.5f));
             float dx = t(-90, 0, 0, 0.22f, EaseIn);
             float dy = 0;
-            telegram_plane.params.position = xyzMake(dx, dy, 0);
+            telegram_plane.params.position = xyzMake(dx - 4, dy, 0);
             float scale = t(0.1f, 1, 0.03f, 0.22f, EaseOut);
             telegram_plane.params.scale = xyzMake(scale, scale, 1);
 
@@ -2191,7 +2191,7 @@ JNIEXPORT void Java_org_telegram_messenger_Intro_onDrawFrame(JNIEnv *env, jclass
             float dx = t(0, 90, 0, 0.22f, EaseOut);
             float dy = 0;
 
-            telegram_plane.params.position = xyzMake(dx, dy, 0);
+            telegram_plane.params.position = xyzMake(dx - 4, dy, 0);
 
             float scale = t(1, 0.1f, 0.03f, 0.22f, EaseOut);
             telegram_plane.params.scale = xyzMake(scale, scale, 1);
