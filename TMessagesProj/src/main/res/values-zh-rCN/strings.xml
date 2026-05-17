@@ -68,6 +68,9 @@
     <string name="FlexFileUnavailable">无法打开所选文件。</string>
     <string name="FlexDatacenterLabel">DC %1$d</string>
     <string name="FlexQuickForward">+1</string>
+    <string name="FlexPlusOneMode">+1 模式</string>
+    <string name="FlexPlusOneModeForward">转发（保留来源）</string>
+    <string name="FlexPlusOneModeNoSource">无来源（以本人身份发送）</string>
     <string name="FlexViewRawJson">查看原始 JSON</string>
     <string name="FlexRawJsonCopied">原始 JSON 已复制到剪贴板</string>
     <string name="FlexDisableMarkdown">禁用 Markdown 解析</string>

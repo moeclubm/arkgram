@@ -10750,6 +10750,9 @@
     <string name="FlexFileUnavailable">The selected file could not be opened.</string>
     <string name="FlexDatacenterLabel">DC %1$d</string>
     <string name="FlexQuickForward">+1</string>
+    <string name="FlexPlusOneMode">+1 Mode</string>
+    <string name="FlexPlusOneModeForward">Forward (keep source)</string>
+    <string name="FlexPlusOneModeNoSource">No source (send as own message)</string>
     <string name="FlexViewRawJson">View Raw JSON</string>
     <string name="FlexRawJsonCopied">Raw JSON copied to clipboard</string>
     <string name="FlexDisableMarkdown">Disable Markdown Parsing</string>

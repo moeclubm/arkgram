@@ -37,6 +37,7 @@ public class FlexSettingsActivity extends UniversalFragment {
     private static final int ID_FORWARD_HIDE_SOURCE = 18;
     private static final int ID_FORWARD_HIDE_CAPTION = 19;
     private static final int ID_AD_BLOCK = 20;
+    private static final int ID_PLUS_ONE_MODE = 21;
     private static final int ID_CHAT = 100;
     private static final int ID_DATA = 101;
     private static final int ID_LANGUAGE = 102;
@@ -120,6 +121,9 @@ public class FlexSettingsActivity extends UniversalFragment {
                 FlexConfig.setForwardingCaptionHiddenByDefault(!FlexConfig.isForwardingCaptionHiddenByDefault());
                 refreshItems();
                 break;
+            case ID_PLUS_ONE_MODE:
+                showPlusOneModeDialog();
+                break;
             case ID_SHOW_DC_INFO:
                 FlexConfig.setDcInfoEnabled(!FlexConfig.isDcInfoEnabled());
                 refreshItems();
@@ -191,6 +195,7 @@ public class FlexSettingsActivity extends UniversalFragment {
     }
 
     private void addForwardingItems(ArrayList<UItem> items) {
+        items.add(UItem.asButton(ID_PLUS_ONE_MODE, R.drawable.msg_filled_plus, getString(R.string.FlexPlusOneMode), getPlusOneModeTitle()));
         items.add(UItem.asCheck(ID_FORWARD_HIDE_SOURCE, getString(R.string.FlexForwardHideSourceDefault)).setChecked(FlexConfig.isForwardingSourceHiddenByDefault()));
         items.add(UItem.asCheck(ID_FORWARD_HIDE_CAPTION, getString(R.string.FlexForwardHideCaptionDefault)).setChecked(FlexConfig.isForwardingCaptionHiddenByDefault()));
         items.add(UItem.asCheck(ID_DISABLE_NO_FORWARDS_RESTRICTIONS, getString(R.string.FlexDisableNoForwardsRestrictions)).setChecked(FlexConfig.isNoForwardsRestrictionsDisabled()));
@@ -286,5 +291,25 @@ public class FlexSettingsActivity extends UniversalFragment {
             return getString(R.string.QualityOriginal);
         }
         return value + "p";
+    }
+
+    private void showPlusOneModeDialog() {
+        CharSequence[] items = new CharSequence[] {
+            getString(R.string.FlexPlusOneModeForward),
+            getString(R.string.FlexPlusOneModeNoSource)
+        };
+        AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
+        builder.setTitle(getString(R.string.FlexPlusOneMode));
+        builder.setItems(items, (dialog, which) -> {
+            FlexConfig.setPlusOneMode(which);
+            refreshItems();
+        });
+        showDialog(builder.create());
+    }
+
+    private CharSequence getPlusOneModeTitle() {
+        return getString(FlexConfig.isPlusOneNoSource()
+            ? R.string.FlexPlusOneModeNoSource
+            : R.string.FlexPlusOneModeForward);
     }
 }

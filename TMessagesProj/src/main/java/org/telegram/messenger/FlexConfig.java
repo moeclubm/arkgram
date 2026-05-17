@@ -22,6 +22,8 @@ public class FlexConfig {
     public static final int VIDEO_QUALITY_DEFAULT_HIGHEST = -2;
     public static final int VIDEO_QUALITY_DEFAULT_AUTO = -1;
     public static final int VIDEO_QUALITY_DEFAULT_ORIGINAL = 0;
+    public static final int PLUS_ONE_MODE_FORWARD = 0;
+    public static final int PLUS_ONE_MODE_NO_SOURCE = 1;
     public static final int TRANSLATION_PROVIDER_TELEGRAM = 0;
     public static final int TRANSLATION_PROVIDER_GOOGLE = 1;
     public static final int TRANSLATION_PROVIDER_GOOGLE_CN = 2;
@@ -162,6 +164,18 @@ public class FlexConfig {
             editor.putBoolean("flex_forwarding_hide_source_default", true);
         }
         editor.apply();
+    }
+
+    public static int getPlusOneMode() {
+        return prefs().getInt("flex_plus_one_mode", PLUS_ONE_MODE_FORWARD);
+    }
+
+    public static void setPlusOneMode(int value) {
+        prefs().edit().putInt("flex_plus_one_mode", value).apply();
+    }
+
+    public static boolean isPlusOneNoSource() {
+        return getPlusOneMode() == PLUS_ONE_MODE_NO_SOURCE;
     }
 
     public static boolean isDcInfoEnabled() {
