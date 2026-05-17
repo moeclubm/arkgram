@@ -32662,8 +32662,7 @@ public class ChatActivity extends BaseFragment implements
                 } else {
                     messages.add(selectedObject);
                 }
-                boolean noSource = FlexConfig.isPlusOneNoSource();
-                forwardMessages(messages, noSource, false, true, 0, 0);
+                forwardMessages(messages, FlexConfig.isPlusOneMessageOnly(), false, true, 0, 0);
                 break;
             }
             case OPTION_FLEX_VIEW_RAW_JSON: {
