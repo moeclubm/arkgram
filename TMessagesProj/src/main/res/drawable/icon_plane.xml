@@ -10,15 +10,12 @@
         android:translateY="14.58">
         <path
             android:fillColor="#FF2F2A24"
-            android:pathData="M51,23 L57,23 L57,70 L51,70 Z" />
+            android:pathData="M52,24 L52,62 L27,62 Z" />
         <path
             android:fillColor="#FF2F2A24"
-            android:pathData="M49,32 L22,68 L49,68 Z" />
+            android:pathData="M57,33 L81,62 L57,62 Z" />
         <path
             android:fillColor="#FF2F2A24"
-            android:pathData="M59,28 L86,68 L59,68 Z" />
-        <path
-            android:fillColor="#FF2F2A24"
-            android:pathData="M18,74 L90,74 L76,88 L34,88 Z" />
+            android:pathData="M19,65 L89,65 L77,86 L31,86 Z" />
     </group>
 </vector>
