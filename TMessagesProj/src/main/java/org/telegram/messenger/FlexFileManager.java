@@ -5,6 +5,7 @@ import android.net.Uri;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
@@ -16,7 +17,9 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.Map;
 
 public class FlexFileManager {
 
@@ -78,9 +81,15 @@ public class FlexFileManager {
         global.put("ai_summary_llm_model", FlexConfig.getAiSummaryLlmModel());
         global.put("ai_summary_llm_model_ref", FlexConfig.getAiSummaryLlmModelRef());
         global.put("ai_summary_llm_prompt", FlexConfig.getAiSummaryLlmPrompt());
+        global.put("llm_stream", FlexConfig.isLlmStreamEnabled());
+        ArrayList<Integer> providerIds = FlexConfig.getProviderIds();
+        global.put("llm_provider_ids", new ArrayList<Object>(providerIds));
         LinkedHashMap<String, Object> llmProviders = new LinkedHashMap<>();
-        for (int provider = FlexConfig.LLM_PROVIDER_CUSTOM; provider <= FlexConfig.LLM_PROVIDER_SILICONFLOW; ++provider) {
+        for (int i = 0; i < providerIds.size(); ++i) {
+            int provider = providerIds.get(i);
             LinkedHashMap<String, Object> config = new LinkedHashMap<>();
+            config.put("name", FlexConfig.getProviderName(provider));
+            config.put("type", FlexConfig.getProviderType(provider));
             config.put("api_url", FlexConfig.getStoredProviderApiUrl(provider));
             config.put("api_key", FlexConfig.getProviderApiKey(provider));
             config.put("models", FlexConfig.getProviderModelsText(provider));
@@ -221,14 +230,30 @@ public class FlexFileManager {
         if (global.has("ai_summary_llm_prompt")) {
             FlexConfig.setAiSummaryLlmPrompt(global.get("ai_summary_llm_prompt").getAsString());
         }
+        if (global.has("llm_stream")) {
+            FlexConfig.setLlmStreamEnabled(global.get("llm_stream").getAsBoolean());
+        }
+        if (global.has("llm_provider_ids") && global.get("llm_provider_ids").isJsonArray()) {
+            ArrayList<Integer> ids = new ArrayList<>();
+            for (JsonElement element : global.getAsJsonArray("llm_provider_ids")) {
+                ids.add(element.getAsInt());
+            }
+            FlexConfig.setProviderIds(ids);
+        }
         if (global.has("llm_provider_configs") && global.get("llm_provider_configs").isJsonObject()) {
             JsonObject llmProviders = global.getAsJsonObject("llm_provider_configs");
-            for (int provider = FlexConfig.LLM_PROVIDER_CUSTOM; provider <= FlexConfig.LLM_PROVIDER_SILICONFLOW; ++provider) {
-                String key = String.valueOf(provider);
-                if (!llmProviders.has(key) || !llmProviders.get(key).isJsonObject()) {
+            for (Map.Entry<String, JsonElement> entry : llmProviders.entrySet()) {
+                if (!entry.getValue().isJsonObject()) {
                     continue;
                 }
-                JsonObject config = llmProviders.getAsJsonObject(key);
+                int provider = Integer.parseInt(entry.getKey());
+                JsonObject config = entry.getValue().getAsJsonObject();
+                if (config.has("name")) {
+                    FlexConfig.setProviderName(provider, config.get("name").getAsString());
+                }
+                if (config.has("type")) {
+                    FlexConfig.setProviderType(provider, config.get("type").getAsInt());
+                }
                 if (config.has("api_url")) {
                     FlexConfig.setProviderApiUrl(provider, config.get("api_url").getAsString());
                 }

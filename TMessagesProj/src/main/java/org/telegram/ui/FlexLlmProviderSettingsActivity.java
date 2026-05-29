@@ -14,6 +14,7 @@ import android.widget.TextView;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.FlexConfig;
 import org.telegram.messenger.FlexLlmHelper;
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
 import org.telegram.ui.ActionBar.AlertDialog;
@@ -29,10 +30,13 @@ import java.util.ArrayList;
 
 public class FlexLlmProviderSettingsActivity extends UniversalFragment {
 
-    private static final int ID_API_URL = 1;
-    private static final int ID_API_KEY = 2;
-    private static final int ID_ADD_MODEL = 3;
-    private static final int ID_FETCH_MODELS = 4;
+    private static final int ID_NAME = 1;
+    private static final int ID_ENDPOINT_TYPE = 2;
+    private static final int ID_API_URL = 3;
+    private static final int ID_API_KEY = 4;
+    private static final int ID_ADD_MODEL = 5;
+    private static final int ID_FETCH_MODELS = 6;
+    private static final int ID_DELETE_PROVIDER = 7;
     private static final int ID_MODEL_BASE = 1000;
 
     private final int provider;
@@ -49,6 +53,8 @@ public class FlexLlmProviderSettingsActivity extends UniversalFragment {
     @Override
     protected void fillItems(ArrayList<UItem> items, UniversalAdapter adapter) {
         items.add(UItem.asHeader(getString(R.string.FlexLlmProviderConfig)));
+        items.add(UItem.asButton(ID_NAME, R.drawable.menu_feature_code, getString(R.string.FlexLlmProviderName), formatPlainValue(FlexConfig.getProviderName(provider))));
+        items.add(UItem.asButton(ID_ENDPOINT_TYPE, R.drawable.msg2_data, getString(R.string.FlexLlmEndpointType), FlexLlmFeatureSettingsActivity.getEndpointTypeTitle(FlexConfig.getProviderType(provider))));
         items.add(UItem.asButton(ID_API_URL, R.drawable.msg2_data, getString(R.string.FlexLlmApiUrl), formatPlainValue(FlexConfig.getProviderApiUrl(provider))));
         items.add(UItem.asButton(ID_API_KEY, R.drawable.msg_translate, getString(R.string.FlexLlmApiKey), formatSecretValue(FlexConfig.getProviderApiKey(provider))));
         items.add(UItem.asShadow(getString(R.string.FlexLlmApiUrlHint)));
@@ -60,11 +66,22 @@ public class FlexLlmProviderSettingsActivity extends UniversalFragment {
             items.add(UItem.asButton(ID_MODEL_BASE + i, R.drawable.menu_feature_code, models.get(i), getString(R.string.Delete)));
         }
         items.add(UItem.asShadow(getString(R.string.FlexLlmModelsHint)));
+        items.add(UItem.asButton(ID_DELETE_PROVIDER, R.drawable.msg_delete, getString(R.string.FlexLlmDeleteProvider)).red());
+        items.add(UItem.asShadow(null));
     }
 
     @Override
     protected void onClick(UItem item, View view, int position, float x, float y) {
-        if (item.id == ID_API_URL) {
+        if (item.id == ID_NAME) {
+            showTextValueDialog(getString(R.string.FlexLlmProviderName), null, FlexConfig.getProviderName(provider), InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS, false, value -> {
+                FlexConfig.setProviderName(provider, value);
+                listView.adapter.update(true);
+            });
+        } else if (item.id == ID_ENDPOINT_TYPE) {
+            showEndpointTypeDialog();
+        } else if (item.id == ID_DELETE_PROVIDER) {
+            showDeleteProviderDialog();
+        } else if (item.id == ID_API_URL) {
             showTextValueDialog(getString(R.string.FlexLlmApiUrl), getString(R.string.FlexLlmApiUrlHint), FlexConfig.getProviderApiUrl(provider), InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_URI | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS, false, value -> {
                 FlexConfig.setProviderApiUrl(provider, value);
                 listView.adapter.update(true);
@@ -128,8 +145,40 @@ public class FlexLlmProviderSettingsActivity extends UniversalFragment {
         }
     }
 
+    private void showEndpointTypeDialog() {
+        int[] types = new int[] {FlexConfig.LLM_ENDPOINT_OPENAI, FlexConfig.LLM_ENDPOINT_RESPONSES, FlexConfig.LLM_ENDPOINT_ANTHROPIC};
+        CharSequence[] items = new CharSequence[types.length];
+        for (int i = 0; i < types.length; ++i) {
+            items[i] = FlexLlmFeatureSettingsActivity.getEndpointTypeTitle(types[i]);
+        }
+        AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
+        builder.setTitle(getString(R.string.FlexLlmEndpointType));
+        builder.setItems(items, (dialog, which) -> {
+            FlexConfig.setProviderType(provider, types[which]);
+            listView.adapter.update(true);
+        });
+        showDialog(builder.create());
+    }
+
+    private void showDeleteProviderDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
+        builder.setTitle(getString(R.string.FlexLlmDeleteProvider));
+        builder.setMessage(LocaleController.formatString(R.string.FlexLlmDeleteProviderConfirm, FlexLlmFeatureSettingsActivity.getProviderTitle(provider)));
+        builder.setPositiveButton(getString(R.string.Delete), (dialog, which) -> {
+            FlexConfig.removeProvider(provider);
+            finishFragment();
+        });
+        builder.setNegativeButton(getString(R.string.Cancel), null);
+        AlertDialog dialog = builder.create();
+        showDialog(dialog);
+        View button = dialog.getButton(android.content.DialogInterface.BUTTON_POSITIVE);
+        if (button instanceof TextView) {
+            ((TextView) button).setTextColor(Theme.getColor(Theme.key_text_RedBold, resourceProvider));
+        }
+    }
+
     private void fetchModels() {
-        FlexLlmHelper.requestModels(FlexConfig.getProviderApiUrl(provider), FlexConfig.getProviderApiKey(provider), (models, error) -> {
+        FlexLlmHelper.requestModels(FlexConfig.getProviderApiUrl(provider), FlexConfig.getProviderType(provider), FlexConfig.getProviderApiKey(provider), (models, error) -> {
             if (!TextUtils.isEmpty(error)) {
                 BulletinFactory.of(this).createErrorBulletin(error).show();
                 return;

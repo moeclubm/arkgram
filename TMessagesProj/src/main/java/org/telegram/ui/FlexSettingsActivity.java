@@ -38,10 +38,6 @@ public class FlexSettingsActivity extends UniversalFragment {
     private static final int ID_FORWARD_HIDE_CAPTION = 19;
     private static final int ID_AD_BLOCK = 20;
     private static final int ID_PLUS_ONE_SEND_MODE = 21;
-    private static final int ID_CHAT = 100;
-    private static final int ID_DATA = 101;
-    private static final int ID_LANGUAGE = 102;
-    private static final int ID_NOTIFICATIONS = 103;
 
     @Override
     protected CharSequence getTitle() {
@@ -73,10 +69,6 @@ public class FlexSettingsActivity extends UniversalFragment {
         items.add(UItem.asHeader(getString(R.string.General)));
         addGeneralItems(items);
         items.add(UItem.asShadow(getString(R.string.FlexSettingsInfo)));
-
-        items.add(UItem.asHeader(getString(R.string.FlexQuickAccess)));
-        addQuickAccessItems(items);
-        items.add(UItem.asShadow(null));
     }
 
     @Override
@@ -158,18 +150,6 @@ public class FlexSettingsActivity extends UniversalFragment {
             case ID_AD_BLOCK:
                 presentFragment(new FlexAdBlockSettingsActivity());
                 break;
-            case ID_CHAT:
-                presentFragment(new ThemeActivity(ThemeActivity.THEME_TYPE_BASIC));
-                break;
-            case ID_DATA:
-                presentFragment(new DataSettingsActivity());
-                break;
-            case ID_LANGUAGE:
-                presentFragment(new LanguageSelectActivity());
-                break;
-            case ID_NOTIFICATIONS:
-                presentFragment(new NotificationsSettingsActivity());
-                break;
         }
     }
 
@@ -210,13 +190,6 @@ public class FlexSettingsActivity extends UniversalFragment {
 
     private void addGeneralItems(ArrayList<UItem> items) {
         items.add(UItem.asButton(ID_LLM_SETTINGS, R.drawable.outline_ai_translate2, getString(R.string.FlexLlmSettings)));
-    }
-
-    private void addQuickAccessItems(ArrayList<UItem> items) {
-        items.add(UItem.asButton(ID_CHAT, R.drawable.msg2_discussion, getString(R.string.ChatSettings)));
-        items.add(UItem.asButton(ID_DATA, R.drawable.msg2_data, getString(R.string.DataSettings)));
-        items.add(UItem.asButton(ID_LANGUAGE, R.drawable.msg2_language, getString(R.string.Language)));
-        items.add(UItem.asButton(ID_NOTIFICATIONS, R.drawable.msg_notifications, getString(R.string.NotificationsAndSounds)));
     }
 
     private void refreshItems() {

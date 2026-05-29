@@ -247,11 +247,13 @@ public class FlexAiSummaryActivity extends UniversalFragment {
             }
             FlexLlmHelper.requestText(
                 FlexConfig.getAiSummaryLlmApiUrl(),
+                FlexConfig.getAiSummaryLlmEndpointType(),
                 FlexConfig.getAiSummaryLlmApiKey(),
                 FlexConfig.getAiSummaryLlmModel(),
                 FlexConfig.getAiSummaryLlmPrompt(),
                 buildSummaryPrompt(summaryData),
                 0.2,
+                FlexConfig.isLlmStreamEnabled(),
                 (result, error) -> {
                     generating = false;
                     try {

@@ -65,22 +65,18 @@ public class FlexLlmFeatureSettingsActivity extends UniversalFragment {
     }
 
     public static CharSequence getProviderTitle(int provider) {
-        if (provider == FlexConfig.LLM_PROVIDER_OPENAI) {
-            return getString(R.string.FlexLlmProviderOpenAi);
+        String name = FlexConfig.getProviderName(provider);
+        return TextUtils.isEmpty(name) ? getString(R.string.FlexLlmProviderCustom) : name;
+    }
+
+    public static CharSequence getEndpointTypeTitle(int type) {
+        if (type == FlexConfig.LLM_ENDPOINT_RESPONSES) {
+            return getString(R.string.FlexLlmEndpointResponses);
         }
-        if (provider == FlexConfig.LLM_PROVIDER_OPENROUTER) {
-            return getString(R.string.FlexLlmProviderOpenRouter);
+        if (type == FlexConfig.LLM_ENDPOINT_ANTHROPIC) {
+            return getString(R.string.FlexLlmEndpointAnthropic);
         }
-        if (provider == FlexConfig.LLM_PROVIDER_DEEPSEEK) {
-            return getString(R.string.FlexLlmProviderDeepSeek);
-        }
-        if (provider == FlexConfig.LLM_PROVIDER_GROQ) {
-            return getString(R.string.FlexLlmProviderGroq);
-        }
-        if (provider == FlexConfig.LLM_PROVIDER_SILICONFLOW) {
-            return getString(R.string.FlexLlmProviderSiliconFlow);
-        }
-        return getString(R.string.FlexLlmProviderCustom);
+        return getString(R.string.FlexLlmEndpointOpenAi);
     }
 
     private String getModelRef() {
@@ -145,7 +141,9 @@ public class FlexLlmFeatureSettingsActivity extends UniversalFragment {
     private void showModelDialog() {
         ArrayList<String> refs = new ArrayList<>();
         ArrayList<CharSequence> items = new ArrayList<>();
-        for (int provider = FlexConfig.LLM_PROVIDER_CUSTOM; provider <= FlexConfig.LLM_PROVIDER_SILICONFLOW; ++provider) {
+        ArrayList<Integer> providers = FlexConfig.getProviderIds();
+        for (int p = 0; p < providers.size(); ++p) {
+            int provider = providers.get(p);
             ArrayList<String> models = FlexConfig.getProviderModelList(provider);
             for (int i = 0; i < models.size(); ++i) {
                 String model = models.get(i);

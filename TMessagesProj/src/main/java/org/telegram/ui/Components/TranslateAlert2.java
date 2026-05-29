@@ -678,7 +678,7 @@ public class TranslateAlert2 extends BottomSheet implements NotificationCenter.N
                         }
                         prompt.append("Target language: ").append(getLanguageDisplayName(toLng)).append('\n');
                         prompt.append("Text:\n").append(text);
-                        FlexLlmHelper.requestText(apiUrl, FlexConfig.getLlmApiKey(), model, FlexConfig.getLlmPrompt(), prompt.toString(), 0, (result, error) -> {
+                        FlexLlmHelper.requestText(apiUrl, FlexConfig.getTranslationLlmEndpointType(), FlexConfig.getLlmApiKey(), model, FlexConfig.getLlmPrompt(), prompt.toString(), 0, FlexConfig.isLlmStreamEnabled(), (result, error) -> {
                             if (error != null || result == null) {
                                 done.run(result, false, error);
                                 return;

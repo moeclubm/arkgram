@@ -19,7 +19,10 @@ import java.util.ArrayList;
 
 public class FlexLlmHelper {
 
-    public static void requestText(String apiUrl, String apiKey, String model, String systemPrompt, String userPrompt, double temperature, Utilities.Callback2<String, String> done) {
+    private static final String ANTHROPIC_VERSION = "2023-06-01";
+    private static final int ANTHROPIC_MAX_TOKENS = 8192;
+
+    public static void requestText(String apiUrl, int endpointType, String apiKey, String model, String systemPrompt, String userPrompt, double temperature, boolean stream, Utilities.Callback2<String, String> done) {
         if (done == null) {
             return;
         }
@@ -35,46 +38,28 @@ public class FlexLlmHelper {
             HttpURLConnection connection = null;
             String responseText = null;
             try {
-                connection = (HttpURLConnection) new URI(apiUrl).toURL().openConnection();
+                connection = (HttpURLConnection) new URI(buildEndpointUrl(apiUrl, endpointType)).toURL().openConnection();
                 connection.setConnectTimeout(15000);
-                connection.setReadTimeout(30000);
+                connection.setReadTimeout(stream ? 120000 : 60000);
                 connection.setRequestMethod("POST");
                 connection.setDoOutput(true);
                 connection.setRequestProperty("Content-Type", "application/json; charset=UTF-8");
-                if (!TextUtils.isEmpty(apiKey)) {
-                    connection.setRequestProperty("Authorization", "Bearer " + apiKey);
+                applyAuthHeaders(connection, endpointType, apiKey);
+                if (stream) {
+                    connection.setRequestProperty("Accept", "text/event-stream");
                 }
 
-                JSONObject request = new JSONObject();
-                request.put("model", model);
-                request.put("temperature", temperature);
-                JSONArray messages = new JSONArray();
-                if (!TextUtils.isEmpty(systemPrompt)) {
-                    messages.put(new JSONObject()
-                        .put("role", "system")
-                        .put("content", systemPrompt));
-                }
-                messages.put(new JSONObject()
-                    .put("role", "user")
-                    .put("content", userPrompt));
-                request.put("messages", messages);
-
+                String body = buildRequestBody(endpointType, model, systemPrompt, userPrompt, temperature, stream).toString();
                 try (OutputStream outputStream = connection.getOutputStream()) {
-                    outputStream.write(request.toString().getBytes(Charsets.UTF_8));
+                    outputStream.write(body.getBytes(Charsets.UTF_8));
                 }
 
-                responseText = readConnectionText(connection, false);
-                JSONArray choices = new JSONObject(responseText).optJSONArray("choices");
-                if (choices == null || choices.length() <= 0) {
-                    throw new IllegalStateException(LocaleController.getString(R.string.FlexLlmInvalidResponse));
-                }
-                JSONObject choice = choices.optJSONObject(0);
-                String result = null;
-                if (choice != null) {
-                    result = extractMessageContent(choice.optJSONObject("message"));
-                    if (TextUtils.isEmpty(result)) {
-                        result = choice.optString("text", null);
-                    }
+                String result;
+                if (stream) {
+                    result = readStreamText(connection, endpointType);
+                } else {
+                    responseText = readConnectionText(connection, false);
+                    result = extractResponseText(endpointType, new JSONObject(responseText));
                 }
                 if (TextUtils.isEmpty(result)) {
                     throw new IllegalStateException(LocaleController.getString(R.string.FlexLlmInvalidResponse));
@@ -101,7 +86,7 @@ public class FlexLlmHelper {
         }, "FlexLlmRequest").start();
     }
 
-    public static void requestModels(String apiUrl, String apiKey, Utilities.Callback2<ArrayList<String>, String> done) {
+    public static void requestModels(String apiUrl, int endpointType, String apiKey, Utilities.Callback2<ArrayList<String>, String> done) {
         if (done == null) {
             return;
         }
@@ -118,9 +103,7 @@ public class FlexLlmHelper {
                 connection.setReadTimeout(30000);
                 connection.setRequestMethod("GET");
                 connection.setRequestProperty("Accept", "application/json");
-                if (!TextUtils.isEmpty(apiKey)) {
-                    connection.setRequestProperty("Authorization", "Bearer " + apiKey);
-                }
+                applyAuthHeaders(connection, endpointType, apiKey);
 
                 responseText = readConnectionText(connection, false);
                 JSONArray data = new JSONObject(responseText).optJSONArray("data");
@@ -157,6 +140,142 @@ public class FlexLlmHelper {
                 }
             }
         }, "FlexLlmModelsRequest").start();
+    }
+
+    private static void applyAuthHeaders(HttpURLConnection connection, int endpointType, String apiKey) {
+        if (TextUtils.isEmpty(apiKey)) {
+            return;
+        }
+        if (endpointType == FlexConfig.LLM_ENDPOINT_ANTHROPIC) {
+            connection.setRequestProperty("x-api-key", apiKey);
+            connection.setRequestProperty("anthropic-version", ANTHROPIC_VERSION);
+        } else {
+            connection.setRequestProperty("Authorization", "Bearer " + apiKey);
+        }
+    }
+
+    private static JSONObject buildRequestBody(int endpointType, String model, String systemPrompt, String userPrompt, double temperature, boolean stream) throws Exception {
+        JSONObject request = new JSONObject();
+        request.put("model", model);
+        if (endpointType == FlexConfig.LLM_ENDPOINT_ANTHROPIC) {
+            request.put("max_tokens", ANTHROPIC_MAX_TOKENS);
+            request.put("temperature", temperature);
+            if (!TextUtils.isEmpty(systemPrompt)) {
+                request.put("system", systemPrompt);
+            }
+            JSONArray messages = new JSONArray();
+            messages.put(new JSONObject().put("role", "user").put("content", userPrompt));
+            request.put("messages", messages);
+        } else if (endpointType == FlexConfig.LLM_ENDPOINT_RESPONSES) {
+            request.put("temperature", temperature);
+            if (!TextUtils.isEmpty(systemPrompt)) {
+                request.put("instructions", systemPrompt);
+            }
+            request.put("input", userPrompt);
+        } else {
+            request.put("temperature", temperature);
+            JSONArray messages = new JSONArray();
+            if (!TextUtils.isEmpty(systemPrompt)) {
+                messages.put(new JSONObject().put("role", "system").put("content", systemPrompt));
+            }
+            messages.put(new JSONObject().put("role", "user").put("content", userPrompt));
+            request.put("messages", messages);
+        }
+        if (stream) {
+            request.put("stream", true);
+        }
+        return request;
+    }
+
+    private static String extractResponseText(int endpointType, JSONObject root) {
+        if (endpointType == FlexConfig.LLM_ENDPOINT_ANTHROPIC) {
+            return extractContentBlocks(root.optJSONArray("content"));
+        }
+        if (endpointType == FlexConfig.LLM_ENDPOINT_RESPONSES) {
+            String direct = root.optString("output_text", null);
+            if (!TextUtils.isEmpty(direct)) {
+                return direct.trim();
+            }
+            JSONArray output = root.optJSONArray("output");
+            StringBuilder builder = new StringBuilder();
+            if (output != null) {
+                for (int i = 0; i < output.length(); ++i) {
+                    JSONObject item = output.optJSONObject(i);
+                    if (item != null) {
+                        builder.append(extractContentBlocks(item.optJSONArray("content")));
+                    }
+                }
+            }
+            return builder.toString().trim();
+        }
+        JSONArray choices = root.optJSONArray("choices");
+        if (choices == null || choices.length() <= 0) {
+            return null;
+        }
+        JSONObject choice = choices.optJSONObject(0);
+        if (choice == null) {
+            return null;
+        }
+        String result = extractMessageContent(choice.optJSONObject("message"));
+        if (TextUtils.isEmpty(result)) {
+            result = choice.optString("text", null);
+        }
+        return result;
+    }
+
+    private static String extractContentBlocks(JSONArray content) {
+        if (content == null) {
+            return "";
+        }
+        StringBuilder builder = new StringBuilder();
+        for (int i = 0; i < content.length(); ++i) {
+            JSONObject block = content.optJSONObject(i);
+            if (block != null) {
+                builder.append(block.optString("text", ""));
+            }
+        }
+        return builder.toString();
+    }
+
+    private static String readStreamText(HttpURLConnection connection, int endpointType) throws IOException {
+        InputStream stream = connection.getInputStream();
+        if (stream == null) {
+            return null;
+        }
+        StringBuilder result = new StringBuilder();
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(stream, Charsets.UTF_8))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                line = line.trim();
+                if (!line.startsWith("data:")) {
+                    continue;
+                }
+                String payload = line.substring(5).trim();
+                if (payload.isEmpty() || "[DONE]".equals(payload)) {
+                    continue;
+                }
+                result.append(extractStreamDelta(endpointType, new JSONObject(payload)));
+            }
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+        return result.toString();
+    }
+
+    private static String extractStreamDelta(int endpointType, JSONObject event) {
+        if (endpointType == FlexConfig.LLM_ENDPOINT_ANTHROPIC) {
+            JSONObject delta = event.optJSONObject("delta");
+            return delta != null ? delta.optString("text", "") : "";
+        }
+        if (endpointType == FlexConfig.LLM_ENDPOINT_RESPONSES) {
+            return event.optString("type", "").endsWith("output_text.delta") ? event.optString("delta", "") : "";
+        }
+        JSONArray choices = event.optJSONArray("choices");
+        if (choices == null || choices.length() <= 0) {
+            return "";
+        }
+        JSONObject delta = choices.optJSONObject(0) != null ? choices.optJSONObject(0).optJSONObject("delta") : null;
+        return delta != null ? delta.optString("content", "") : "";
     }
 
     private static String readConnectionText(HttpURLConnection connection, boolean errorStream) throws IOException {
@@ -211,7 +330,7 @@ public class FlexLlmHelper {
         return LocaleController.getString(R.string.FlexLlmRequestFailed);
     }
 
-    private static String getModelsApiUrl(String apiUrl) {
+    private static String normalizeBaseUrl(String apiUrl) {
         String value = apiUrl.trim();
         int queryIndex = value.indexOf('?');
         if (queryIndex >= 0) {
@@ -220,13 +339,40 @@ public class FlexLlmHelper {
         while (value.endsWith("/")) {
             value = value.substring(0, value.length() - 1);
         }
-        if (value.endsWith("/chat/completions")) {
-            return value.substring(0, value.length() - "/chat/completions".length()) + "/models";
+        if (!value.contains("://")) {
+            value = "https://" + value;
         }
-        if (value.endsWith("/completions")) {
-            return value.substring(0, value.length() - "/completions".length()) + "/models";
+        String[] suffixes = {"/chat/completions", "/completions", "/responses", "/messages", "/models"};
+        for (int i = 0; i < suffixes.length; ++i) {
+            if (value.endsWith(suffixes[i])) {
+                value = value.substring(0, value.length() - suffixes[i].length());
+                break;
+            }
         }
-        return value + "/models";
+        while (value.endsWith("/")) {
+            value = value.substring(0, value.length() - 1);
+        }
+        int slash = value.lastIndexOf('/');
+        String lastSegment = slash >= 0 ? value.substring(slash + 1) : value;
+        if (!lastSegment.matches("v\\d+")) {
+            value = value + "/v1";
+        }
+        return value;
+    }
+
+    private static String buildEndpointUrl(String apiUrl, int endpointType) {
+        String base = normalizeBaseUrl(apiUrl);
+        if (endpointType == FlexConfig.LLM_ENDPOINT_ANTHROPIC) {
+            return base + "/messages";
+        }
+        if (endpointType == FlexConfig.LLM_ENDPOINT_RESPONSES) {
+            return base + "/responses";
+        }
+        return base + "/chat/completions";
+    }
+
+    private static String getModelsApiUrl(String apiUrl) {
+        return normalizeBaseUrl(apiUrl) + "/models";
     }
 
     private static String extractMessageContent(JSONObject message) {
