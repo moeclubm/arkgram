@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: beta-${{ github.ref }}
@@ -83,28 +83,3 @@ jobs:
             :TMessagesProj_AppStandalone:assembleAfatStandalone \
             :TMessagesProj_AppStandalone:bundleAfatStandalone \
             --build-cache --configuration-cache --stacktrace
-
-      - name: Publish beta binaries
-        if: github.ref == 'refs/heads/master'
-        shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          assets=(
-            TMessagesProj_App/build/outputs/apk/afat/beta/*.apk
-            TMessagesProj_App/build/outputs/bundle/bundleAfatBeta/*.aab
-            TMessagesProj_AppStandalone/build/outputs/apk/afat/standalone/*.apk
-            TMessagesProj_AppStandalone/build/outputs/bundle/afatStandalone/*.aab
-          )
-          for asset in "${assets[@]}"; do
-            test -f "$asset"
-          done
-          if gh release view beta >/dev/null 2>&1; then
-            gh release delete beta --yes --cleanup-tag
-          fi
-          gh release create beta "${assets[@]}" \
-            --target "$GITHUB_SHA" \
-            --title "ArkGram Beta #${GITHUB_RUN_NUMBER}" \
-            --notes "Commit ${GITHUB_SHA}" \
-            --prerelease \
-            --latest=false

@@ -6,7 +6,6 @@ on:
   push:
     tags:
       - '*'
-  workflow_dispatch:
 
 permissions:
   contents: write
@@ -86,7 +85,7 @@ jobs:
       - name: Publish GitHub release binaries
         uses: softprops/action-gh-release@v3.0.0
         with:
-          tag_name: ${{ github.ref_type == 'tag' && github.ref_name || format('manual-{0}', github.run_number) }}
+          tag_name: ${{ github.ref_name }}
           target_commitish: ${{ github.sha }}
           fail_on_unmatched_files: true
           files: |
