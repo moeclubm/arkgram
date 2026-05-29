@@ -83,3 +83,31 @@ jobs:
             :TMessagesProj_AppStandalone:assembleAfatStandalone \
             :TMessagesProj_AppStandalone:bundleAfatStandalone \
             --build-cache --configuration-cache --stacktrace
+
+      - name: Upload app beta APK
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          path: TMessagesProj_App/build/outputs/apk/afat/beta/*.apk
+          if-no-files-found: error
+          archive: false
+
+      - name: Upload app beta AAB
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          path: TMessagesProj_App/build/outputs/bundle/bundleAfatBeta/*.aab
+          if-no-files-found: error
+          archive: false
+
+      - name: Upload standalone APK
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          path: TMessagesProj_AppStandalone/build/outputs/apk/afat/standalone/*.apk
+          if-no-files-found: error
+          archive: false
+
+      - name: Upload standalone AAB
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          path: TMessagesProj_AppStandalone/build/outputs/bundle/afatStandalone/*.aab
+          if-no-files-found: error
+          archive: false
