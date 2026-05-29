@@ -24929,6 +24929,7 @@ public class ChatActivity extends BaseFragment implements
         message.id = flexAdBlockCollapsedMessageId--;
         message.local_id = FlexConfig.AD_BLOCK_COLLAPSED_LOCAL_ID;
         message.dialog_id = dialog_id;
+        message.peer_id = getMessagesController().getPeer(dialog_id);
         message.date = baseMessage != null && baseMessage.messageOwner != null ? baseMessage.messageOwner.date : getConnectionsManager().getCurrentTime();
         MessageObject messageObject = new MessageObject(currentAccount, message, false, false);
         messageObject.type = MessageObject.TYPE_DATE;
