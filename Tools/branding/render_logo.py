@@ -3,7 +3,7 @@
 Single source of truth for the boat shape; regenerates every PNG asset and the
 vector drawable from these normalized coordinates.
 """
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, ImageFilter
 import os
 
 REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -41,19 +41,36 @@ def render_transparent(w: int, h: int, color, fill_frac: float = 0.58) -> Image.
     return img
 
 
-def render_launcher(size: int, *, round_corners: bool = True,
-                    bg=CREAM, ink=INK, fill_frac: float = 0.54) -> Image.Image:
-    """Rounded-square (or fully round) launcher: bg + boat."""
-    img = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+def render_background_clip(size: int, *, inset: float = 0.155) -> Image.Image:
+    """Adaptive-icon mask overlay: white outside, transparent center.
+    Layered above the cream background to preserve Telegram's outer white ring."""
+    scale = 4
+    big = size * scale
+    img = Image.new("RGBA", (big, big), WHITE)
     d = ImageDraw.Draw(img)
-    if round_corners:
-        r = int(size * 0.22)
-        d.rounded_rectangle([0, 0, size - 1, size - 1], radius=r, fill=bg)
-    else:
-        d.ellipse([0, 0, size - 1, size - 1], fill=bg)
-    s = size * fill_frac / 0.92
-    draw_boat(d, size / 2, size / 2, s, ink)
-    return img
+    m = int(big * inset)
+    d.ellipse([m, m, big - 1 - m, big - 1 - m], fill=(0, 0, 0, 0))
+    return img.resize((size, size), Image.Resampling.LANCZOS)
+
+
+def render_launcher(size: int, *, bg=CREAM, ink=INK, fill_frac: float = 0.54) -> Image.Image:
+    """Pre-composited launcher PNG: transparent canvas + white outer circle + cream circle + boat."""
+    scale = 4
+    big = size * scale
+    img = Image.new("RGBA", (big, big), (0, 0, 0, 0))
+    shadow = Image.new("RGBA", (big, big), (0, 0, 0, 0))
+    shadow_draw = ImageDraw.Draw(shadow)
+    outer = int(big * 0.06)
+    shadow_draw.ellipse([outer, outer + int(big * 0.02), big - 1 - outer, big - 1 - outer + int(big * 0.02)], fill=(0, 0, 0, 36))
+    shadow = shadow.filter(ImageFilter.GaussianBlur(max(1, int(big * 0.018))))
+    img.alpha_composite(shadow)
+    d = ImageDraw.Draw(img)
+    d.ellipse([outer, outer, big - 1 - outer, big - 1 - outer], fill=WHITE)
+    ring = int(big * 0.085)
+    d.ellipse([ring, ring, big - 1 - ring, big - 1 - ring], fill=bg)
+    s = big * fill_frac / 0.92
+    draw_boat(d, big / 2, big / 2, s, ink)
+    return img.resize((size, size), Image.Resampling.LANCZOS)
 
 
 def save(img: Image.Image, path: str):
@@ -126,7 +143,7 @@ def regen_launchers():
                         "icon_4_launcher_sa", "icon_5_launcher_sa", "icon_6_launcher_sa"]
     for d in DENSITIES:
         size = int(base * SCALE[d])
-        sq = render_launcher(size, round_corners=True)
+        sq = render_launcher(size)
         for name, sub in targets:
             path = os.path.join(RES, f"{sub}-{d}", f"{name}.png")
             if os.path.exists(path):
@@ -137,6 +154,28 @@ def regen_launchers():
             if os.path.exists(sa_path):
                 save(sq, sa_path)
                 written += 1
+    return written
+
+
+def regen_background_clips():
+    """Adaptive-icon clip overlays: white outer area with transparent center.
+    The cream/color background below shows through the center and creates the
+    original outer white ring for adaptive launcher icons."""
+    base = 108
+    written = 0
+    for d in DENSITIES:
+        size = int(base * SCALE[d])
+        for name, inset in (("icon_background_clip", 0.155), ("icon_background_clip_round", 0.118)):
+            img = render_background_clip(size, inset=inset)
+            path = os.path.join(RES, f"mipmap-{d}", f"{name}.png")
+            if os.path.exists(path):
+                save(img, path)
+                written += 1
+    for name, inset in (("icon_background_clip", 0.155), ("icon_background_clip_round", 0.118)):
+        path = os.path.join(RES, "drawable", f"{name}.png")
+        if os.path.exists(path):
+            save(render_background_clip(432, inset=inset), path)
+            written += 1
     return written
 
 
@@ -165,11 +204,13 @@ def regen_all():
     n2 = regen_notification()
     n3 = regen_launchers()
     n4 = regen_intro_plane()
+    n5 = regen_background_clips()
     print(f"icon_foreground:  {n1} files")
     print(f"notification:     {n2} files")
     print(f"launchers:        {n3} files")
     print(f"intro plane:      {n4} files")
-    print(f"total:            {n1+n2+n3+n4} files")
+    print(f"background clips: {n5} files")
+    print(f"total:            {n1+n2+n3+n4+n5} files")
 
 
 if __name__ == "__main__":
