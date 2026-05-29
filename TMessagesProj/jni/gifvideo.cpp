@@ -1,5 +1,6 @@
 #include <jni.h>
 #include <android/bitmap.h>
+#include <cstring>
 #include <cstdint>
 #include <limits>
 #include <string>
@@ -19,8 +20,6 @@ extern "C" {
 #include <libavformat/avformat.h>
 #include <libavformat/isom.h>
 #include <libavcodec/bytestream.h>
-#include <libavcodec/get_bits.h>
-#include <libavcodec/golomb.h>
 #include <libavutil/eval.h>
 #include <libavutil/intmath.h>
 #include <libswscale/swscale.h>
@@ -551,8 +550,10 @@ extern "C" JNIEXPORT jlong JNICALL Java_org_telegram_ui_Components_AnimatedFileD
         return 0;
     }
 
-    info->pkt = AVPacket();
-    info->orig_pkt = AVPacket();
+    memset(&info->pkt, 0, sizeof(info->pkt));
+    memset(&info->orig_pkt, 0, sizeof(info->orig_pkt));
+    av_packet_unref(&info->pkt);
+    av_packet_unref(&info->orig_pkt);
     info->pkt.data = nullptr;
     info->pkt.size = 0;
 
@@ -671,7 +672,7 @@ extern "C" JNIEXPORT void JNICALL Java_org_telegram_ui_Components_AnimatedFileDr
             if (info->pkt.size == 0) {
                 ret = av_read_frame(info->fmt_ctx, &info->pkt);
                 if (ret >= 0) {
-                    info->orig_pkt = info->pkt;
+                    memcpy(&info->orig_pkt, &info->pkt, sizeof(info->orig_pkt));
                 }
             }
 
@@ -861,7 +862,7 @@ static inline void writeFrameToBitmap(JNIEnv *env, VideoInfo *info, jintArray da
 }
 
 extern "C" JNIEXPORT int JNICALL Java_org_telegram_ui_Components_AnimatedFileDrawable_getFrameAtTime(JNIEnv *env, jclass clazz, jlong ptr, jlong ms, jobject bitmap, jintArray data) {
-    if (ptr == NULL || bitmap == nullptr || data == nullptr) {
+    if (ptr == 0 || bitmap == nullptr || data == nullptr) {
         return 0;
     }
     VideoInfo *info = (VideoInfo *) (intptr_t) ptr;
@@ -900,7 +901,7 @@ extern "C" JNIEXPORT int JNICALL Java_org_telegram_ui_Components_AnimatedFileDra
             if (info->pkt.size == 0 && readNextPacket) {
                 ret = av_read_frame(info->fmt_ctx, &info->pkt);
                 if (ret >= 0) {
-                    info->orig_pkt = info->pkt;
+                    memcpy(&info->orig_pkt, &info->pkt, sizeof(info->orig_pkt));
                 }
             }
 
@@ -961,7 +962,7 @@ extern "C" JNIEXPORT int JNICALL Java_org_telegram_ui_Components_AnimatedFileDra
 }
 
 extern "C" JNIEXPORT jint JNICALL Java_org_telegram_ui_Components_AnimatedFileDrawable_getVideoFrame(JNIEnv *env, jclass clazz, jlong ptr, jobject bitmap, jintArray data, jboolean preview, jfloat start_time, jfloat end_time, jboolean loop) {
-    if (ptr == NULL) {
+    if (ptr == 0) {
         return 0;
     }
     //int64_t time = ConnectionsManager::getInstance(0).getCurrentTimeMonotonicMillis();
@@ -1000,7 +1001,7 @@ extern "C" JNIEXPORT jint JNICALL Java_org_telegram_ui_Components_AnimatedFileDr
                     info->pkt.data = NULL;
                     info->pkt.size = 0;
                 } else {
-                    info->orig_pkt = info->pkt;
+                    memcpy(&info->orig_pkt, &info->pkt, sizeof(info->orig_pkt));
                 }
             }
         }
