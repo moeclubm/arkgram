@@ -78,18 +78,5 @@ jobs:
       - name: Build verification APK
         shell: bash
         run: |
-          set -o pipefail
           chmod +x gradlew
-          ./gradlew :TMessagesProj_App:assembleAfatDebug --build-cache --configuration-cache --stacktrace 2>&1 | tee gradle-build.log
-          status=${PIPESTATUS[0]}
-          if [ "$status" -ne 0 ]; then
-            tail_message="$(tail -n 40 gradle-build.log | python3 -c 'import sys; print(sys.stdin.read().replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A"))')"
-            echo "::error file=.github/workflows/ci.yml,line=78,title=Gradle failure tail::$tail_message"
-            {
-              echo '### Gradle failure tail'
-              echo '```'
-              tail -n 200 gradle-build.log
-              echo '```'
-            } >> "$GITHUB_STEP_SUMMARY"
-          fi
-          exit "$status"
+          ./gradlew :TMessagesProj_App:assembleAfatDebug --build-cache --configuration-cache --stacktrace
