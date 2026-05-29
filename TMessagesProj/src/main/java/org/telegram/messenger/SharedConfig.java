@@ -333,6 +333,7 @@ public class SharedConfig {
     public static boolean autoRetryFailedMediaDownloads;
     public static boolean disableChannelSwipeNext;
     public static boolean lazyAttachCamera;
+    public static boolean photoLiveDefault;
 
     public static TLRPC.TL_help_appUpdate pendingAppUpdate;
     public static int pendingAppUpdateBuildVersion;
@@ -608,7 +609,7 @@ public class SharedConfig {
             nextMediaTap = preferences.getBoolean("next_media_on_tap", true);
             recordViaSco = preferences.getBoolean("record_via_sco", false);
             customTabs = preferences.getBoolean("custom_tabs", true);
-            inappBrowser = preferences.getBoolean("inapp_browser", true);
+            inappBrowser = preferences.getBoolean("inapp_browser", false);
             browserOpenMode = preferences.getInt("browser_open_mode", BROWSER_OPEN_MODE_DEFAULT);
             adaptableColorInBrowser = preferences.getBoolean("adaptableBrowser", false);
             onlyLocalInstantView = preferences.getBoolean("onlyLocalInstantView", BuildVars.DEBUG_PRIVATE_VERSION);
@@ -696,6 +697,7 @@ public class SharedConfig {
             autoRetryFailedMediaDownloads = preferences.getBoolean("autoRetryFailedMediaDownloads", false);
             disableChannelSwipeNext = preferences.getBoolean("disableChannelSwipeNext", false);
             lazyAttachCamera = preferences.getBoolean("lazyAttachCamera", false);
+            photoLiveDefault = preferences.getBoolean("photoLiveDefault", false);
 
             loadDebugConfig(preferences);
 

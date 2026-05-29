@@ -61,7 +61,8 @@ object RulesRegistry {
                 "updateChatParticipant",
                 "updateInlineBotCallbackQuery",
                 "updatePtsChanged",
-                "updateSmsJob"
+                "updateSmsJob",
+                "updateBotGuestChatQuery"
             ),
             "MessageAction" to setOf(
                 "messageActionRequestedPeerSentMe",

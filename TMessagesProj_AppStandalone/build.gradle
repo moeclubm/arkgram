@@ -133,11 +133,10 @@ android {
     defaultConfig.versionCode = appVersionCode
 
     defaultConfig {
-        minSdk = 23
-        targetSdk = 36
-        versionName appVersionName
-        ndkVersion = "21.4.7075529"
-
+        minSdkVersion 21
+        targetSdkVersion 35
+        versionName APP_VERSION_NAME
+        ndkVersion "27.2.12479018"
         multiDexEnabled = true
 
         vectorDrawables.generatedDensities = ['mdpi', 'hdpi', 'xhdpi', 'xxhdpi']
