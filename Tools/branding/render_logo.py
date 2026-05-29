@@ -3,7 +3,7 @@
 Single source of truth for the boat shape; regenerates every PNG asset and the
 vector drawable from these normalized coordinates.
 """
-from PIL import Image, ImageDraw, ImageFilter
+from PIL import Image, ImageDraw, ImageFilter, ImageFont
 import os
 
 REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -53,20 +53,20 @@ def render_background_clip(size: int, *, inset: float = 0.155) -> Image.Image:
     return img.resize((size, size), Image.Resampling.LANCZOS)
 
 
-def render_launcher(size: int, *, bg=CREAM, ink=INK, fill_frac: float = 0.54) -> Image.Image:
+def render_launcher(size: int, *, bg=CREAM, ink=INK, fill_frac: float = 0.49) -> Image.Image:
     """Pre-composited launcher PNG: transparent canvas + white outer circle + cream circle + boat."""
     scale = 4
     big = size * scale
     img = Image.new("RGBA", (big, big), (0, 0, 0, 0))
     shadow = Image.new("RGBA", (big, big), (0, 0, 0, 0))
     shadow_draw = ImageDraw.Draw(shadow)
-    outer = int(big * 0.06)
+    outer = int(big * 0.02)
     shadow_draw.ellipse([outer, outer + int(big * 0.02), big - 1 - outer, big - 1 - outer + int(big * 0.02)], fill=(0, 0, 0, 36))
     shadow = shadow.filter(ImageFilter.GaussianBlur(max(1, int(big * 0.018))))
     img.alpha_composite(shadow)
     d = ImageDraw.Draw(img)
     d.ellipse([outer, outer, big - 1 - outer, big - 1 - outer], fill=WHITE)
-    ring = int(big * 0.085)
+    ring = int(big * 0.08)
     d.ellipse([ring, ring, big - 1 - ring, big - 1 - ring], fill=bg)
     s = big * fill_frac / 0.92
     draw_boat(d, big / 2, big / 2, s, ink)
@@ -93,7 +93,7 @@ def regen_icon_foreground():
     written = 0
     for d in DENSITIES:
         size = int(base * SCALE[d])
-        img = render_transparent(size, size, INK, fill_frac=0.58)
+        img = render_transparent(size, size, INK, fill_frac=0.33)
         for n in names:
             path = os.path.join(RES, f"mipmap-{d}", f"{n}.png")
             if os.path.exists(path):
@@ -165,13 +165,13 @@ def regen_background_clips():
     written = 0
     for d in DENSITIES:
         size = int(base * SCALE[d])
-        for name, inset in (("icon_background_clip", 0.155), ("icon_background_clip_round", 0.118)):
+        for name, inset in (("icon_background_clip", 0.234), ("icon_background_clip_round", 0.206)):
             img = render_background_clip(size, inset=inset)
             path = os.path.join(RES, f"mipmap-{d}", f"{name}.png")
             if os.path.exists(path):
                 save(img, path)
                 written += 1
-    for name, inset in (("icon_background_clip", 0.155), ("icon_background_clip_round", 0.118)):
+    for name, inset in (("icon_background_clip", 0.234), ("icon_background_clip_round", 0.206)):
         path = os.path.join(RES, "drawable", f"{name}.png")
         if os.path.exists(path):
             save(render_background_clip(432, inset=inset), path)
@@ -199,18 +199,56 @@ def regen_intro_plane():
     return written
 
 
+def regen_dialogs_logo():
+    """Action-bar ArkGram wordmark used by DialogsActivity.
+    Keep the same mdpi logical size as the original bitmap (90x21dp), but write
+    density-specific PNGs so high-density screens do not upscale the mdpi asset."""
+    font_path = os.path.join(REPO, "TMessagesProj", "src", "main", "assets", "fonts", "rextrabold.ttf")
+    base_w, base_h, base_font = 90, 21, 18
+    written = 0
+    for d in DENSITIES:
+        scale = SCALE[d]
+        w, h = int(base_w * scale), int(base_h * scale)
+        img = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+        draw = ImageDraw.Draw(img)
+        font = ImageFont.truetype(font_path, int(base_font * scale))
+        bbox = draw.textbbox((0, 0), "ArkGram", font=font)
+        y = int((h - (bbox[3] - bbox[1])) / 2 - bbox[1])
+        draw.text((0, y), "ArkGram", font=font, fill=WHITE)
+        path = os.path.join(RES, f"drawable-{d}", "telegram_logo_2.png")
+        save(img, path)
+        written += 1
+    save(Image.open(os.path.join(RES, "drawable-mdpi", "telegram_logo_2.png")), os.path.join(RES, "drawable", "telegram_logo_2.png"))
+    return written + 1
+
+
+def regen_logo_middle():
+    """Round ArkGram emblem used by TermsOfServiceView."""
+    written = 0
+    for d, size in (("xhdpi", 136), ("xxhdpi", 204)):
+        path = os.path.join(RES, f"drawable-{d}", "logo_middle.png")
+        if os.path.exists(path):
+            save(render_launcher(size, fill_frac=0.50), path)
+            written += 1
+    return written
+
+
 def regen_all():
     n1 = regen_icon_foreground()
     n2 = regen_notification()
     n3 = regen_launchers()
     n4 = regen_intro_plane()
     n5 = regen_background_clips()
+    n6 = regen_dialogs_logo()
+    n7 = regen_logo_middle()
     print(f"icon_foreground:  {n1} files")
     print(f"notification:     {n2} files")
     print(f"launchers:        {n3} files")
     print(f"intro plane:      {n4} files")
     print(f"background clips: {n5} files")
-    print(f"total:            {n1+n2+n3+n4+n5} files")
+    print(f"dialogs logo:     {n6} files")
+    print(f"logo middle:      {n7} files")
+    print(f"total:            {n1+n2+n3+n4+n5+n6+n7} files")
 
 
 if __name__ == "__main__":
