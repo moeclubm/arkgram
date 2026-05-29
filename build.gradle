@@ -1,17 +1,17 @@
 buildscript {
     dependencies {
         constraints {
-            classpath 'io.netty:netty-buffer:4.1.132.Final'
-            classpath 'io.netty:netty-codec:4.1.132.Final'
-            classpath 'io.netty:netty-codec-http:4.1.132.Final'
-            classpath 'io.netty:netty-codec-http2:4.1.132.Final'
-            classpath 'io.netty:netty-codec-socks:4.1.132.Final'
-            classpath 'io.netty:netty-common:4.1.132.Final'
-            classpath 'io.netty:netty-handler:4.1.132.Final'
-            classpath 'io.netty:netty-handler-proxy:4.1.132.Final'
-            classpath 'io.netty:netty-resolver:4.1.132.Final'
-            classpath 'io.netty:netty-transport:4.1.132.Final'
-            classpath 'io.netty:netty-transport-native-unix-common:4.1.132.Final'
+            classpath 'io.netty:netty-buffer:4.2.14.Final'
+            classpath 'io.netty:netty-codec:4.2.14.Final'
+            classpath 'io.netty:netty-codec-http:4.2.14.Final'
+            classpath 'io.netty:netty-codec-http2:4.2.14.Final'
+            classpath 'io.netty:netty-codec-socks:4.2.14.Final'
+            classpath 'io.netty:netty-common:4.2.14.Final'
+            classpath 'io.netty:netty-handler:4.2.14.Final'
+            classpath 'io.netty:netty-handler-proxy:4.2.14.Final'
+            classpath 'io.netty:netty-resolver:4.2.14.Final'
+            classpath 'io.netty:netty-transport:4.2.14.Final'
+            classpath 'io.netty:netty-transport-native-unix-common:4.2.14.Final'
             classpath 'org.bouncycastle:bcpkix-jdk18on:1.84'
             classpath 'org.bouncycastle:bcprov-jdk18on:1.84'
             classpath 'org.bouncycastle:bcutil-jdk18on:1.84'
@@ -26,7 +26,7 @@ buildscript {
                     withDependencies { dependencies ->
                         dependencies.each { dependency ->
                             if (dependency.group == 'io.netty' && dependency.name.startsWith('netty-')) {
-                                dependency.version { require '4.1.132.Final' }
+                                dependency.version { require '4.2.14.Final' }
                             } else if (dependency.group == 'org.bouncycastle' && dependency.name.endsWith('-jdk18on')) {
                                 dependency.version { require '1.84' }
                             } else if (dependency.group == 'org.bitbucket.b_c' && dependency.name == 'jose4j') {
@@ -47,7 +47,7 @@ buildscript {
     configurations.classpath {
         resolutionStrategy.eachDependency { details ->
             if (details.requested.group == 'io.netty' && details.requested.name.startsWith('netty-')) {
-                details.useVersion '4.1.132.Final'
+                details.useVersion '4.2.14.Final'
             } else if (details.requested.group == 'org.bouncycastle' && details.requested.name.endsWith('-jdk18on')) {
                 details.useVersion '1.84'
             } else if (details.requested.group == 'org.bitbucket.b_c' && details.requested.name == 'jose4j') {
@@ -77,7 +77,7 @@ subprojects {
                     withDependencies { dependencies ->
                         dependencies.each { dependency ->
                             if (dependency.group == 'io.netty' && dependency.name.startsWith('netty-')) {
-                                dependency.version { require '4.1.132.Final' }
+                                dependency.version { require '4.2.14.Final' }
                             } else if (dependency.group == 'org.bouncycastle' && dependency.name.endsWith('-jdk18on')) {
                                 dependency.version { require '1.84' }
                             } else if (dependency.group == 'org.bitbucket.b_c' && dependency.name == 'jose4j') {
@@ -98,7 +98,7 @@ subprojects {
     configurations.configureEach {
         resolutionStrategy.eachDependency { details ->
             if (details.requested.group == 'io.netty' && details.requested.name.startsWith('netty-')) {
-                details.useVersion '4.1.132.Final'
+                details.useVersion '4.2.14.Final'
             } else if (details.requested.group == 'org.bouncycastle' && details.requested.name.endsWith('-jdk18on')) {
                 details.useVersion '1.84'
             } else if (details.requested.group == 'org.bitbucket.b_c' && details.requested.name == 'jose4j') {

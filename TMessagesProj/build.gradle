@@ -49,7 +49,7 @@ dependencies {
     implementation 'com.stripe:stripe-android:2.0.2'
     implementation 'com.google.mlkit:language-id:17.0.6'
     implementation 'com.android.billingclient:billing:7.1.1'
-    implementation 'com.google.code.gson:gson:2.13.2'
+    implementation 'com.google.code.gson:gson:2.14.0'
     implementation 'com.google.guava:guava:33.6.0-android'
     implementation 'com.google.android.play:integrity:1.6.0'
     implementation 'com.google.android.gms:play-services-mlkit-subject-segmentation:16.0.0-beta1'
@@ -68,10 +68,10 @@ dependencies {
 //    implementation 'com.google.mlkit:translate:17.0.3'
 
     constraints {
-        implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk7:2.3.20") {
+        implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk7:2.3.21") {
             because("kotlin-stdlib-jdk7 is now a part of kotlin-stdlib")
         }
-        implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:2.3.20") {
+        implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:2.3.21") {
             because("kotlin-stdlib-jdk8 is now a part of kotlin-stdlib")
         }
     }

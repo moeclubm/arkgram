@@ -24,23 +24,23 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6.0.2
 
       - name: Set up Java
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@v5.2.0
         with:
           distribution: temurin
           java-version: '17'
 
       - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v5
+        uses: gradle/actions/setup-gradle@v6.1.0
         with:
           cache-cleanup: always
           cache-encryption-key: ${{ secrets.GRADLE_ENCRYPTION_KEY }}
           cache-read-only: ${{ github.ref != 'refs/heads/master' && !startsWith(github.ref, 'refs/tags/') }}
 
       - name: Set up Android SDK
-        uses: android-actions/setup-android@v4
+        uses: android-actions/setup-android@v4.0.1
         with:
           packages: 'platforms;android-36 build-tools;36.0.0 ndk;21.4.7075529 cmake;3.22.1'
 
@@ -72,29 +72,26 @@ jobs:
           test -n "${release_alias}"
           echo "ORG_GRADLE_PROJECT_RELEASE_KEY_ALIAS=${release_alias}" >> "$GITHUB_ENV"
 
-      - name: Build release APK and Play release AAB
+      - name: Build release APKs and AABs
         shell: bash
         run: |
           chmod +x gradlew
-          ./gradlew :TMessagesProj_App:assembleAfatRelease :TMessagesProj_App:bundleBundleAfatRelease --build-cache --configuration-cache --stacktrace
+          ./gradlew \
+            :TMessagesProj_App:assembleAfatRelease \
+            :TMessagesProj_App:bundleBundleAfatRelease \
+            :TMessagesProj_AppStandalone:assembleAfatStandalone \
+            :TMessagesProj_AppStandalone:bundleAfatStandalone \
+            --build-cache --configuration-cache --stacktrace
 
-      - name: Upload release artifacts
-        uses: actions/upload-artifact@v6
+      - name: Publish GitHub release binaries
+        uses: softprops/action-gh-release@v3.0.0
         with:
-          name: arkgram-release-${{ github.ref_name }}
-          path: TMessagesProj_App/build/outputs/apk/afat/release/*.apk
-          if-no-files-found: error
-
-      - name: Upload Play release AAB
-        uses: actions/upload-artifact@v6
-        with:
-          name: arkgram-play-release-aab-${{ github.ref_name }}
-          path: TMessagesProj_App/build/outputs/bundle/bundleAfatRelease/*.aab
-          if-no-files-found: error
-
-      - name: Publish GitHub release
-        if: startsWith(github.ref, 'refs/tags/')
-        uses: softprops/action-gh-release@v2
-        with:
-          files: TMessagesProj_App/build/outputs/apk/afat/release/*.apk
+          tag_name: ${{ github.ref_type == 'tag' && github.ref_name || format('manual-{0}', github.run_number) }}
+          target_commitish: ${{ github.sha }}
+          fail_on_unmatched_files: true
+          files: |
+            TMessagesProj_App/build/outputs/apk/afat/release/*.apk
+            TMessagesProj_App/build/outputs/bundle/bundleAfatRelease/*.aab
+            TMessagesProj_AppStandalone/build/outputs/apk/afat/standalone/*.apk
+            TMessagesProj_AppStandalone/build/outputs/bundle/afatStandalone/*.aab
           generate_release_notes: true
