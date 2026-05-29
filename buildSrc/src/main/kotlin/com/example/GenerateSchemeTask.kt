@@ -222,7 +222,7 @@ abstract class GenerateSchemeTask : DefaultTask() {
         var testIndex = 0;
 
         for (constructor in constructorsSorted) {
-            if (!RULES.rules.filterConstructor(constructor.tl.key.name)) continue
+            if (!RulesRegistry.rules.filterConstructor(constructor.tl.key.name)) continue
 
             val isEncrypted = constructor in encrypted
             val isLegacy = constructor.layerLast < LAYER
