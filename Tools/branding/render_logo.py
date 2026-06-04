@@ -53,7 +53,7 @@ def render_background_clip(size: int, *, inset: float = 0.155) -> Image.Image:
     return img.resize((size, size), Image.Resampling.LANCZOS)
 
 
-def render_launcher(size: int, *, bg=CREAM, ink=INK, fill_frac: float = 0.49) -> Image.Image:
+def render_launcher(size: int, *, bg=CREAM, ink=INK, fill_frac: float = 0.42) -> Image.Image:
     """Pre-composited launcher PNG: transparent canvas + white outer circle + cream circle + boat."""
     scale = 4
     big = size * scale
@@ -93,7 +93,7 @@ def regen_icon_foreground():
     written = 0
     for d in DENSITIES:
         size = int(base * SCALE[d])
-        img = render_transparent(size, size, INK, fill_frac=0.33)
+        img = render_transparent(size, size, INK, fill_frac=0.26)
         for n in names:
             path = os.path.join(RES, f"mipmap-{d}", f"{n}.png")
             if os.path.exists(path):
@@ -228,7 +228,7 @@ def regen_logo_middle():
     for d, size in (("xhdpi", 136), ("xxhdpi", 204)):
         path = os.path.join(RES, f"drawable-{d}", "logo_middle.png")
         if os.path.exists(path):
-            save(render_launcher(size, fill_frac=0.50), path)
+            save(render_launcher(size, fill_frac=0.42), path)
             written += 1
     return written
 
