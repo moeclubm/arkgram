@@ -18,8 +18,9 @@ package org.telegram.messenger.support.fingerprint;
 
 import android.annotation.TargetApi;
 import android.content.Context;
-import android.hardware.fingerprint.FingerprintManager;
 import android.os.Handler;
+
+import androidx.biometric.BiometricManager;
 
 import org.telegram.messenger.FileLog;
 
@@ -31,17 +32,9 @@ import javax.crypto.Mac;
 @TargetApi(23)
 public final class FingerprintManagerCompatApi23 {
 
-    private static FingerprintManager getFingerprintManager(Context ctx) {
-        return (FingerprintManager) ctx.getSystemService(Context.FINGERPRINT_SERVICE);
-    }
-
     public static boolean hasEnrolledFingerprints(Context context) {
         try {
-            FingerprintManager fingerprintManager = getFingerprintManager(context);
-            if (fingerprintManager == null) {
-                return false;
-            }
-            return fingerprintManager.hasEnrolledFingerprints();
+            return BiometricManager.from(context).canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_STRONG) == BiometricManager.BIOMETRIC_SUCCESS;
         } catch (Exception e) {
             FileLog.e(e);
         }
@@ -50,11 +43,8 @@ public final class FingerprintManagerCompatApi23 {
 
     public static boolean isHardwareDetected(Context context) {
         try {
-            FingerprintManager fingerprintManager = getFingerprintManager(context);
-            if (fingerprintManager == null) {
-                return false;
-            }
-            return fingerprintManager.isHardwareDetected();
+            int result = BiometricManager.from(context).canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_STRONG);
+            return result == BiometricManager.BIOMETRIC_SUCCESS || result == BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED;
         } catch (Exception e) {
             FileLog.e(e);
         }
@@ -63,67 +53,7 @@ public final class FingerprintManagerCompatApi23 {
 
     public static void authenticate(Context context, CryptoObject crypto, int flags, Object cancel,
                                     AuthenticationCallback callback, Handler handler) {
-        try {
-            getFingerprintManager(context).authenticate(wrapCryptoObject(crypto),
-                    (android.os.CancellationSignal) cancel, flags,
-                    wrapCallback(callback), handler);
-        } catch (Exception e) {
-            FileLog.e(e);
-        }
-    }
-
-    private static FingerprintManager.CryptoObject wrapCryptoObject(CryptoObject cryptoObject) {
-        if (cryptoObject == null) {
-            return null;
-        } else if (cryptoObject.getCipher() != null) {
-            return new FingerprintManager.CryptoObject(cryptoObject.getCipher());
-        } else if (cryptoObject.getSignature() != null) {
-            return new FingerprintManager.CryptoObject(cryptoObject.getSignature());
-        } else if (cryptoObject.getMac() != null) {
-            return new FingerprintManager.CryptoObject(cryptoObject.getMac());
-        } else {
-            return null;
-        }
-    }
-
-    private static CryptoObject unwrapCryptoObject(FingerprintManager.CryptoObject cryptoObject) {
-        if (cryptoObject == null) {
-            return null;
-        } else if (cryptoObject.getCipher() != null) {
-            return new CryptoObject(cryptoObject.getCipher());
-        } else if (cryptoObject.getSignature() != null) {
-            return new CryptoObject(cryptoObject.getSignature());
-        } else if (cryptoObject.getMac() != null) {
-            return new CryptoObject(cryptoObject.getMac());
-        } else {
-            return null;
-        }
-    }
-
-    private static FingerprintManager.AuthenticationCallback wrapCallback(
-            final AuthenticationCallback callback) {
-        return new FingerprintManager.AuthenticationCallback() {
-            @Override
-            public void onAuthenticationError(int errMsgId, CharSequence errString) {
-                callback.onAuthenticationError(errMsgId, errString);
-            }
-
-            @Override
-            public void onAuthenticationHelp(int helpMsgId, CharSequence helpString) {
-                callback.onAuthenticationHelp(helpMsgId, helpString);
-            }
-
-            @Override
-            public void onAuthenticationSucceeded(FingerprintManager.AuthenticationResult result) {
-                callback.onAuthenticationSucceeded(new AuthenticationResultInternal(
-                        unwrapCryptoObject(result.getCryptoObject())));
-            }
-
-            @Override
-            public void onAuthenticationFailed() {
-                callback.onAuthenticationFailed();
-            }
-        };
+        callback.onAuthenticationError(BiometricManager.BIOMETRIC_ERROR_UNSUPPORTED, "FingerprintManager API is unavailable");
     }
 
     public static class CryptoObject {

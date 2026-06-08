@@ -172,7 +172,7 @@ android {
             sourceSets.release {
                 manifest.srcFile '../TMessagesProj/config/release/AndroidManifest_SDK23.xml'
             }
-            minSdk = 23
+            minSdk = 24
             buildConfigField "boolean", "BUNDLE", "true"
         }
         afat {
@@ -198,7 +198,7 @@ android {
     defaultConfig.versionCode = appVersionCode
 
     defaultConfig {
-        minSdk = 23
+        minSdk = 24
         targetSdk = 36
         versionName appVersionName
         ndkVersion = "21.4.7075529"
