@@ -63,7 +63,7 @@ def abiVersionCodes = [
 ]
 
 android {
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig.applicationId = APP_PACKAGE
 

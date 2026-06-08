@@ -9666,14 +9666,14 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
     private void onShowView() {
         if (parentActivity instanceof LaunchActivity) {
             LaunchActivity launchActivity = (LaunchActivity) parentActivity;
-            launchActivity.addOnUserLeaveHintListener(onUserLeaveHintListener);
+            launchActivity.addTelegramOnUserLeaveHintListener(onUserLeaveHintListener);
         }
     }
 
     private void onHideView() {
         if (parentActivity instanceof LaunchActivity) {
             LaunchActivity launchActivity = (LaunchActivity) parentActivity;
-            launchActivity.removeOnUserLeaveHintListener(onUserLeaveHintListener);
+            launchActivity.removeTelegramOnUserLeaveHintListener(onUserLeaveHintListener);
         }
         if (parentFragment != null && parentFragment.getFragmentView() != null) {
             clippingImageProgress = 1f;

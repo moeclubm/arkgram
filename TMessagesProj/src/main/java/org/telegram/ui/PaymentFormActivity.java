@@ -22,6 +22,7 @@ import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.IntentSender;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Canvas;
@@ -73,6 +74,7 @@ import androidx.dynamicanimation.animation.FloatValueHolder;
 import androidx.dynamicanimation.animation.SpringAnimation;
 import androidx.dynamicanimation.animation.SpringForce;
 
+import com.google.android.gms.common.api.ResolvableApiException;
 import com.google.android.gms.common.api.Status;
 import com.google.android.gms.tasks.Task;
 import com.google.android.gms.wallet.AutoResolveHelper;
@@ -82,14 +84,16 @@ import com.google.android.gms.wallet.PaymentDataRequest;
 import com.google.android.gms.wallet.PaymentsClient;
 import com.google.android.gms.wallet.Wallet;
 import com.google.android.gms.wallet.WalletConstants;
+import com.stripe.android.ApiResultCallback;
+import com.stripe.android.CardUtils;
 import com.stripe.android.Stripe;
-import com.stripe.android.TokenCallback;
-import com.stripe.android.exception.APIConnectionException;
-import com.stripe.android.exception.APIException;
+import com.stripe.android.core.exception.APIConnectionException;
+import com.stripe.android.core.exception.APIException;
+import com.stripe.android.model.Address;
 import com.stripe.android.model.Card;
+import com.stripe.android.model.CardBrand;
+import com.stripe.android.model.CardParams;
 import com.stripe.android.model.Token;
-import com.stripe.android.net.StripeApiHandler;
-import com.stripe.android.net.TokenParser;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -2959,7 +2963,7 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                             put("parameters", new JSONObject() {{
                                 put("gateway", "stripe");
                                 put("stripe:publishableKey", providerApiKey);
-                                put("stripe:version", StripeApiHandler.VERSION);
+                                put("stripe:version", Stripe.VERSION);
                             }});
                         }
                     }});
@@ -2994,7 +2998,23 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
 
                 PaymentDataRequest request = PaymentDataRequest.fromJson(paymentDataRequest.toString());
                 if (request != null) {
-                    AutoResolveHelper.resolveTask(paymentsClient.loadPaymentData(request), getParentActivity(), LOAD_PAYMENT_DATA_REQUEST_CODE);
+                    paymentsClient.loadPaymentData(request)
+                            .addOnSuccessListener(paymentData -> {
+                                Intent resultData = new Intent();
+                                paymentData.putIntoIntent(resultData);
+                                onActivityResultFragment(LOAD_PAYMENT_DATA_REQUEST_CODE, Activity.RESULT_OK, resultData);
+                            })
+                            .addOnFailureListener(error -> {
+                                if (error instanceof ResolvableApiException) {
+                                    try {
+                                        ((ResolvableApiException) error).startResolutionForResult(getParentActivity(), LOAD_PAYMENT_DATA_REQUEST_CODE);
+                                    } catch (IntentSender.SendIntentException e) {
+                                        FileLog.e(e);
+                                    }
+                                } else {
+                                    FileLog.e(error);
+                                }
+                            });
                 }
             } catch (JSONException e) {
                 FileLog.e(e);
@@ -3394,10 +3414,10 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                                 cardName = "Android Pay";
                             }
                         } else {
-                            Token t = TokenParser.parseToken(token);
+                            Token t = Token.fromJson(new JSONObject(token));
                             paymentJson = String.format(Locale.US, "{\"type\":\"%1$s\", \"id\":\"%2$s\"}", t.getType(), t.getId());
                             Card card = t.getCard();
-                            cardName = card.getBrand() + " *" + card.getLast4();
+                            cardName = card.getBrand().getDisplayName() + " *" + card.getLast4();
                         }
                         goToNextStep();
                     } catch (JSONException e) {
@@ -3850,17 +3870,12 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
             month = null;
             year = null;
         }
-        Card card = new Card(
-                inputFields[FIELD_CARD].getText().toString(),
-                month,
-                year,
-                inputFields[FIELD_CVV].getText().toString(),
-                inputFields[FIELD_CARDNAME].getText().toString(),
-                null, null, null, null,
-                inputFields[FIELD_CARD_POSTCODE].getText().toString(),
-                inputFields[FIELD_CARD_COUNTRY].getText().toString(),
-                null);
-        cardName = card.getBrand() + " *" + card.getLast4();
+        String cardNumber = inputFields[FIELD_CARD].getText().toString();
+        String cvc = inputFields[FIELD_CVV].getText().toString();
+        String cardholderName = inputFields[FIELD_CARDNAME].getText().toString();
+        String postalCode = inputFields[FIELD_CARD_POSTCODE].getText().toString();
+        String country = inputFields[FIELD_CARD_COUNTRY].getText().toString();
+        CardBrand brand = CardUtils.getPossibleCardBrand(cardNumber);
 
         boolean skipDateCheck = false;
         if (month != null && year != null) {
@@ -3873,16 +3888,16 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
             }
         }
 
-        if (!card.validateNumber()) {
+        if (!CardUtils.INSTANCE.isValidLuhnNumber(cardNumber) || !brand.isValidCardNumberLength(cardNumber)) {
             shakeField(FIELD_CARD);
             return false;
-        } else if (!skipDateCheck && (!card.validateExpMonth() || !card.validateExpYear() || !card.validateExpiryDate())) {
+        } else if (!skipDateCheck && (month == null || year == null || month < 1 || month > 12 || (year < 100 ? 2000 + year : year) < Calendar.getInstance().get(Calendar.YEAR) || ((year < 100 ? 2000 + year : year) == Calendar.getInstance().get(Calendar.YEAR) && month < Calendar.getInstance().get(Calendar.MONTH) + 1))) {
             shakeField(FIELD_EXPIRE_DATE);
             return false;
         } else if (need_card_name && inputFields[FIELD_CARDNAME].length() == 0) {
             shakeField(FIELD_CARDNAME);
             return false;
-        } else if (!card.validateCVC()) {
+        } else if (!brand.isValidCvc(cvc)) {
             shakeField(FIELD_CVV);
             return false;
         } else if (need_card_country && inputFields[FIELD_CARD_COUNTRY].length() == 0) {
@@ -3892,12 +3907,15 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
             shakeField(FIELD_CARD_POSTCODE);
             return false;
         }
+        CardParams card = new CardParams(cardNumber, month, year, cvc, cardholderName, new Address(null, country, null, null, postalCode, null));
+        cardName = brand.getDisplayName() + " *" + card.getLast4();
         showEditDoneProgress(true, true);
         try {
             if ("stripe".equals(paymentForm.native_provider)) {
-                Stripe stripe = new Stripe(providerApiKey);
-                stripe.createToken(card, new TokenCallback() {
-                            public void onSuccess(Token token) {
+                Stripe stripe = new Stripe(getParentActivity(), providerApiKey);
+                stripe.createCardToken(card, new ApiResultCallback<Token>() {
+                            @Override
+                            public void onSuccess(@NonNull Token token) {
                                 if (canceled) {
                                     return;
                                 }
@@ -3909,7 +3927,8 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                                 });
                             }
 
-                            public void onError(Exception error) {
+                            @Override
+                            public void onError(@NonNull Exception error) {
                                 if (canceled) {
                                     return;
                                 }
@@ -3931,10 +3950,10 @@ public class PaymentFormActivity extends BaseFragment implements NotificationCen
                         try {
                             JSONObject jsonObject = new JSONObject();
                             JSONObject cardObject = new JSONObject();
-                            cardObject.put("number", card.getNumber());
-                            cardObject.put("expiration_month", String.format(Locale.US, "%02d", card.getExpMonth()));
-                            cardObject.put("expiration_year", "" + card.getExpYear());
-                            cardObject.put("security_code", "" + card.getCVC());
+                            cardObject.put("number", cardNumber);
+                            cardObject.put("expiration_month", String.format(Locale.US, "%02d", month));
+                            cardObject.put("expiration_year", "" + year);
+                            cardObject.put("security_code", "" + cvc);
                             jsonObject.put("card", cardObject);
 
                             String overrideSmartGlocalConnectionUrl = null;
