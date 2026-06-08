@@ -442,25 +442,44 @@ public class TranslateAlert2 extends BottomSheet implements NotificationCenter.N
         return (idx >= start) ? idx : -1;
     }
 
-    public static ArrayList<String> cut(String encodedText, int maxLength) {
+    public static ArrayList<String> cut(String text, int maxLength) {
         ArrayList<String> result = new ArrayList<>();
-        int start = 0;
-        while (start < encodedText.length()) {
-            int end = Math.min(start + maxLength, encodedText.length());
-            int splitPos = -1;
-
-            splitPos = lastIndexOfSafe(encodedText, "%0A", start, end);
-            if (splitPos == -1) {
-                splitPos = lastIndexOfSafe(encodedText, "%20", start, end);
+        StringBuilder part = new StringBuilder();
+        int encodedLength = 0;
+        int lastBreak = -1;
+        for (int i = 0; i < text.length(); ) {
+            final int codePoint = text.codePointAt(i);
+            final int next = i + Character.charCount(codePoint);
+            String piece = text.substring(i, next);
+            int pieceLength = Uri.encode(piece).length();
+            if (encodedLength + pieceLength > maxLength && part.length() > 0) {
+                if (lastBreak > 0) {
+                    result.add(Uri.encode(part.substring(0, lastBreak)));
+                    part.delete(0, lastBreak);
+                    encodedLength = Uri.encode(part.toString()).length();
+                } else {
+                    result.add(Uri.encode(part.toString()));
+                    part.setLength(0);
+                    encodedLength = 0;
+                }
+                lastBreak = lastIndexOfSafe(part.toString(), "\n", 0, part.length());
+                if (lastBreak == -1) {
+                    lastBreak = lastIndexOfSafe(part.toString(), " ", 0, part.length());
+                }
+                if (lastBreak >= 0) {
+                    lastBreak += 1;
+                }
+                continue;
             }
-            if (splitPos == -1) {
-                splitPos = end;
-            } else {
-                splitPos += 3;
+            part.append(piece);
+            encodedLength += pieceLength;
+            if (codePoint == '\n' || codePoint == ' ') {
+                lastBreak = part.length();
             }
-
-            result.add(encodedText.substring(start, splitPos));
-            start = splitPos;
+            i = next;
+        }
+        if (part.length() > 0) {
+            result.add(Uri.encode(part.toString()));
         }
         return result;
     }
@@ -483,7 +502,7 @@ public class TranslateAlert2 extends BottomSheet implements NotificationCenter.N
         if (provider == FlexConfig.TRANSLATION_PROVIDER_GOOGLE || provider == FlexConfig.TRANSLATION_PROVIDER_GOOGLE_CN) {
             final String etext = Uri.encode(text);
             if (etext.length() > 5000) {
-                ArrayList<String> parts = cut(etext, 5000);
+                ArrayList<String> parts = cut(text, 5000);
                 ArrayList<String> results = new ArrayList<>();
                 for (int i = 0; i < parts.size(); ++i) {
                     results.add(null);
