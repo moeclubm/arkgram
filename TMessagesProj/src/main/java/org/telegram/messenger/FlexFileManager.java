@@ -79,8 +79,9 @@ public class FlexFileManager {
         global.put("ai_summary_llm_model_ref", FlexConfig.getAiSummaryLlmModelRef());
         global.put("ai_summary_llm_prompt", FlexConfig.getAiSummaryLlmPrompt());
         LinkedHashMap<String, Object> llmProviders = new LinkedHashMap<>();
-        for (int provider = FlexConfig.LLM_PROVIDER_CUSTOM; provider <= FlexConfig.LLM_PROVIDER_SILICONFLOW; ++provider) {
+        for (int provider = FlexConfig.LLM_PROVIDER_CUSTOM; provider <= FlexConfig.LLM_PROVIDER_ANTHROPIC; ++provider) {
             LinkedHashMap<String, Object> config = new LinkedHashMap<>();
+            config.put("api_type", FlexConfig.getProviderApiType(provider));
             config.put("api_url", FlexConfig.getStoredProviderApiUrl(provider));
             config.put("api_key", FlexConfig.getProviderApiKey(provider));
             config.put("models", FlexConfig.getProviderModelsText(provider));
@@ -223,12 +224,15 @@ public class FlexFileManager {
         }
         if (global.has("llm_provider_configs") && global.get("llm_provider_configs").isJsonObject()) {
             JsonObject llmProviders = global.getAsJsonObject("llm_provider_configs");
-            for (int provider = FlexConfig.LLM_PROVIDER_CUSTOM; provider <= FlexConfig.LLM_PROVIDER_SILICONFLOW; ++provider) {
+            for (int provider = FlexConfig.LLM_PROVIDER_CUSTOM; provider <= FlexConfig.LLM_PROVIDER_ANTHROPIC; ++provider) {
                 String key = String.valueOf(provider);
                 if (!llmProviders.has(key) || !llmProviders.get(key).isJsonObject()) {
                     continue;
                 }
                 JsonObject config = llmProviders.getAsJsonObject(key);
+                if (config.has("api_type")) {
+                    FlexConfig.setProviderApiType(provider, config.get("api_type").getAsInt());
+                }
                 if (config.has("api_url")) {
                     FlexConfig.setProviderApiUrl(provider, config.get("api_url").getAsString());
                 }

@@ -80,7 +80,24 @@ public class FlexLlmFeatureSettingsActivity extends UniversalFragment {
         if (provider == FlexConfig.LLM_PROVIDER_SILICONFLOW) {
             return getString(R.string.FlexLlmProviderSiliconFlow);
         }
+        if (provider == FlexConfig.LLM_PROVIDER_ANTHROPIC) {
+            return getString(R.string.FlexLlmProviderAnthropic);
+        }
         return getString(R.string.FlexLlmProviderCustom);
+    }
+
+    public static CharSequence getApiTypeTitle(int apiType) {
+        if (apiType == FlexConfig.LLM_API_TYPE_RESPONSES) {
+            return getString(R.string.FlexLlmApiTypeResponses);
+        }
+        if (apiType == FlexConfig.LLM_API_TYPE_CLAUDE_MESSAGES) {
+            return getString(R.string.FlexLlmApiTypeClaudeMessages);
+        }
+        return getString(R.string.FlexLlmApiTypeChatCompletions);
+    }
+
+    public static CharSequence getProviderApiTitle(int provider) {
+        return getProviderTitle(provider) + " [" + getApiTypeTitle(FlexConfig.getProviderApiType(provider)) + "]";
     }
 
     private String getModelRef() {
@@ -128,7 +145,7 @@ public class FlexLlmFeatureSettingsActivity extends UniversalFragment {
             return getString(R.string.FlexLlmNotSet);
         }
         int provider = summary ? FlexConfig.getAiSummaryLlmProvider() : FlexConfig.getTranslationLlmProvider();
-        return getProviderTitle(provider) + " / " + value;
+        return getProviderApiTitle(provider) + " / " + value;
     }
 
     private CharSequence formatPromptValue(String value) {
@@ -145,12 +162,12 @@ public class FlexLlmFeatureSettingsActivity extends UniversalFragment {
     private void showModelDialog() {
         ArrayList<String> refs = new ArrayList<>();
         ArrayList<CharSequence> items = new ArrayList<>();
-        for (int provider = FlexConfig.LLM_PROVIDER_CUSTOM; provider <= FlexConfig.LLM_PROVIDER_SILICONFLOW; ++provider) {
+        for (int provider = FlexConfig.LLM_PROVIDER_CUSTOM; provider <= FlexConfig.LLM_PROVIDER_ANTHROPIC; ++provider) {
             ArrayList<String> models = FlexConfig.getProviderModelList(provider);
             for (int i = 0; i < models.size(); ++i) {
                 String model = models.get(i);
                 refs.add(FlexConfig.makeLlmModelRef(provider, model));
-                items.add(getProviderTitle(provider) + " / " + model);
+                items.add(getProviderApiTitle(provider) + " / " + model);
             }
         }
         if (items.isEmpty()) {

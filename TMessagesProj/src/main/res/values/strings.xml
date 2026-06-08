@@ -10797,8 +10797,13 @@
     <string name="FlexLlmProviderDeepSeek">DeepSeek</string>
     <string name="FlexLlmProviderGroq">Groq</string>
     <string name="FlexLlmProviderSiliconFlow">SiliconFlow</string>
+    <string name="FlexLlmProviderAnthropic">Anthropic</string>
+    <string name="FlexLlmApiType">API Type</string>
+    <string name="FlexLlmApiTypeChatCompletions">Chat Completions</string>
+    <string name="FlexLlmApiTypeResponses">Responses</string>
+    <string name="FlexLlmApiTypeClaudeMessages">Claude Messages</string>
     <string name="FlexLlmApiUrl">LLM API URL</string>
-    <string name="FlexLlmApiUrlHint">Enter a complete chat completions endpoint URL. Built-in providers fill in a default value automatically.</string>
+    <string name="FlexLlmApiUrlHint">Choose the API type, then enter the complete endpoint URL. Built-in providers fill in a default value automatically.</string>
     <string name="FlexLlmApiKey">LLM API Key</string>
     <string name="FlexLlmModel">LLM Model</string>
     <string name="FlexLlmModelHint">Enter the model name used for requests.</string>

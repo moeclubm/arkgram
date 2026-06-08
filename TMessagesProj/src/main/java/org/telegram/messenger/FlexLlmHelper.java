@@ -19,7 +19,14 @@ import java.util.ArrayList;
 
 public class FlexLlmHelper {
 
+    private static final int CLAUDE_MAX_TOKENS = 4096;
+    private static final String CLAUDE_API_VERSION = "2023-06-01";
+
     public static void requestText(String apiUrl, String apiKey, String model, String systemPrompt, String userPrompt, double temperature, Utilities.Callback2<String, String> done) {
+        requestText(FlexConfig.LLM_API_TYPE_CHAT_COMPLETIONS, apiUrl, apiKey, model, systemPrompt, userPrompt, temperature, done);
+    }
+
+    public static void requestText(int apiType, String apiUrl, String apiKey, String model, String systemPrompt, String userPrompt, double temperature, Utilities.Callback2<String, String> done) {
         if (done == null) {
             return;
         }
@@ -41,40 +48,54 @@ public class FlexLlmHelper {
                 connection.setRequestMethod("POST");
                 connection.setDoOutput(true);
                 connection.setRequestProperty("Content-Type", "application/json; charset=UTF-8");
-                if (!TextUtils.isEmpty(apiKey)) {
-                    connection.setRequestProperty("Authorization", "Bearer " + apiKey);
-                }
+                setAuthHeaders(connection, apiType, apiKey);
 
                 JSONObject request = new JSONObject();
                 request.put("model", model);
                 request.put("temperature", temperature);
-                JSONArray messages = new JSONArray();
-                if (!TextUtils.isEmpty(systemPrompt)) {
+                if (apiType == FlexConfig.LLM_API_TYPE_RESPONSES) {
+                    if (!TextUtils.isEmpty(systemPrompt)) {
+                        request.put("instructions", systemPrompt);
+                    }
+                    request.put("input", userPrompt);
+                } else if (apiType == FlexConfig.LLM_API_TYPE_CLAUDE_MESSAGES) {
+                    request.put("max_tokens", CLAUDE_MAX_TOKENS);
+                    if (!TextUtils.isEmpty(systemPrompt)) {
+                        request.put("system", systemPrompt);
+                    }
+                    request.put("messages", new JSONArray()
+                        .put(new JSONObject()
+                            .put("role", "user")
+                            .put("content", userPrompt)));
+                } else {
+                    JSONArray messages = new JSONArray();
+                    if (!TextUtils.isEmpty(systemPrompt)) {
+                        messages.put(new JSONObject()
+                            .put("role", "system")
+                            .put("content", systemPrompt));
+                    }
                     messages.put(new JSONObject()
-                        .put("role", "system")
-                        .put("content", systemPrompt));
+                        .put("role", "user")
+                        .put("content", userPrompt));
+                    request.put("messages", messages);
                 }
-                messages.put(new JSONObject()
-                    .put("role", "user")
-                    .put("content", userPrompt));
-                request.put("messages", messages);
 
                 try (OutputStream outputStream = connection.getOutputStream()) {
                     outputStream.write(request.toString().getBytes(Charsets.UTF_8));
                 }
 
                 responseText = readConnectionText(connection, false);
-                JSONArray choices = new JSONObject(responseText).optJSONArray("choices");
-                if (choices == null || choices.length() <= 0) {
-                    throw new IllegalStateException(LocaleController.getString(R.string.FlexLlmInvalidResponse));
-                }
-                JSONObject choice = choices.optJSONObject(0);
-                String result = null;
-                if (choice != null) {
-                    result = extractMessageContent(choice.optJSONObject("message"));
+                JSONObject response = new JSONObject(responseText);
+                String result;
+                if (apiType == FlexConfig.LLM_API_TYPE_RESPONSES) {
+                    result = response.optString("output_text", null);
                     if (TextUtils.isEmpty(result)) {
-                        result = choice.optString("text", null);
+                        result = extractResponseOutput(response.optJSONArray("output"));
                     }
+                } else if (apiType == FlexConfig.LLM_API_TYPE_CLAUDE_MESSAGES) {
+                    result = extractTextContent(response.optJSONArray("content"));
+                } else {
+                    result = extractChatCompletion(response);
                 }
                 if (TextUtils.isEmpty(result)) {
                     throw new IllegalStateException(LocaleController.getString(R.string.FlexLlmInvalidResponse));
@@ -102,6 +123,10 @@ public class FlexLlmHelper {
     }
 
     public static void requestModels(String apiUrl, String apiKey, Utilities.Callback2<ArrayList<String>, String> done) {
+        requestModels(FlexConfig.LLM_API_TYPE_CHAT_COMPLETIONS, apiUrl, apiKey, done);
+    }
+
+    public static void requestModels(int apiType, String apiUrl, String apiKey, Utilities.Callback2<ArrayList<String>, String> done) {
         if (done == null) {
             return;
         }
@@ -118,9 +143,7 @@ public class FlexLlmHelper {
                 connection.setReadTimeout(30000);
                 connection.setRequestMethod("GET");
                 connection.setRequestProperty("Accept", "application/json");
-                if (!TextUtils.isEmpty(apiKey)) {
-                    connection.setRequestProperty("Authorization", "Bearer " + apiKey);
-                }
+                setAuthHeaders(connection, apiType, apiKey);
 
                 responseText = readConnectionText(connection, false);
                 JSONArray data = new JSONObject(responseText).optJSONArray("data");
@@ -159,6 +182,19 @@ public class FlexLlmHelper {
         }, "FlexLlmModelsRequest").start();
     }
 
+    private static void setAuthHeaders(HttpURLConnection connection, int apiType, String apiKey) {
+        if (apiType == FlexConfig.LLM_API_TYPE_CLAUDE_MESSAGES) {
+            connection.setRequestProperty("anthropic-version", CLAUDE_API_VERSION);
+            if (!TextUtils.isEmpty(apiKey)) {
+                connection.setRequestProperty("x-api-key", apiKey);
+            }
+            return;
+        }
+        if (!TextUtils.isEmpty(apiKey)) {
+            connection.setRequestProperty("Authorization", "Bearer " + apiKey);
+        }
+    }
+
     private static String readConnectionText(HttpURLConnection connection, boolean errorStream) throws IOException {
         if (connection == null) {
             return null;
@@ -193,6 +229,10 @@ public class FlexLlmHelper {
                     if (!TextUtils.isEmpty(message)) {
                         return message;
                     }
+                    String type = error.optString("type", null);
+                    if (!TextUtils.isEmpty(type)) {
+                        return type;
+                    }
                 }
                 String message = object.optString("message", null);
                 if (!TextUtils.isEmpty(message)) {
@@ -226,7 +266,26 @@ public class FlexLlmHelper {
         if (value.endsWith("/completions")) {
             return value.substring(0, value.length() - "/completions".length()) + "/models";
         }
+        if (value.endsWith("/responses")) {
+            return value.substring(0, value.length() - "/responses".length()) + "/models";
+        }
+        if (value.endsWith("/messages")) {
+            return value.substring(0, value.length() - "/messages".length()) + "/models";
+        }
         return value + "/models";
+    }
+
+    private static String extractChatCompletion(JSONObject response) {
+        JSONArray choices = response.optJSONArray("choices");
+        if (choices == null || choices.length() <= 0) {
+            return null;
+        }
+        JSONObject choice = choices.optJSONObject(0);
+        if (choice == null) {
+            return null;
+        }
+        String result = extractMessageContent(choice.optJSONObject("message"));
+        return TextUtils.isEmpty(result) ? choice.optString("text", null) : result;
     }
 
     private static String extractMessageContent(JSONObject message) {
@@ -237,10 +296,35 @@ public class FlexLlmHelper {
         if (content instanceof String) {
             return ((String) content).trim();
         }
-        if (!(content instanceof JSONArray)) {
+        if (content instanceof JSONArray) {
+            return extractTextContent((JSONArray) content);
+        }
+        return null;
+    }
+
+    private static String extractResponseOutput(JSONArray output) {
+        if (output == null) {
             return null;
         }
-        JSONArray contentArray = (JSONArray) content;
+        StringBuilder builder = new StringBuilder();
+        for (int i = 0; i < output.length(); ++i) {
+            JSONObject item = output.optJSONObject(i);
+            if (item == null) {
+                continue;
+            }
+            String text = extractTextContent(item.optJSONArray("content"));
+            if (!TextUtils.isEmpty(text)) {
+                builder.append(text);
+            }
+        }
+        String result = builder.toString().trim();
+        return result.isEmpty() ? null : result;
+    }
+
+    private static String extractTextContent(JSONArray contentArray) {
+        if (contentArray == null) {
+            return null;
+        }
         StringBuilder builder = new StringBuilder();
         for (int i = 0; i < contentArray.length(); ++i) {
             Object block = contentArray.opt(i);

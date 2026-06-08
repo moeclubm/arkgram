@@ -31,8 +31,9 @@ public class FlexLlmProviderSettingsActivity extends UniversalFragment {
 
     private static final int ID_API_URL = 1;
     private static final int ID_API_KEY = 2;
-    private static final int ID_ADD_MODEL = 3;
-    private static final int ID_FETCH_MODELS = 4;
+    private static final int ID_API_TYPE = 3;
+    private static final int ID_ADD_MODEL = 4;
+    private static final int ID_FETCH_MODELS = 5;
     private static final int ID_MODEL_BASE = 1000;
 
     private final int provider;
@@ -49,6 +50,7 @@ public class FlexLlmProviderSettingsActivity extends UniversalFragment {
     @Override
     protected void fillItems(ArrayList<UItem> items, UniversalAdapter adapter) {
         items.add(UItem.asHeader(getString(R.string.FlexLlmProviderConfig)));
+        items.add(UItem.asButton(ID_API_TYPE, R.drawable.msg2_data, getString(R.string.FlexLlmApiType), FlexLlmFeatureSettingsActivity.getApiTypeTitle(FlexConfig.getProviderApiType(provider))));
         items.add(UItem.asButton(ID_API_URL, R.drawable.msg2_data, getString(R.string.FlexLlmApiUrl), formatPlainValue(FlexConfig.getProviderApiUrl(provider))));
         items.add(UItem.asButton(ID_API_KEY, R.drawable.msg_translate, getString(R.string.FlexLlmApiKey), formatSecretValue(FlexConfig.getProviderApiKey(provider))));
         items.add(UItem.asShadow(getString(R.string.FlexLlmApiUrlHint)));
@@ -69,6 +71,8 @@ public class FlexLlmProviderSettingsActivity extends UniversalFragment {
                 FlexConfig.setProviderApiUrl(provider, value);
                 listView.adapter.update(true);
             });
+        } else if (item.id == ID_API_TYPE) {
+            showApiTypeDialog();
         } else if (item.id == ID_API_KEY) {
             showTextValueDialog(getString(R.string.FlexLlmApiKey), null, FlexConfig.getProviderApiKey(provider), InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS, false, value -> {
                 FlexConfig.setProviderApiKey(provider, value);
@@ -129,7 +133,7 @@ public class FlexLlmProviderSettingsActivity extends UniversalFragment {
     }
 
     private void fetchModels() {
-        FlexLlmHelper.requestModels(FlexConfig.getProviderApiUrl(provider), FlexConfig.getProviderApiKey(provider), (models, error) -> {
+        FlexLlmHelper.requestModels(FlexConfig.getProviderApiType(provider), FlexConfig.getProviderApiUrl(provider), FlexConfig.getProviderApiKey(provider), (models, error) -> {
             if (!TextUtils.isEmpty(error)) {
                 BulletinFactory.of(this).createErrorBulletin(error).show();
                 return;
@@ -146,6 +150,25 @@ public class FlexLlmProviderSettingsActivity extends UniversalFragment {
             });
             showDialog(builder.create());
         });
+    }
+
+    private void showApiTypeDialog() {
+        int[] values = new int[] {
+            FlexConfig.LLM_API_TYPE_CHAT_COMPLETIONS,
+            FlexConfig.LLM_API_TYPE_RESPONSES,
+            FlexConfig.LLM_API_TYPE_CLAUDE_MESSAGES
+        };
+        CharSequence[] items = new CharSequence[values.length];
+        for (int i = 0; i < values.length; ++i) {
+            items[i] = FlexLlmFeatureSettingsActivity.getApiTypeTitle(values[i]);
+        }
+        AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
+        builder.setTitle(getString(R.string.FlexLlmApiType));
+        builder.setItems(items, (dialog, which) -> {
+            FlexConfig.setProviderApiType(provider, values[which]);
+            listView.adapter.update(true);
+        });
+        showDialog(builder.create());
     }
 
     private void showRemoveModelDialog(String model) {

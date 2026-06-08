@@ -115,8 +115,13 @@
     <string name="FlexLlmProviderDeepSeek">DeepSeek</string>
     <string name="FlexLlmProviderGroq">Groq</string>
     <string name="FlexLlmProviderSiliconFlow">SiliconFlow</string>
+    <string name="FlexLlmProviderAnthropic">Anthropic</string>
+    <string name="FlexLlmApiType">API 类型</string>
+    <string name="FlexLlmApiTypeChatCompletions">Chat Completions</string>
+    <string name="FlexLlmApiTypeResponses">Responses</string>
+    <string name="FlexLlmApiTypeClaudeMessages">Claude Messages</string>
     <string name="FlexLlmApiUrl">LLM API URL</string>
-    <string name="FlexLlmApiUrlHint">输入完整的 chat completions 接口 URL。内置提供商会自动填入默认值。</string>
+    <string name="FlexLlmApiUrlHint">先选择 API 类型，再输入完整接口 URL。内置提供商会自动填入默认值。</string>
     <string name="FlexLlmApiKey">LLM API Key</string>
     <string name="FlexLlmModel">LLM 模型</string>
     <string name="FlexLlmModelHint">输入请求使用的模型名称。</string>

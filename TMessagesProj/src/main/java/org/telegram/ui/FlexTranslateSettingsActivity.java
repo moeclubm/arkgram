@@ -161,7 +161,7 @@ public class FlexTranslateSettingsActivity extends UniversalFragment {
 
     private CharSequence getLlmSettingsValue() {
         String model = FlexConfig.getLlmModel();
-        CharSequence provider = FlexLlmFeatureSettingsActivity.getProviderTitle(FlexConfig.getTranslationLlmProvider());
+        CharSequence provider = FlexLlmFeatureSettingsActivity.getProviderApiTitle(FlexConfig.getTranslationLlmProvider());
         return TextUtils.isEmpty(model) ? provider : provider + " / " + model;
     }
 

@@ -33,6 +33,10 @@ public class FlexConfig {
     public static final int LLM_PROVIDER_DEEPSEEK = 3;
     public static final int LLM_PROVIDER_GROQ = 4;
     public static final int LLM_PROVIDER_SILICONFLOW = 5;
+    public static final int LLM_PROVIDER_ANTHROPIC = 6;
+    public static final int LLM_API_TYPE_CHAT_COMPLETIONS = 0;
+    public static final int LLM_API_TYPE_RESPONSES = 1;
+    public static final int LLM_API_TYPE_CLAUDE_MESSAGES = 2;
     public static final int AD_BLOCK_COLLAPSED_LOCAL_ID = -21041001;
     public static final String DEFAULT_DEEPL_API_URL = "https://api-free.deepl.com/v2/translate";
     public static final String DEFAULT_TRANSLATION_LLM_PROMPT = "You are a professional translation engine. Translate the user's text into the requested target language. Return only the translated text. Preserve line breaks, markdown, URLs, mentions, hashtags, emoji, punctuation, and list structure. Do not add explanations.";
@@ -73,6 +77,20 @@ public class FlexConfig {
     }
 
     public static String getLlmProviderDefaultApiUrl(int provider) {
+        return getLlmProviderDefaultApiUrl(provider, getDefaultLlmApiType(provider));
+    }
+
+    public static int getDefaultLlmApiType(int provider) {
+        return provider == LLM_PROVIDER_ANTHROPIC ? LLM_API_TYPE_CLAUDE_MESSAGES : LLM_API_TYPE_CHAT_COMPLETIONS;
+    }
+
+    public static String getLlmProviderDefaultApiUrl(int provider, int apiType) {
+        if (apiType == LLM_API_TYPE_CLAUDE_MESSAGES) {
+            return provider == LLM_PROVIDER_ANTHROPIC ? "https://api.anthropic.com/v1/messages" : "";
+        }
+        if (apiType == LLM_API_TYPE_RESPONSES) {
+            return provider == LLM_PROVIDER_OPENAI ? "https://api.openai.com/v1/responses" : "";
+        }
         if (provider == LLM_PROVIDER_OPENAI) {
             return "https://api.openai.com/v1/chat/completions";
         }
@@ -91,9 +109,9 @@ public class FlexConfig {
         return "";
     }
 
-    private static String resolveLlmApiUrl(int provider, String customValue) {
+    private static String resolveLlmApiUrl(int provider, int apiType, String customValue) {
         String value = clean(customValue);
-        return value.isEmpty() ? getLlmProviderDefaultApiUrl(provider) : value;
+        return value.isEmpty() ? getLlmProviderDefaultApiUrl(provider, apiType) : value;
     }
 
     public static int getDownloadSpeedBoost() {
@@ -611,10 +629,25 @@ public class FlexConfig {
         return clean(prefs().getString(llmProviderKey(provider, "api_url"), ""));
     }
 
+    public static int getProviderApiType(int provider) {
+        return prefs().getInt(llmProviderKey(provider, "api_type"), getDefaultLlmApiType(provider));
+    }
+
+    public static void setProviderApiType(int provider, int value) {
+        int oldType = getProviderApiType(provider);
+        String storedUrl = getStoredProviderApiUrl(provider);
+        SharedPreferences.Editor editor = prefs().edit().putInt(llmProviderKey(provider, "api_type"), value);
+        if (TextUtils.equals(storedUrl, getLlmProviderDefaultApiUrl(provider, oldType))) {
+            editor.remove(llmProviderKey(provider, "api_url"));
+        }
+        editor.apply();
+    }
+
     public static String getProviderApiUrl(int provider) {
         String value = getStoredProviderApiUrl(provider);
+        int apiType = getProviderApiType(provider);
         if (!value.isEmpty()) {
-            return resolveLlmApiUrl(provider, value);
+            return resolveLlmApiUrl(provider, apiType, value);
         }
         if (provider == getLegacyTranslationLlmProvider()) {
             value = getLegacyTranslationLlmApiUrl();
@@ -622,7 +655,7 @@ public class FlexConfig {
         if (value.isEmpty() && provider == getLegacyAiSummaryLlmProvider()) {
             value = getLegacyAiSummaryLlmApiUrl();
         }
-        return resolveLlmApiUrl(provider, value);
+        return resolveLlmApiUrl(provider, apiType, value);
     }
 
     public static void setProviderApiUrl(int provider, String value) {
@@ -686,6 +719,10 @@ public class FlexConfig {
         return getProviderApiUrl(getTranslationLlmProvider());
     }
 
+    public static int getLlmApiType() {
+        return getProviderApiType(getTranslationLlmProvider());
+    }
+
     public static String getStoredLlmApiUrl() {
         String value = getStoredProviderApiUrl(getTranslationLlmProvider());
         return value.isEmpty() ? getLegacyTranslationLlmApiUrl() : value;
@@ -741,6 +778,10 @@ public class FlexConfig {
 
     public static String getAiSummaryLlmApiUrl() {
         return getProviderApiUrl(getAiSummaryLlmProvider());
+    }
+
+    public static int getAiSummaryLlmApiType() {
+        return getProviderApiType(getAiSummaryLlmProvider());
     }
 
     public static String getStoredAiSummaryLlmApiUrl() {

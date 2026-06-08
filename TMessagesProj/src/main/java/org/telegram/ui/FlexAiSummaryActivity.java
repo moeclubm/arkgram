@@ -246,6 +246,7 @@ public class FlexAiSummaryActivity extends UniversalFragment {
                 return;
             }
             FlexLlmHelper.requestText(
+                FlexConfig.getAiSummaryLlmApiType(),
                 FlexConfig.getAiSummaryLlmApiUrl(),
                 FlexConfig.getAiSummaryLlmApiKey(),
                 FlexConfig.getAiSummaryLlmModel(),

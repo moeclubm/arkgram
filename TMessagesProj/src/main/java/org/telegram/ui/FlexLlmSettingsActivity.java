@@ -28,8 +28,8 @@ public class FlexLlmSettingsActivity extends UniversalFragment {
     @Override
     protected void fillItems(ArrayList<UItem> items, UniversalAdapter adapter) {
         items.add(UItem.asHeader(getString(R.string.FlexLlmProviders)));
-        for (int provider = FlexConfig.LLM_PROVIDER_CUSTOM; provider <= FlexConfig.LLM_PROVIDER_SILICONFLOW; ++provider) {
-            items.add(UItem.asButton(ID_PROVIDER_BASE + provider, R.drawable.msg2_data, FlexLlmFeatureSettingsActivity.getProviderTitle(provider), getProviderValue(provider)));
+        for (int provider = FlexConfig.LLM_PROVIDER_CUSTOM; provider <= FlexConfig.LLM_PROVIDER_ANTHROPIC; ++provider) {
+            items.add(UItem.asButton(ID_PROVIDER_BASE + provider, R.drawable.msg2_data, FlexLlmFeatureSettingsActivity.getProviderApiTitle(provider), getProviderValue(provider)));
         }
         items.add(UItem.asShadow(getString(R.string.FlexLlmSettingsInfo)));
         items.add(UItem.asHeader(getString(R.string.FlexLlmFeatures)));
@@ -71,6 +71,6 @@ public class FlexLlmSettingsActivity extends UniversalFragment {
         if (TextUtils.isEmpty(model)) {
             return getString(R.string.FlexLlmNotSet);
         }
-        return FlexLlmFeatureSettingsActivity.getProviderTitle(provider) + " / " + model;
+        return FlexLlmFeatureSettingsActivity.getProviderApiTitle(provider) + " / " + model;
     }
 }
