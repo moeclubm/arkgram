@@ -69,6 +69,7 @@ dependencies {
 
     constraints {
         implementation("com.google.code.findbugs:jsr305:3.0.2")
+        implementation("com.google.protobuf:protobuf-javalite:3.25.5")
         implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk7:2.4.0") {
             because("kotlin-stdlib-jdk7 is now a part of kotlin-stdlib")
         }
