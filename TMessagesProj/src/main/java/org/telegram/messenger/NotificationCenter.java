@@ -253,7 +253,6 @@ public class NotificationCenter {
     public static final int botStarsUpdated = totalEvents++;
     public static final int botStarsTransactionsLoaded = totalEvents++;
     public static final int channelStarsUpdated = totalEvents++;
-    public static final int webViewResolved = totalEvents++;
     public static final int updateAllMessages = totalEvents++;
     public static final int starGiftsLoaded = totalEvents++;
     public static final int starUserGiftsLoaded = totalEvents++;
@@ -276,8 +275,10 @@ public class NotificationCenter {
     public static final int updatedChatRanks = totalEvents++;
     public static final int joinedGroup = totalEvents++;
     public static final int loadedAiComposeTones = totalEvents++;
+    public static final int updatedChatbot = totalEvents++;
 
     //global
+    public static final int activeAccountChanged = totalEvents++;
     public static final int pushMessagesUpdated = totalEvents++;
     public static final int wallpapersDidLoad = totalEvents++;
     public static final int wallpapersNeedReload = totalEvents++;
@@ -371,6 +372,8 @@ public class NotificationCenter {
     public static final int mainTabsVisibilityToggled = totalEvents++;
     public static final int flexAdBlockSettingsChanged = totalEvents++;
     public static final int contactsPermissionBadgeCheck = totalEvents++;
+    public static final int guardBotDecisionResult = totalEvents++;
+    public static final int webBrowserSettingsUpdate = totalEvents++;
 
     public static boolean alreadyLogged;
 

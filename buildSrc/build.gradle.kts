@@ -25,6 +25,7 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach 
     compilerOptions {
         freeCompilerArgs.add("-Xannotation-default-target=param-property")
     }
+    incremental = false
 }
 
 dependencies {
